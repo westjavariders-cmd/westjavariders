@@ -16,6 +16,8 @@ import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminNoAccessRouteImport } from './routes/admin/no-access'
 import { Route as AdminSetupRouteImport } from './routes/admin/setup'
 import { Route as AdminAppIndexRouteImport } from './routes/admin/_app/index'
+import { Route as AdminAppCatalogTaxonomyRouteImport } from './routes/admin/_app/catalog-taxonomy'
+import { Route as AdminAppComponentTemplatesRouteImport } from './routes/admin/_app/component-templates'
 import { Route as AdminAppCustomersRouteImport } from './routes/admin/_app/customers'
 import { Route as AdminAppExperiencesRouteImport } from './routes/admin/_app/experiences'
 import { Route as AdminAppHotelsRouteImport } from './routes/admin/_app/hotels'
@@ -29,6 +31,8 @@ import { Route as AdminAppReviewsRouteImport } from './routes/admin/_app/reviews
 import { Route as AdminAppTeamRouteImport } from './routes/admin/_app/team'
 import { Route as AdminAppTransportRouteImport } from './routes/admin/_app/transport'
 import { Route as AdminAppVouchersRouteImport } from './routes/admin/_app/vouchers'
+import { Route as AdminAppProductsIndexRouteImport } from './routes/admin/_app/products.index'
+import { Route as AdminAppProductsProductIdRouteImport } from './routes/admin/_app/products.$productId'
 import { Route as AdminAppSettingsIndexRouteImport } from './routes/admin/_app/settings.index'
 import { Route as AdminAppSettingsAuditRouteImport } from './routes/admin/_app/settings.audit'
 import { Route as AdminAppSettingsCurrenciesRouteImport } from './routes/admin/_app/settings.currencies'
@@ -70,6 +74,17 @@ const AdminAppIndexRoute = AdminAppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminAppRouteRoute,
 } as any)
+const AdminAppCatalogTaxonomyRoute = AdminAppCatalogTaxonomyRouteImport.update({
+  id: '/catalog-taxonomy',
+  path: '/catalog-taxonomy',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppComponentTemplatesRoute =
+  AdminAppComponentTemplatesRouteImport.update({
+    id: '/component-templates',
+    path: '/component-templates',
+    getParentRoute: () => AdminAppRouteRoute,
+  } as any)
 const AdminAppCustomersRoute = AdminAppCustomersRouteImport.update({
   id: '/customers',
   path: '/customers',
@@ -135,6 +150,17 @@ const AdminAppVouchersRoute = AdminAppVouchersRouteImport.update({
   path: '/vouchers',
   getParentRoute: () => AdminAppRouteRoute,
 } as any)
+const AdminAppProductsIndexRoute = AdminAppProductsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminAppProductsRoute,
+} as any)
+const AdminAppProductsProductIdRoute =
+  AdminAppProductsProductIdRouteImport.update({
+    id: '/$productId',
+    path: '/$productId',
+    getParentRoute: () => AdminAppProductsRoute,
+  } as any)
 const AdminAppSettingsIndexRoute = AdminAppSettingsIndexRouteImport.update({
   id: '/settings/',
   path: '/settings/',
@@ -174,6 +200,8 @@ export interface FileRoutesByFullPath {
   '/admin/login': typeof AdminLoginRoute
   '/admin/no-access': typeof AdminNoAccessRoute
   '/admin/setup': typeof AdminSetupRoute
+  '/admin/catalog-taxonomy': typeof AdminAppCatalogTaxonomyRoute
+  '/admin/component-templates': typeof AdminAppComponentTemplatesRoute
   '/admin/customers': typeof AdminAppCustomersRoute
   '/admin/experiences': typeof AdminAppExperiencesRoute
   '/admin/hotels': typeof AdminAppHotelsRoute
@@ -181,18 +209,20 @@ export interface FileRoutesByFullPath {
   '/admin/motorbikes': typeof AdminAppMotorbikesRoute
   '/admin/orders': typeof AdminAppOrdersRoute
   '/admin/prices': typeof AdminAppPricesRoute
-  '/admin/products': typeof AdminAppProductsRoute
+  '/admin/products': typeof AdminAppProductsRouteWithChildren
   '/admin/promo-codes': typeof AdminAppPromoCodesRoute
   '/admin/reviews': typeof AdminAppReviewsRoute
   '/admin/team': typeof AdminAppTeamRoute
   '/admin/transport': typeof AdminAppTransportRoute
   '/admin/vouchers': typeof AdminAppVouchersRoute
   '/admin/': typeof AdminAppIndexRoute
+  '/admin/products/$productId': typeof AdminAppProductsProductIdRoute
   '/admin/settings/audit': typeof AdminAppSettingsAuditRoute
   '/admin/settings/currencies': typeof AdminAppSettingsCurrenciesRoute
   '/admin/settings/languages': typeof AdminAppSettingsLanguagesRoute
   '/admin/settings/markets': typeof AdminAppSettingsMarketsRoute
   '/admin/settings/users': typeof AdminAppSettingsUsersRoute
+  '/admin/products/': typeof AdminAppProductsIndexRoute
   '/admin/settings/': typeof AdminAppSettingsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -201,6 +231,8 @@ export interface FileRoutesByTo {
   '/admin/login': typeof AdminLoginRoute
   '/admin/no-access': typeof AdminNoAccessRoute
   '/admin/setup': typeof AdminSetupRoute
+  '/admin/catalog-taxonomy': typeof AdminAppCatalogTaxonomyRoute
+  '/admin/component-templates': typeof AdminAppComponentTemplatesRoute
   '/admin/customers': typeof AdminAppCustomersRoute
   '/admin/experiences': typeof AdminAppExperiencesRoute
   '/admin/hotels': typeof AdminAppHotelsRoute
@@ -208,17 +240,18 @@ export interface FileRoutesByTo {
   '/admin/motorbikes': typeof AdminAppMotorbikesRoute
   '/admin/orders': typeof AdminAppOrdersRoute
   '/admin/prices': typeof AdminAppPricesRoute
-  '/admin/products': typeof AdminAppProductsRoute
   '/admin/promo-codes': typeof AdminAppPromoCodesRoute
   '/admin/reviews': typeof AdminAppReviewsRoute
   '/admin/team': typeof AdminAppTeamRoute
   '/admin/transport': typeof AdminAppTransportRoute
   '/admin/vouchers': typeof AdminAppVouchersRoute
+  '/admin/products/$productId': typeof AdminAppProductsProductIdRoute
   '/admin/settings/audit': typeof AdminAppSettingsAuditRoute
   '/admin/settings/currencies': typeof AdminAppSettingsCurrenciesRoute
   '/admin/settings/languages': typeof AdminAppSettingsLanguagesRoute
   '/admin/settings/markets': typeof AdminAppSettingsMarketsRoute
   '/admin/settings/users': typeof AdminAppSettingsUsersRoute
+  '/admin/products': typeof AdminAppProductsIndexRoute
   '/admin/settings': typeof AdminAppSettingsIndexRoute
 }
 export interface FileRoutesById {
@@ -229,6 +262,8 @@ export interface FileRoutesById {
   '/admin/login': typeof AdminLoginRoute
   '/admin/no-access': typeof AdminNoAccessRoute
   '/admin/setup': typeof AdminSetupRoute
+  '/admin/_app/catalog-taxonomy': typeof AdminAppCatalogTaxonomyRoute
+  '/admin/_app/component-templates': typeof AdminAppComponentTemplatesRoute
   '/admin/_app/customers': typeof AdminAppCustomersRoute
   '/admin/_app/experiences': typeof AdminAppExperiencesRoute
   '/admin/_app/hotels': typeof AdminAppHotelsRoute
@@ -236,18 +271,20 @@ export interface FileRoutesById {
   '/admin/_app/motorbikes': typeof AdminAppMotorbikesRoute
   '/admin/_app/orders': typeof AdminAppOrdersRoute
   '/admin/_app/prices': typeof AdminAppPricesRoute
-  '/admin/_app/products': typeof AdminAppProductsRoute
+  '/admin/_app/products': typeof AdminAppProductsRouteWithChildren
   '/admin/_app/promo-codes': typeof AdminAppPromoCodesRoute
   '/admin/_app/reviews': typeof AdminAppReviewsRoute
   '/admin/_app/team': typeof AdminAppTeamRoute
   '/admin/_app/transport': typeof AdminAppTransportRoute
   '/admin/_app/vouchers': typeof AdminAppVouchersRoute
   '/admin/_app/': typeof AdminAppIndexRoute
+  '/admin/_app/products/$productId': typeof AdminAppProductsProductIdRoute
   '/admin/_app/settings/audit': typeof AdminAppSettingsAuditRoute
   '/admin/_app/settings/currencies': typeof AdminAppSettingsCurrenciesRoute
   '/admin/_app/settings/languages': typeof AdminAppSettingsLanguagesRoute
   '/admin/_app/settings/markets': typeof AdminAppSettingsMarketsRoute
   '/admin/_app/settings/users': typeof AdminAppSettingsUsersRoute
+  '/admin/_app/products/': typeof AdminAppProductsIndexRoute
   '/admin/_app/settings/': typeof AdminAppSettingsIndexRoute
 }
 export interface FileRouteTypes {
@@ -258,6 +295,8 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/no-access'
     | '/admin/setup'
+    | '/admin/catalog-taxonomy'
+    | '/admin/component-templates'
     | '/admin/customers'
     | '/admin/experiences'
     | '/admin/hotels'
@@ -272,11 +311,13 @@ export interface FileRouteTypes {
     | '/admin/transport'
     | '/admin/vouchers'
     | '/admin/'
+    | '/admin/products/$productId'
     | '/admin/settings/audit'
     | '/admin/settings/currencies'
     | '/admin/settings/languages'
     | '/admin/settings/markets'
     | '/admin/settings/users'
+    | '/admin/products/'
     | '/admin/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -285,6 +326,8 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/no-access'
     | '/admin/setup'
+    | '/admin/catalog-taxonomy'
+    | '/admin/component-templates'
     | '/admin/customers'
     | '/admin/experiences'
     | '/admin/hotels'
@@ -292,17 +335,18 @@ export interface FileRouteTypes {
     | '/admin/motorbikes'
     | '/admin/orders'
     | '/admin/prices'
-    | '/admin/products'
     | '/admin/promo-codes'
     | '/admin/reviews'
     | '/admin/team'
     | '/admin/transport'
     | '/admin/vouchers'
+    | '/admin/products/$productId'
     | '/admin/settings/audit'
     | '/admin/settings/currencies'
     | '/admin/settings/languages'
     | '/admin/settings/markets'
     | '/admin/settings/users'
+    | '/admin/products'
     | '/admin/settings'
   id:
     | '__root__'
@@ -312,6 +356,8 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/no-access'
     | '/admin/setup'
+    | '/admin/_app/catalog-taxonomy'
+    | '/admin/_app/component-templates'
     | '/admin/_app/customers'
     | '/admin/_app/experiences'
     | '/admin/_app/hotels'
@@ -326,11 +372,13 @@ export interface FileRouteTypes {
     | '/admin/_app/transport'
     | '/admin/_app/vouchers'
     | '/admin/_app/'
+    | '/admin/_app/products/$productId'
     | '/admin/_app/settings/audit'
     | '/admin/_app/settings/currencies'
     | '/admin/_app/settings/languages'
     | '/admin/_app/settings/markets'
     | '/admin/_app/settings/users'
+    | '/admin/_app/products/'
     | '/admin/_app/settings/'
   fileRoutesById: FileRoutesById
 }
@@ -388,6 +436,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminAppIndexRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/catalog-taxonomy': {
+      id: '/admin/_app/catalog-taxonomy'
+      path: '/catalog-taxonomy'
+      fullPath: '/admin/catalog-taxonomy'
+      preLoaderRoute: typeof AdminAppCatalogTaxonomyRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/component-templates': {
+      id: '/admin/_app/component-templates'
+      path: '/component-templates'
+      fullPath: '/admin/component-templates'
+      preLoaderRoute: typeof AdminAppComponentTemplatesRouteImport
       parentRoute: typeof AdminAppRouteRoute
     }
     '/admin/_app/customers': {
@@ -481,6 +543,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAppVouchersRouteImport
       parentRoute: typeof AdminAppRouteRoute
     }
+    '/admin/_app/products/': {
+      id: '/admin/_app/products/'
+      path: '/'
+      fullPath: '/admin/products/'
+      preLoaderRoute: typeof AdminAppProductsIndexRouteImport
+      parentRoute: typeof AdminAppProductsRoute
+    }
+    '/admin/_app/products/$productId': {
+      id: '/admin/_app/products/$productId'
+      path: '/$productId'
+      fullPath: '/admin/products/$productId'
+      preLoaderRoute: typeof AdminAppProductsProductIdRouteImport
+      parentRoute: typeof AdminAppProductsRoute
+    }
     '/admin/_app/settings/': {
       id: '/admin/_app/settings/'
       path: '/settings'
@@ -526,7 +602,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminAppProductsRouteChildren {
+  AdminAppProductsProductIdRoute: typeof AdminAppProductsProductIdRoute
+  AdminAppProductsIndexRoute: typeof AdminAppProductsIndexRoute
+}
+
+const AdminAppProductsRouteChildren: AdminAppProductsRouteChildren = {
+  AdminAppProductsProductIdRoute: AdminAppProductsProductIdRoute,
+  AdminAppProductsIndexRoute: AdminAppProductsIndexRoute,
+}
+
+const AdminAppProductsRouteWithChildren =
+  AdminAppProductsRoute._addFileChildren(AdminAppProductsRouteChildren)
+
 interface AdminAppRouteRouteChildren {
+  AdminAppCatalogTaxonomyRoute: typeof AdminAppCatalogTaxonomyRoute
+  AdminAppComponentTemplatesRoute: typeof AdminAppComponentTemplatesRoute
   AdminAppCustomersRoute: typeof AdminAppCustomersRoute
   AdminAppExperiencesRoute: typeof AdminAppExperiencesRoute
   AdminAppHotelsRoute: typeof AdminAppHotelsRoute
@@ -534,7 +625,7 @@ interface AdminAppRouteRouteChildren {
   AdminAppMotorbikesRoute: typeof AdminAppMotorbikesRoute
   AdminAppOrdersRoute: typeof AdminAppOrdersRoute
   AdminAppPricesRoute: typeof AdminAppPricesRoute
-  AdminAppProductsRoute: typeof AdminAppProductsRoute
+  AdminAppProductsRoute: typeof AdminAppProductsRouteWithChildren
   AdminAppPromoCodesRoute: typeof AdminAppPromoCodesRoute
   AdminAppReviewsRoute: typeof AdminAppReviewsRoute
   AdminAppTeamRoute: typeof AdminAppTeamRoute
@@ -550,6 +641,8 @@ interface AdminAppRouteRouteChildren {
 }
 
 const AdminAppRouteRouteChildren: AdminAppRouteRouteChildren = {
+  AdminAppCatalogTaxonomyRoute: AdminAppCatalogTaxonomyRoute,
+  AdminAppComponentTemplatesRoute: AdminAppComponentTemplatesRoute,
   AdminAppCustomersRoute: AdminAppCustomersRoute,
   AdminAppExperiencesRoute: AdminAppExperiencesRoute,
   AdminAppHotelsRoute: AdminAppHotelsRoute,
@@ -557,7 +650,7 @@ const AdminAppRouteRouteChildren: AdminAppRouteRouteChildren = {
   AdminAppMotorbikesRoute: AdminAppMotorbikesRoute,
   AdminAppOrdersRoute: AdminAppOrdersRoute,
   AdminAppPricesRoute: AdminAppPricesRoute,
-  AdminAppProductsRoute: AdminAppProductsRoute,
+  AdminAppProductsRoute: AdminAppProductsRouteWithChildren,
   AdminAppPromoCodesRoute: AdminAppPromoCodesRoute,
   AdminAppReviewsRoute: AdminAppReviewsRoute,
   AdminAppTeamRoute: AdminAppTeamRoute,
