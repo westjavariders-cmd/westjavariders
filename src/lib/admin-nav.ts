@@ -8,7 +8,16 @@ export type AdminNavItem = {
 
 /** Navigation order is fixed by the platform architecture. */
 export const ADMIN_NAV: AdminNavItem[] = [
-  { label: "Products", to: "/admin/products", status: "planned" },
+  {
+    label: "Products",
+    to: "/admin/products",
+    status: "available",
+    children: [
+      { label: "All Products", to: "/admin/products", status: "available" },
+      { label: "Component Templates", to: "/admin/component-templates", status: "available" },
+      { label: "Categories & Placements", to: "/admin/catalog-taxonomy", status: "available" },
+    ],
+  },
   { label: "Prices", to: "/admin/prices", status: "planned" },
   { label: "Packages / Orders", to: "/admin/orders", status: "planned" },
   { label: "Vouchers", to: "/admin/vouchers", status: "planned" },
