@@ -405,6 +405,50 @@ export type Database = {
           },
         ]
       }
+      formula_versions: {
+        Row: {
+          activated_at: string | null
+          created_at: string
+          created_by: string | null
+          expression: string
+          id: string
+          is_active: boolean
+          pricing_id: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          activated_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expression: string
+          id?: string
+          is_active?: boolean
+          pricing_id: string
+          updated_at?: string
+          version: number
+        }
+        Update: {
+          activated_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expression?: string
+          id?: string
+          is_active?: boolean
+          pricing_id?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formula_versions_pricing_id_fkey"
+            columns: ["pricing_id"]
+            isOneToOne: false
+            referencedRelation: "product_pricing"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       languages: {
         Row: {
           code: string
@@ -518,6 +562,154 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      pricing_rules: {
+        Row: {
+          amount_idr: number | null
+          component_id: string | null
+          condition_operator: string | null
+          condition_value: string | null
+          condition_variable: string | null
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          label: string
+          pricing_id: string
+          rule_type: Database["public"]["Enums"]["pricing_rule_type"]
+          sign: Database["public"]["Enums"]["pricing_sign"]
+          updated_at: string
+          variable_name: string | null
+        }
+        Insert: {
+          amount_idr?: number | null
+          component_id?: string | null
+          condition_operator?: string | null
+          condition_value?: string | null
+          condition_variable?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          label: string
+          pricing_id: string
+          rule_type: Database["public"]["Enums"]["pricing_rule_type"]
+          sign?: Database["public"]["Enums"]["pricing_sign"]
+          updated_at?: string
+          variable_name?: string | null
+        }
+        Update: {
+          amount_idr?: number | null
+          component_id?: string | null
+          condition_operator?: string | null
+          condition_value?: string | null
+          condition_variable?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          label?: string
+          pricing_id?: string
+          rule_type?: Database["public"]["Enums"]["pricing_rule_type"]
+          sign?: Database["public"]["Enums"]["pricing_sign"]
+          updated_at?: string
+          variable_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_rules_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "product_components"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pricing_rules_pricing_id_fkey"
+            columns: ["pricing_id"]
+            isOneToOne: false
+            referencedRelation: "product_pricing"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pricing_test_cases: {
+        Row: {
+          created_at: string
+          expected_total_idr: number | null
+          id: string
+          inputs: Json
+          label: string
+          pricing_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expected_total_idr?: number | null
+          id?: string
+          inputs?: Json
+          label: string
+          pricing_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expected_total_idr?: number | null
+          id?: string
+          inputs?: Json
+          label?: string
+          pricing_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_test_cases_pricing_id_fkey"
+            columns: ["pricing_id"]
+            isOneToOne: false
+            referencedRelation: "product_pricing"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pricing_tiers: {
+        Row: {
+          amount_idr: number
+          created_at: string
+          display_order: number
+          from_value: number
+          id: string
+          rule_id: string
+          to_value: number | null
+          updated_at: string
+        }
+        Insert: {
+          amount_idr: number
+          created_at?: string
+          display_order?: number
+          from_value: number
+          id?: string
+          rule_id: string
+          to_value?: number | null
+          updated_at?: string
+        }
+        Update: {
+          amount_idr?: number
+          created_at?: string
+          display_order?: number
+          from_value?: number
+          id?: string
+          rule_id?: string
+          to_value?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_tiers_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_rules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_categories: {
         Row: {
@@ -661,6 +853,69 @@ export type Database = {
             foreignKeyName: "product_placements_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_pricing: {
+        Row: {
+          active_version_id: string | null
+          base_amount_idr: number
+          created_at: string
+          days_variable: string | null
+          id: string
+          mode: Database["public"]["Enums"]["pricing_mode"]
+          nights_variable: string | null
+          notes: string | null
+          people_variable: string | null
+          product_id: string
+          sessions_variable: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          active_version_id?: string | null
+          base_amount_idr?: number
+          created_at?: string
+          days_variable?: string | null
+          id?: string
+          mode?: Database["public"]["Enums"]["pricing_mode"]
+          nights_variable?: string | null
+          notes?: string | null
+          people_variable?: string | null
+          product_id: string
+          sessions_variable?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          active_version_id?: string | null
+          base_amount_idr?: number
+          created_at?: string
+          days_variable?: string | null
+          id?: string
+          mode?: Database["public"]["Enums"]["pricing_mode"]
+          nights_variable?: string | null
+          notes?: string | null
+          people_variable?: string | null
+          product_id?: string
+          sessions_variable?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_pricing_active_version_fkey"
+            columns: ["active_version_id"]
+            isOneToOne: false
+            referencedRelation: "formula_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_pricing_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
@@ -889,6 +1144,14 @@ export type Database = {
         | "FULLY_PAID"
         | "PAYMENT_FAILED"
         | "PAYMENT_UNKNOWN"
+      pricing_mode: "structured" | "formula"
+      pricing_rule_type:
+        | "fixed"
+        | "variable_times_amount"
+        | "component_quantity"
+        | "conditional"
+        | "tier"
+      pricing_sign: "add" | "subtract"
       product_kind: "package" | "insurance"
       unit_basis:
         | "fixed"
@@ -1055,6 +1318,15 @@ export const Constants = {
         "PAYMENT_FAILED",
         "PAYMENT_UNKNOWN",
       ],
+      pricing_mode: ["structured", "formula"],
+      pricing_rule_type: [
+        "fixed",
+        "variable_times_amount",
+        "component_quantity",
+        "conditional",
+        "tier",
+      ],
+      pricing_sign: ["add", "subtract"],
       product_kind: ["package", "insurance"],
       unit_basis: [
         "fixed",
