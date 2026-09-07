@@ -73,10 +73,17 @@ export const createProduct = createServerFn({ method: "POST" })
       .single();
     if (error || !product) fail("This product could not be created. The reference may already be in use.");
 
-    await supabase.from("config_flows").insert({ product_id: product.id });
-    await supabase
+    const { error: flowError } = await supabase
+      .from("config_flows")
+      .insert({ product_id: product.id });
+    const { error: contentError } = await supabase
       .from("product_translations")
       .insert({ product_id: product.id, language_code: "en" });
+    if (flowError || contentError) {
+      // Leave nothing half-built behind.
+      await supabase.from("products").delete().eq("id", product.id);
+      fail("This product could not be created. Please try again.");
+    }
 
     await audit(supabase, userId, "product_created", product.id, product.internal_name, {
       kind: data.kind,
