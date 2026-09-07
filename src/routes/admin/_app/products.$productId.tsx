@@ -19,6 +19,7 @@ import { ComponentsTab } from "@/components/admin/configurator/ComponentsTab";
 import { ConfiguratorTab } from "@/components/admin/configurator/ConfiguratorTab";
 import { DependenciesTab } from "@/components/admin/configurator/DependenciesTab";
 import { PreviewTab } from "@/components/admin/configurator/PreviewTab";
+import { PricingTab } from "@/components/admin/pricing/PricingTab";
 import { selectClass } from "@/components/admin/configurator/ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,6 +84,7 @@ function ProductEditor() {
           <TabsTrigger value="components">Components</TabsTrigger>
           <TabsTrigger value="configurator">Configurator</TabsTrigger>
           <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
+          <TabsTrigger value="pricing">Pricing</TabsTrigger>
           <TabsTrigger value="preview">Preview</TabsTrigger>
           <TabsTrigger value="status">Status</TabsTrigger>
         </TabsList>
@@ -102,6 +104,9 @@ function ProductEditor() {
           </TabsContent>
           <TabsContent value="dependencies">
             <DependenciesTab bundle={bundle} canEdit={canEdit} reload={reload} />
+          </TabsContent>
+          <TabsContent value="pricing">
+            <PricingTab bundle={bundle} canEdit={canEdit} />
           </TabsContent>
           <TabsContent value="preview">
             <PreviewTab bundle={bundle} />
