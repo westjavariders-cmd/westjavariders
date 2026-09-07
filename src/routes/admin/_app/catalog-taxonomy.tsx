@@ -71,15 +71,15 @@ function TaxonomyList({
   async function add() {
     const slug = newRow.slug.trim().toLowerCase();
     if (!/^[a-z0-9-]+$/.test(slug)) {
-      return toast.error("Use lowercase letters, numbers and hyphens for the slug.");
+      { toast.error("Use lowercase letters, numbers and hyphens for the slug."); return; }
     }
-    if (!newRow.name.trim()) return toast.error("A name is required.");
+    if (!newRow.name.trim()) { toast.error("A name is required."); return; }
     const { error } = await supabase.from(table).insert({
       slug,
       name: newRow.name.trim(),
       display_order: (list.data ?? []).length,
     });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await recordAdminAction(`${table}_created`, table, slug);
     setNewRow({ slug: "", name: "" });
     list.refetch();
@@ -163,7 +163,7 @@ function TaxonomyRow({
         is_active: draft.is_active,
       })
       .eq("id", row.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await recordAdminAction(`${table}_updated`, table, row.slug);
     toast.success("Saved.");
     reload();
@@ -171,7 +171,7 @@ function TaxonomyRow({
 
   async function remove() {
     const { error } = await supabase.from(table).delete().eq("id", row.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await recordAdminAction(`${table}_deleted`, table, row.slug);
     reload();
   }

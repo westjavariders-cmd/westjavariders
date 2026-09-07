@@ -28,13 +28,13 @@ export function ConfiguratorTab({ bundle, canEdit, reload }: Props) {
   const [openStep, setOpenStep] = useState<string | null>(bundle.steps[0]?.id ?? null);
 
   async function addStep() {
-    if (!bundle.flow) return toast.error("This product has no configurator flow yet.");
+    if (!bundle.flow) { toast.error("This product has no configurator flow yet."); return; }
     const { error } = await supabase.from("steps").insert({
       flow_id: bundle.flow.id,
       internal_name: `Step ${bundle.steps.length + 1}`,
       display_order: bundle.steps.length,
     });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await recordAdminAction("configurator_step_added", "steps", bundle.product.internal_name);
     reload();
   }
@@ -103,7 +103,7 @@ function StepEditor({
         is_active: draft.is_active,
       })
       .eq("id", step.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await recordAdminAction("configurator_step_updated", "steps", draft.internal_name);
     toast.success("Step saved.");
     reload();
@@ -111,7 +111,7 @@ function StepEditor({
 
   async function removeStep() {
     const { error } = await supabase.from("steps").delete().eq("id", step.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await recordAdminAction("configurator_step_removed", "steps", step.internal_name);
     toast.success("Step removed.");
     reload();
@@ -127,7 +127,7 @@ function StepEditor({
       field_type: "text",
       display_order: fields.length,
     });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await recordAdminAction("configurator_field_added", "fields", bundle.product.internal_name);
     reload();
   }
@@ -244,13 +244,13 @@ function FieldEditor({
 
   async function save() {
     if (!/^[a-z][a-z0-9_]*$/.test(draft.variable_name)) {
-      return toast.error("Variable name must be lowercase letters, numbers and underscores.");
+      { toast.error("Variable name must be lowercase letters, numbers and underscores."); return; }
     }
     if (draft.variable_name !== field.variable_name) {
       const duplicate = bundle.fields.some(
         (f) => f.id !== field.id && f.variable_name === draft.variable_name,
       );
-      if (duplicate) return toast.error("This variable name is already used in this product.");
+      if (duplicate) { toast.error("This variable name is already used in this product."); return; }
     }
     const { error } = await supabase
       .from("fields")
@@ -268,7 +268,7 @@ function FieldEditor({
         display_order: Number(draft.display_order || 0),
       })
       .eq("id", field.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await recordAdminAction("configurator_field_updated", "fields", draft.internal_name, {
       variable_name: draft.variable_name,
       renamed_from: draft.variable_name === field.variable_name ? null : field.variable_name,
@@ -279,7 +279,7 @@ function FieldEditor({
 
   async function removeField() {
     const { error } = await supabase.from("fields").delete().eq("id", field.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await recordAdminAction("configurator_field_removed", "fields", field.internal_name);
     reload();
   }
@@ -291,7 +291,7 @@ function FieldEditor({
       customer_label: `Option ${options.length + 1}`,
       display_order: options.length,
     });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     reload();
   }
 
@@ -466,14 +466,14 @@ function OptionRow({
         is_default: draft.is_default,
       })
       .eq("id", option.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Option saved.");
     reload();
   }
 
   async function remove() {
     const { error } = await supabase.from("field_options").delete().eq("id", option.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     reload();
   }
 

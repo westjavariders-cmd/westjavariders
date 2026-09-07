@@ -58,18 +58,18 @@ export function DependenciesTab({ bundle, canEdit, reload }: Props) {
   const sourceOptions = bundle.options.filter((o) => o.field_id === draft.source_field_id);
 
   async function add() {
-    if (!draft.source_field_id) return toast.error("Choose the field the rule watches.");
-    if (!draft.target) return toast.error("Choose what the rule affects.");
+    if (!draft.source_field_id) { toast.error("Choose the field the rule watches."); return; }
+    if (!draft.target) { toast.error("Choose what the rule affects."); return; }
     if (operator?.needsValue && !draft.compare_value.trim() && !draft.source_option_id) {
-      return toast.error("This condition needs a value.");
+      { toast.error("This condition needs a value."); return; }
     }
     if (action?.needsValue && !draft.action_value.trim()) {
-      return toast.error("This action needs a value.");
+      { toast.error("This action needs a value."); return; }
     }
     const [kind, id] = draft.target.split(":");
     // Targets come from this product only, so a rule can never reach another product.
-    if (kind === "field" && !fieldById.has(id ?? "")) return toast.error("Invalid target.");
-    if (kind === "option" && !optionById.has(id ?? "")) return toast.error("Invalid target.");
+    if (kind === "field" && !fieldById.has(id ?? "")) { toast.error("Invalid target."); return; }
+    if (kind === "option" && !optionById.has(id ?? "")) { toast.error("Invalid target."); return; }
 
     setSaving(true);
     const { error } = await supabase.from("dependencies").insert({
@@ -85,7 +85,7 @@ export function DependenciesTab({ bundle, canEdit, reload }: Props) {
       is_active: draft.is_active,
     });
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await recordAdminAction("dependency_added", "dependencies", bundle.product.internal_name);
     toast.success("Rule added.");
     setDraft(emptyDraft);
@@ -94,14 +94,14 @@ export function DependenciesTab({ bundle, canEdit, reload }: Props) {
 
   async function remove(id: string) {
     const { error } = await supabase.from("dependencies").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await recordAdminAction("dependency_removed", "dependencies", bundle.product.internal_name);
     reload();
   }
 
   async function toggle(id: string, is_active: boolean) {
     const { error } = await supabase.from("dependencies").update({ is_active }).eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     reload();
   }
 

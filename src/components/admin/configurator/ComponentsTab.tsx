@@ -44,7 +44,7 @@ export function ComponentsTab({ bundle, canEdit, reload }: Props) {
       internal_name: "New component",
       display_order: bundle.components.length,
     });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await recordAdminAction("product_component_added", "product_components", bundle.product.internal_name, {
       source: "blank",
     });
@@ -71,14 +71,14 @@ export function ComponentsTab({ bundle, canEdit, reload }: Props) {
       internal_name: `Copy of ${c.internal_name}`,
       display_order: bundle.components.length,
     });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Component duplicated.");
     reload();
   }
 
   async function remove(c: ProductComponent) {
     const { error } = await supabase.from("product_components").delete().eq("id", c.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Component removed.");
     reload();
   }
@@ -205,7 +205,7 @@ function ComponentForm({
       })
       .eq("id", component.id);
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await recordAdminAction("product_component_updated", "product_components", draft.internal_name);
     toast.success("Component saved.");
     reload();

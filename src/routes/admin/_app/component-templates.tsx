@@ -44,7 +44,7 @@ function TemplatesPage() {
     const { error } = await supabase
       .from("component_templates")
       .insert({ internal_name: "New template" });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await recordAdminAction("component_template_created", "component_templates", "New template");
     list.refetch();
   }
@@ -146,7 +146,7 @@ function TemplateForm({
         is_active: draft.is_active,
       })
       .eq("id", template.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await recordAdminAction("component_template_updated", "component_templates", draft.internal_name);
     toast.success("Template saved.");
     reload();
@@ -154,7 +154,7 @@ function TemplateForm({
 
   async function remove() {
     const { error } = await supabase.from("component_templates").delete().eq("id", template.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await recordAdminAction("component_template_deleted", "component_templates", template.internal_name);
     toast.success("Template deleted. Components already copied are unaffected.");
     reload();

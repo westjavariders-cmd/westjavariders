@@ -158,7 +158,7 @@ function DetailsTab({ bundle, canEdit, reload }: TabProps) {
         sort_order: Number(draft.sort_order || 0),
       })
       .eq("id", bundle.product.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await recordAdminAction("product_updated", "products", draft.internal_name);
     toast.success("Product saved.");
     reload();
@@ -173,7 +173,7 @@ function DetailsTab({ bundle, canEdit, reload }: TabProps) {
           .eq("product_id", bundle.product.id)
           .eq("category_id", categoryId);
     const { error } = await q;
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     reload();
   }
 
@@ -190,7 +190,7 @@ function DetailsTab({ bundle, canEdit, reload }: TabProps) {
           .eq("product_id", bundle.product.id)
           .eq("placement_id", placementId);
     const { error } = await q;
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     reload();
   }
 
@@ -200,7 +200,7 @@ function DetailsTab({ bundle, canEdit, reload }: TabProps) {
       .update({ display_order: Number(order || 0) })
       .eq("product_id", bundle.product.id)
       .eq("placement_id", placementId);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     reload();
   }
 
@@ -330,7 +330,7 @@ function ContentTab({ bundle, canEdit, reload }: TabProps) {
     const { error } = t
       ? await supabase.from("product_translations").update(payload).eq("id", t.id)
       : await supabase.from("product_translations").insert(payload);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await recordAdminAction("product_content_updated", "product_translations", bundle.product.internal_name, {
       language: MASTER_LANGUAGE,
     });
