@@ -1,78 +1,109 @@
-# Cimaja Boardriders — Architecture Plan (Phase 0)
+# Cimaja Boardriders — Phase 0 Architecture (Frozen)
 
-No application code yet. This is the blueprint we will build against.
+No tables, UI, payments or public site in this step. This document is the blueprint implementation will follow.
 
-## 1. Contradictions and risky assumptions found in the brief
+## Decisions now locked
 
-1. **No customer login, but vouchers must be retrievable.** Without accounts, the only recovery path is email + WhatsApp. Voucher access needs an unguessable public link (long random token per voucher), not the voucher number, or anyone could guess `CBR-2026-004`.
-2. **Insurance is "not a package" but must still be paid for.** It still needs an order line, a payment amount and a confirmed record. Treated as a non-package order line with its own document type — not a Voucher-producing package.
-3. **40% now / 60% later has no stated due date, reminder rule, or consequence of non-payment.** Open question, not invented.
-4. **Round UP to the whole currency unit vs. split payments.** 40% + 60% of a rounded total will not both be whole numbers. Rule needed: round the total, then round the first instalment up and make the balance the remainder (recommended).
-5. **Season and promo "greater discount wins" needs a defined eligible-amount unit.** Recommend: per package line, so different lines can legitimately use different discounts.
-6. **"Configurable formula, no code execution"** means a restricted expression language with a whitelist of variables and operators, evaluated identically on server and client. This is the single most technically demanding piece.
-7. **Global voucher sequence** must be generated inside the database transaction (sequence table with row lock), never in application code, or concurrent checkouts collide.
-8. **8-month validity** is stated as fixed; keep it a setting so it is not recompiled, but existing vouchers keep the value stored on them.
-9. **Component Templates copied into Products** means write-time copy, never a live reference. Also implies templates can never be "updated everywhere" — accepted consequence.
-10. **Real-time hotel availability is excluded**, so accommodation is a priced, configurable product with no stock. Overbooking is handled operationally by staff.
+- Voucher belongs to a Purchase, never to a Package. Insurance purchases produce vouchers too.
+- Insurance is configurable and sellable standalone, alongside another purchase, or as a gift — but never as a Package and never with cart-based season/promo discounts.
+- No customer account, login or voucher recovery in V1. Delivery is confirmed payment → PDF voucher → email.
+- Every voucher stores its own expiry date (purchase date + 8 months at creation) and its own validity months, so changing the global setting later never touches existing vouchers.
+- Normal purchase: 40% now, 60% collected administratively before the experience. No second customer checkout, no invented due dates, no automatic cancellation. Gift purchase: 100% now.
+- Rounding: exact IDR total → FX → round up to the next whole customer-currency unit. First payment = round up(total × 40%); second = total − first. Components are never rounded.
+- Season and promo eligibility are per priced component. Same eligible amount → take the greater saving only. Different amounts → both may apply.
+- FX provider and payment provider are both unselected; each sits behind its own service boundary.
+- Gift vouchers go to the purchaser only and never display price, paid or pending amounts.
+- Kept from the earlier plan: server-authoritative pricing, one shared domain layer, restricted formula language with no code execution, database-generated global voucher sequence, component templates copied then independent, self-contained snapshots, relational PostgreSQL, secure admin roles, public reads limited to published content, commercial writes only through protected server operations.
 
-## 2. Recommended technical architecture
+## A. Final core entity model
 
-- Frontend: the existing TanStack Start app (React 19, SSR) — mobile-first public site plus an English-only Admin area behind login.
-- Backend: Lovable Cloud (PostgreSQL, auth, storage, server functions). All commercial logic runs in server functions; the browser never computes an authoritative price.
-- One shared domain layer (`src/domain/`) used by both Admin and the public site: configurator resolution, dependency evaluation, pricing, discounting, FX, rounding. Public price previews call the same server-side pricing entry point, so preview and checkout can never disagree.
-- Admin/staff auth: email + password login, roles in a separate `user_roles` table with a security-definer role check (never a role column on a profile).
-- Public pages read only published, whitelisted product data through narrow public read policies. Everything commercial is written by server functions only.
-- Money: integer IDR minor-unit-free amounts (IDR has no cents) stored as bigint. Customer amounts stored as integers in their currency. No floats anywhere in pricing.
+**Catalog:** products (kind = package | insurance), product_translations, categories, placements, product_placements, config_flows, steps, fields, field_options, dependencies, component_templates, product_components, pricing_rules, formulas, formula_versions, seasons, season_rules.
 
-## 3. Core entity model (groups, not final columns)
+**Operations:** hotels, rooms, transport_routes, motorbike_types, experiences, team_members, insurance_plans.
 
-- **Catalog:** products, product_translations, categories, placements, config_flows, steps, fields, field_options, dependencies, component_templates, product_components, pricing_rules, formulas, seasons, season_rules.
-- **Operations:** hotels, rooms, transport_routes, motorbike_types, experiences, team_members, insurance_plans.
-- **Customer:** customers (identified by email, no password), voucher_recipients.
-- **Commerce:** carts, cart_packages (one in-progress + completed), orders, order_lines, payments, payment_events (idempotency log), purchases, purchase_snapshots.
-- **Vouchers:** vouchers, voucher_sequence, voucher_events.
-- **Marketing:** promo_codes, promo_redemptions, reviews, analytics_events.
-- **Legal:** terms_versions, terms_acceptances.
+**Customer:** customers (email-identified, no password), gift_details.
 
-Key relationships: product → config_flow → steps → fields → options; dependencies reference fields/options within the same product only. cart_package → order_line → purchase → purchase_snapshot (1:1) → voucher (1:1 for package products). order → many payments; payment_events keyed by provider event id, unique, so replays are inert. Snapshots are self-contained JSON plus scalar money columns — they hold no foreign key to mutable product config.
+**Commerce:** carts, cart_packages, orders, order_lines (line_kind = package | insurance), payments, payment_events, purchases, purchase_snapshots, fx_rates, fx_snapshots.
 
-Translations live in per-entity translation rows keyed by language code, so a new language is data, not a release. Missing rows fall back to English at read time.
+**Vouchers:** vouchers, voucher_sequence, voucher_events.
 
-## 4. Phases and dependencies
+**Marketing:** promo_codes, promo_redemptions, reviews, analytics_events.
 
-- **Phase 1 — Data + core backend:** schema, row-level security, grants, roles, voucher sequence, FX rate storage, seed reference data.
-- **Phase 2 — Admin foundation:** login, roles, layout, product list/create, settings.
-- **Phase 3 — Product + configurator builder:** steps, fields, options, dependencies, component templates → product components.
-- **Phase 4 — Pricing engine:** rules, restricted formula language, validator, sample-value tester, activation gate, season/promo resolution, FX freeze + round-up.
-- **Phase 5 — Customer configurator + cart:** server-driven flow rendering, package build, cart with one unfinished package.
-- **Phase 6 — Checkout + payments:** order, split payment, provider integration, idempotent webhooks, reconciliation of unknown states.
-- **Phase 7 — Purchase, snapshot, voucher, email:** snapshot writing, voucher numbering/PDF, purchaser vs holder, transactional email.
-- **Phase 8 — Special modules:** accommodation, transport, motorbikes, experiences, insurance, team, reviews, promo codes, legal.
-- **Phase 9 — Public website:** navigation, home (video hero → Build Your Trip), category pages, languages, markets.
-- **Phase 10 — SEO, analytics, QA, launch.**
+**Legal:** terms_versions, terms_acceptances.
 
-Hard dependencies: 4 requires 3; 5 requires 4; 6 requires 5; 7 requires 6; 9 can start visually in parallel with 8 but must consume the real engine before launch.
+**Admin:** app users via Cloud auth, roles in a separate user_roles table checked through a security-definer function.
 
-## 5. Must be decided before the database is built
+Money is stored as integers: IDR as bigint, customer-currency amounts as integers in that currency. No floating point in any pricing path.
 
-1. Payment provider and which currencies it can actually charge (drives payment tables and whether IDR or customer currency is charged).
-2. Balance-payment rule: due date, reminder cadence, and what happens if the 60% is never paid.
-3. Instalment rounding rule (recommendation in section 1.4).
-4. Discount eligibility unit for the "greater discount wins" comparison (recommendation: per package line).
-5. FX rate source and refresh frequency, plus a safety margin, if any.
-6. Whether insurance is sold standalone, only alongside a package, or both.
-7. Voucher document format: PDF attachment, hosted secret link, or both.
-8. Gift flow: does the recipient receive the voucher directly, or does the purchaser always forward it?
+## B. Final core relationships
 
-## 6. Safely configurable later
+```text
+product ─1:1─ config_flow ─1:n─ step ─1:n─ field ─1:n─ field_option
+product ─1:n─ product_component        (copied from component_template, then independent)
+product ─1:n─ pricing_rule / formula_version
+component_template ──copy──▶ product_component   (no live link)
 
-Additional languages, currencies and markets; new products, components, seasons, promo codes; voucher validity length; content, images and copy; additional admin roles; website placements; email template wording.
+cart ─1:n─ cart_package        (many completed + at most one in progress)
+order ─1:n─ order_line         (package lines and insurance lines side by side)
+order ─1:n─ payment ─1:n─ payment_event (unique provider event id)
+order_line ─1:1─ purchase ─1:1─ purchase_snapshot ─1:1─ voucher
+purchase ─n:1─ customer (purchaser)   purchase ─0:1─ gift_details
+voucher ─1:n─ voucher_events
+```
 
-## 7. Main technical risks
+purchase_snapshot holds no foreign key into mutable product configuration — it stores the resolved configuration, options, quantities, component prices, rules, formula version, discount maths, IDR total, currency, FX rate and timestamp, converted and rounded amounts, paid and pending amounts, purchaser data, gift flag and validity months. A voucher reads from its snapshot and never computes a price.
 
-- **Formula engine** — mitigate with a restricted expression language, validation before activation, mandatory sample-value test, and versioned formulas referenced by snapshots.
-- **Price disagreement between preview and checkout** — mitigate by making the server the only price authority and re-pricing at checkout.
-- **Payment duplication / unknown states** — mitigate with a unique provider-event log, idempotent confirmation, and a staff reconciliation view.
-- **Voucher number collisions** — mitigate with a database-locked sequence.
-- **Admin complexity overwhelming a non-programmer** — mitigate with the create → configure → price → test → preview → validate → activate path, where activation is blocked until validation passes.
-- **Translation drift** — mitigate by marking machine translations and flagging stale rows when English changes.
+## C. Final commerce flow
+
+```text
+product → configurator flow → completed configuration → cart_package
+cart (n packages, optional insurance lines) → order + order_lines
+→ price re-computed server-side → FX frozen → payment (40% or 100%)
+→ confirmed → purchase per line → purchase_snapshot → voucher → PDF email
+```
+
+## D. Final insurance flow
+
+```text
+insurance product → insurance configuration → insurance order_line
+→ payment → insurance purchase → purchase_snapshot → insurance voucher
+```
+
+Insurance never becomes a cart_package, never uses season, never accepts a promo code, and can be added to an order that also contains packages, sold alone, or sold as a gift.
+
+## E. Final payment flow
+
+States: payment pending, partially paid, fully paid, payment failed, payment unknown. Order-level paid and pending amounts derive from confirmed payments.
+
+Every provider notification is recorded in payment_events with a unique provider event id, so replays are inert and can never create a second purchase or voucher. Unknown status is never re-charged — it is reconciled and only confirmed on provider confirmation. The 60% balance is recorded by staff in Admin as an additional payment against the same order.
+
+## F. Final voucher flow
+
+Confirmed purchase → voucher number from a database-locked global sequence (`CBR-2026-001`) → expiry stored as purchase date + 8 months → status active / used / expired / cancelled, with admin correction and reactivation → PDF generated from the snapshot → emailed to the purchaser. Regeneration reuses the same number; deleting a voucher never deletes the purchase, snapshot or payment history. Gift vouchers omit all monetary fields.
+
+## G. Remaining open decisions
+
+1. FX rate source, refresh frequency and whether a safety margin is applied.
+2. Payment provider, and whether the customer is charged in their currency or in IDR.
+3. Voucher PDF layout, branding and required legal text.
+4. Insurance voucher content — what the document must state (cover, plan, dates, holder).
+5. Which fields identify the "experience start" used operationally to chase the 60%.
+6. Whether staff need a partial-refund or cancellation-with-refund record in V1.
+
+None of these block Phase 1; each maps to a nullable or configuration-driven area.
+
+## H. Phase 1 database implementation plan
+
+1. Enums and shared foundations: product kind, line kind, payment status, voucher status, currency, language, role.
+2. Roles and security base: user_roles table, security-definer role check, admin-only write policy pattern.
+3. Catalog schema: products, translations, categories, placements, config flows, steps, fields, options, dependencies, component templates, product components.
+4. Pricing schema: pricing rules, formulas with versions, seasons and season rules, per-component season/promo eligibility flags.
+5. Operations schema: hotels, rooms, transport routes, motorbike types, experiences, team, insurance plans.
+6. Commerce schema: customers, carts, cart packages, orders, order lines, payments, payment events with the uniqueness constraint, purchases, purchase snapshots.
+7. FX schema: current rates plus frozen snapshots.
+8. Voucher schema: vouchers with stored expiry and validity months, locked global sequence, voucher events.
+9. Marketing and legal schema: promo codes, redemptions, reviews, analytics events, terms versions, acceptances.
+10. Row-level security and grants on every table in the same migration that creates it: public read only for published catalog content, no public write anywhere, commercial writes through server-side operations only.
+11. Seed reference data: currencies, languages, markets, initial settings including voucher validity months.
+
+Each numbered item is a separate reviewable migration block.
