@@ -243,6 +243,93 @@ export type Database = {
         }
         Relationships: []
       }
+      cart_packages: {
+        Row: {
+          cart_id: string
+          created_at: string
+          id: string
+          package_id: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          cart_id: string
+          created_at?: string
+          id?: string
+          package_id: string
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          cart_id?: string
+          created_at?: string
+          id?: string
+          package_id?: string
+          position?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cart_packages_cart_id_fkey"
+            columns: ["cart_id"]
+            isOneToOne: false
+            referencedRelation: "carts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_packages_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: true
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      carts: {
+        Row: {
+          created_at: string
+          currency_code: string | null
+          id: string
+          market_code: string | null
+          session_token: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency_code?: string | null
+          id?: string
+          market_code?: string | null
+          session_token: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency_code?: string | null
+          id?: string
+          market_code?: string | null
+          session_token?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carts_currency_code_fkey"
+            columns: ["currency_code"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "carts_market_code_fkey"
+            columns: ["market_code"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
@@ -723,6 +810,81 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "languages"
             referencedColumns: ["code"]
+          },
+        ]
+      }
+      packages: {
+        Row: {
+          answers: Json
+          created_at: string
+          id: string
+          product_id: string
+          promo_code: string | null
+          promo_code_id: string | null
+          promo_discount_idr: number
+          quote_lines: Json
+          quoted_at: string | null
+          resolved_inputs: Json
+          season_discount_idr: number
+          season_month: number | null
+          season_period: Database["public"]["Enums"]["season_period"] | null
+          status: string
+          subtotal_idr: number
+          total_idr: number
+          updated_at: string
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string
+          id?: string
+          product_id: string
+          promo_code?: string | null
+          promo_code_id?: string | null
+          promo_discount_idr?: number
+          quote_lines?: Json
+          quoted_at?: string | null
+          resolved_inputs?: Json
+          season_discount_idr?: number
+          season_month?: number | null
+          season_period?: Database["public"]["Enums"]["season_period"] | null
+          status?: string
+          subtotal_idr?: number
+          total_idr?: number
+          updated_at?: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          id?: string
+          product_id?: string
+          promo_code?: string | null
+          promo_code_id?: string | null
+          promo_discount_idr?: number
+          quote_lines?: Json
+          quoted_at?: string | null
+          resolved_inputs?: Json
+          season_discount_idr?: number
+          season_month?: number | null
+          season_period?: Database["public"]["Enums"]["season_period"] | null
+          status?: string
+          subtotal_idr?: number
+          total_idr?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "packages_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "packages_promo_code_id_fkey"
+            columns: ["promo_code_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
           },
         ]
       }
