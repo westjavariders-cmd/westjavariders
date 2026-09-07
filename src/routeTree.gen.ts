@@ -31,6 +31,7 @@ import { Route as AdminAppTeamRouteImport } from './routes/admin/_app/team'
 import { Route as AdminAppTransportRouteImport } from './routes/admin/_app/transport'
 import { Route as AdminAppVouchersRouteImport } from './routes/admin/_app/vouchers'
 import { Route as AdminAppHotelsIndexRouteImport } from './routes/admin/_app/hotels.index'
+import { Route as AdminAppHotelsAccommodationIdRouteImport } from './routes/admin/_app/hotels.$accommodationId'
 import { Route as AdminAppProductsIndexRouteImport } from './routes/admin/_app/products.index'
 import { Route as AdminAppProductsProductIdRouteImport } from './routes/admin/_app/products.$productId'
 import { Route as AdminAppSettingsIndexRouteImport } from './routes/admin/_app/settings.index'
@@ -150,6 +151,12 @@ const AdminAppHotelsIndexRoute = AdminAppHotelsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminAppHotelsRoute,
 } as any)
+const AdminAppHotelsAccommodationIdRoute =
+  AdminAppHotelsAccommodationIdRouteImport.update({
+    id: '/$accommodationId',
+    path: '/$accommodationId',
+    getParentRoute: () => AdminAppHotelsRoute,
+  } as any)
 const AdminAppProductsIndexRoute = AdminAppProductsIndexRouteImport.update({
   id: '/products/',
   path: '/products/',
@@ -215,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/admin/transport': typeof AdminAppTransportRoute
   '/admin/vouchers': typeof AdminAppVouchersRoute
   '/admin/': typeof AdminAppIndexRoute
+  '/admin/hotels/$accommodationId': typeof AdminAppHotelsAccommodationIdRoute
   '/admin/products/$productId': typeof AdminAppProductsProductIdRoute
   '/admin/settings/audit': typeof AdminAppSettingsAuditRoute
   '/admin/settings/currencies': typeof AdminAppSettingsCurrenciesRoute
@@ -244,6 +252,7 @@ export interface FileRoutesByTo {
   '/admin/team': typeof AdminAppTeamRoute
   '/admin/transport': typeof AdminAppTransportRoute
   '/admin/vouchers': typeof AdminAppVouchersRoute
+  '/admin/hotels/$accommodationId': typeof AdminAppHotelsAccommodationIdRoute
   '/admin/products/$productId': typeof AdminAppProductsProductIdRoute
   '/admin/settings/audit': typeof AdminAppSettingsAuditRoute
   '/admin/settings/currencies': typeof AdminAppSettingsCurrenciesRoute
@@ -277,6 +286,7 @@ export interface FileRoutesById {
   '/admin/_app/transport': typeof AdminAppTransportRoute
   '/admin/_app/vouchers': typeof AdminAppVouchersRoute
   '/admin/_app/': typeof AdminAppIndexRoute
+  '/admin/_app/hotels/$accommodationId': typeof AdminAppHotelsAccommodationIdRoute
   '/admin/_app/products/$productId': typeof AdminAppProductsProductIdRoute
   '/admin/_app/settings/audit': typeof AdminAppSettingsAuditRoute
   '/admin/_app/settings/currencies': typeof AdminAppSettingsCurrenciesRoute
@@ -310,6 +320,7 @@ export interface FileRouteTypes {
     | '/admin/transport'
     | '/admin/vouchers'
     | '/admin/'
+    | '/admin/hotels/$accommodationId'
     | '/admin/products/$productId'
     | '/admin/settings/audit'
     | '/admin/settings/currencies'
@@ -339,6 +350,7 @@ export interface FileRouteTypes {
     | '/admin/team'
     | '/admin/transport'
     | '/admin/vouchers'
+    | '/admin/hotels/$accommodationId'
     | '/admin/products/$productId'
     | '/admin/settings/audit'
     | '/admin/settings/currencies'
@@ -371,6 +383,7 @@ export interface FileRouteTypes {
     | '/admin/_app/transport'
     | '/admin/_app/vouchers'
     | '/admin/_app/'
+    | '/admin/_app/hotels/$accommodationId'
     | '/admin/_app/products/$productId'
     | '/admin/_app/settings/audit'
     | '/admin/_app/settings/currencies'
@@ -543,6 +556,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAppHotelsIndexRouteImport
       parentRoute: typeof AdminAppHotelsRoute
     }
+    '/admin/_app/hotels/$accommodationId': {
+      id: '/admin/_app/hotels/$accommodationId'
+      path: '/$accommodationId'
+      fullPath: '/admin/hotels/$accommodationId'
+      preLoaderRoute: typeof AdminAppHotelsAccommodationIdRouteImport
+      parentRoute: typeof AdminAppHotelsRoute
+    }
     '/admin/_app/products/': {
       id: '/admin/_app/products/'
       path: '/products'
@@ -603,10 +623,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminAppHotelsRouteChildren {
+  AdminAppHotelsAccommodationIdRoute: typeof AdminAppHotelsAccommodationIdRoute
   AdminAppHotelsIndexRoute: typeof AdminAppHotelsIndexRoute
 }
 
 const AdminAppHotelsRouteChildren: AdminAppHotelsRouteChildren = {
+  AdminAppHotelsAccommodationIdRoute: AdminAppHotelsAccommodationIdRoute,
   AdminAppHotelsIndexRoute: AdminAppHotelsIndexRoute,
 }
 
