@@ -15,6 +15,8 @@ Phase 2 — Admin foundation: DONE (auth, first-admin setup, shell, settings/cur
 - [x] Phase 4 — Pricing core (product_pricing, rules, tiers, formula versions, test lab; server-authoritative IDR)
 - [x] Phase 5 — Season & promotion engine (per-product seasons, promo codes, non-stacking discounts)
 - [x] Phase 6 — Accommodation catalogue (hotels, rooms, beach camping, characteristics, photos)
+- [x] Phase 7 — Transport catalogue (predefined routes, other location, people/time pricing, calculator, duplication)
+
 - [ ] Phase 6b — Customer configurator + cart
 - [ ] Phase 6 — Checkout + payments
 - [ ] Phase 7 — Purchase, snapshot, voucher PDF, email
