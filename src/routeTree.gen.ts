@@ -11,10 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
+import { Route as CartRouteImport } from './routes/cart'
 import { Route as AdminAppRouteRouteImport } from './routes/admin/_app/route'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminNoAccessRouteImport } from './routes/admin/no-access'
 import { Route as AdminSetupRouteImport } from './routes/admin/setup'
+import { Route as BuildYourTripIndexRouteImport } from './routes/build-your-trip.index'
+import { Route as BuildYourTripProductIdRouteImport } from './routes/build-your-trip.$productId'
 import { Route as AdminAppIndexRouteImport } from './routes/admin/_app/index'
 import { Route as AdminAppCatalogTaxonomyRouteImport } from './routes/admin/_app/catalog-taxonomy'
 import { Route as AdminAppComponentTemplatesRouteImport } from './routes/admin/_app/component-templates'
@@ -51,6 +54,11 @@ const AdminRouteRoute = AdminRouteRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CartRoute = CartRouteImport.update({
+  id: '/cart',
+  path: '/cart',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminAppRouteRoute = AdminAppRouteRouteImport.update({
   id: '/_app',
   getParentRoute: () => AdminRouteRoute,
@@ -69,6 +77,16 @@ const AdminSetupRoute = AdminSetupRouteImport.update({
   id: '/setup',
   path: '/setup',
   getParentRoute: () => AdminRouteRoute,
+} as any)
+const BuildYourTripIndexRoute = BuildYourTripIndexRouteImport.update({
+  id: '/build-your-trip/',
+  path: '/build-your-trip/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuildYourTripProductIdRoute = BuildYourTripProductIdRouteImport.update({
+  id: '/build-your-trip/$productId',
+  path: '/build-your-trip/$productId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminAppIndexRoute = AdminAppIndexRouteImport.update({
   id: '/',
@@ -205,9 +223,12 @@ const AdminAppTransportTransportIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
+  '/cart': typeof CartRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/no-access': typeof AdminNoAccessRoute
   '/admin/setup': typeof AdminSetupRoute
+  '/build-your-trip/$productId': typeof BuildYourTripProductIdRoute
+  '/build-your-trip/': typeof BuildYourTripIndexRoute
   '/admin/catalog-taxonomy': typeof AdminAppCatalogTaxonomyRoute
   '/admin/component-templates': typeof AdminAppComponentTemplatesRoute
   '/admin/customers': typeof AdminAppCustomersRoute
@@ -237,9 +258,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminAppIndexRoute
+  '/cart': typeof CartRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/no-access': typeof AdminNoAccessRoute
   '/admin/setup': typeof AdminSetupRoute
+  '/build-your-trip/$productId': typeof BuildYourTripProductIdRoute
+  '/build-your-trip': typeof BuildYourTripIndexRoute
   '/admin/catalog-taxonomy': typeof AdminAppCatalogTaxonomyRoute
   '/admin/component-templates': typeof AdminAppComponentTemplatesRoute
   '/admin/customers': typeof AdminAppCustomersRoute
@@ -269,10 +293,13 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
+  '/cart': typeof CartRoute
   '/admin/_app': typeof AdminAppRouteRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
   '/admin/no-access': typeof AdminNoAccessRoute
   '/admin/setup': typeof AdminSetupRoute
+  '/build-your-trip/$productId': typeof BuildYourTripProductIdRoute
+  '/build-your-trip/': typeof BuildYourTripIndexRoute
   '/admin/_app/catalog-taxonomy': typeof AdminAppCatalogTaxonomyRoute
   '/admin/_app/component-templates': typeof AdminAppComponentTemplatesRoute
   '/admin/_app/customers': typeof AdminAppCustomersRoute
@@ -304,9 +331,12 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/cart'
     | '/admin/login'
     | '/admin/no-access'
     | '/admin/setup'
+    | '/build-your-trip/$productId'
+    | '/build-your-trip/'
     | '/admin/catalog-taxonomy'
     | '/admin/component-templates'
     | '/admin/customers'
@@ -336,9 +366,12 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/cart'
     | '/admin/login'
     | '/admin/no-access'
     | '/admin/setup'
+    | '/build-your-trip/$productId'
+    | '/build-your-trip'
     | '/admin/catalog-taxonomy'
     | '/admin/component-templates'
     | '/admin/customers'
@@ -367,10 +400,13 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/cart'
     | '/admin/_app'
     | '/admin/login'
     | '/admin/no-access'
     | '/admin/setup'
+    | '/build-your-trip/$productId'
+    | '/build-your-trip/'
     | '/admin/_app/catalog-taxonomy'
     | '/admin/_app/component-templates'
     | '/admin/_app/customers'
@@ -401,6 +437,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
+  CartRoute: typeof CartRoute
+  BuildYourTripProductIdRoute: typeof BuildYourTripProductIdRoute
+  BuildYourTripIndexRoute: typeof BuildYourTripIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -417,6 +456,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cart': {
+      id: '/cart'
+      path: '/cart'
+      fullPath: '/cart'
+      preLoaderRoute: typeof CartRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/_app': {
@@ -446,6 +492,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/setup'
       preLoaderRoute: typeof AdminSetupRouteImport
       parentRoute: typeof AdminRouteRoute
+    }
+    '/build-your-trip/': {
+      id: '/build-your-trip/'
+      path: '/build-your-trip'
+      fullPath: '/build-your-trip/'
+      preLoaderRoute: typeof BuildYourTripIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/build-your-trip/$productId': {
+      id: '/build-your-trip/$productId'
+      path: '/build-your-trip/$productId'
+      fullPath: '/build-your-trip/$productId'
+      preLoaderRoute: typeof BuildYourTripProductIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/_app/': {
       id: '/admin/_app/'
@@ -706,6 +766,9 @@ const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRouteRoute: AdminRouteRouteWithChildren,
+  CartRoute: CartRoute,
+  BuildYourTripProductIdRoute: BuildYourTripProductIdRoute,
+  BuildYourTripIndexRoute: BuildYourTripIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
