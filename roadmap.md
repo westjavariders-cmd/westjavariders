@@ -12,7 +12,7 @@ Phase 2 — Admin foundation: DONE (auth, first-admin setup, shell, settings/cur
 - [ ] Phase 1F — Customers, carts, orders, payments, purchases, snapshots
 - [ ] Phase 1G — FX + vouchers + legal/reviews/analytics
 - [x] Phase 3 — Product + configurator builder (Admin: products, content, components, configurator, dependencies, preview, status)
-- [ ] Phase 4 — Pricing engine
+- [x] Phase 4 — Pricing core (product_pricing, rules, tiers, formula versions, test lab; server-authoritative IDR)
 - [ ] Phase 5 — Customer configurator + cart
 - [ ] Phase 6 — Checkout + payments
 - [ ] Phase 7 — Purchase, snapshot, voucher PDF, email
