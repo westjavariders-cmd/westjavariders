@@ -80,8 +80,8 @@ export function DependenciesTab({ bundle, canEdit, reload }: Props) {
       compare_value: draft.compare_value.trim() || null,
       action: draft.action as never,
       action_value: draft.action_value.trim() || null,
-      target_field_id: kind === "field" ? id : null,
-      target_option_id: kind === "option" ? id : null,
+      target_field_id: kind === "field" ? (id ?? null) : null,
+      target_option_id: kind === "option" ? (id ?? null) : null,
       is_active: draft.is_active,
     });
     setSaving(false);
