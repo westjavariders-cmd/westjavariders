@@ -101,222 +101,24 @@ export const duplicateProduct = createServerFn({ method: "POST" })
 
     const { data: original, error } = await supabase
       .from("products")
-      .select("*")
+      .select("internal_name")
       .eq("id", src)
-      .single();
+      .maybeSingle();
     if (error || !original) fail("This product could not be found.");
 
-    const { data: copy, error: copyError } = await supabase
-      .from("products")
-      .insert({
-        kind: original.kind,
-        internal_name: `Copy of ${original.internal_name}`.slice(0, 200),
-        internal_ref: null,
-        status: "draft",
-        sort_order: original.sort_order,
-      })
-      .select("id")
-      .single();
-    if (copyError || !copy) fail(SAFE_ERROR);
-    const newId = copy.id as string;
+    // One database transaction copies the whole product tree (content,
+    // categories, placements and their order, components with their template
+    // traceability, flow, steps, fields, options and dependencies). Any
+    // failure inside it rolls the entire duplicate back.
+    const { data: newId, error: dupError } = await supabase.rpc("duplicate_product", {
+      _source: src,
+    });
+    if (dupError || !newId) fail(SAFE_ERROR);
 
-    // Content
-    const { data: translations } = await supabase
-      .from("product_translations")
-      .select("*")
-      .eq("product_id", src);
-    if (translations?.length) {
-      await supabase.from("product_translations").insert(
-        translations.map((t: any) => ({
-          product_id: newId,
-          language_code: t.language_code,
-          title: t.title,
-          summary: t.summary,
-          body: t.body,
-          seo_title: t.seo_title,
-          seo_description: t.seo_description,
-        })),
-      );
-    }
-
-    // Categories and placements
-    const { data: cats } = await supabase
-      .from("product_categories")
-      .select("category_id")
-      .eq("product_id", src);
-    if (cats?.length) {
-      await supabase
-        .from("product_categories")
-        .insert(cats.map((c: any) => ({ product_id: newId, category_id: c.category_id })));
-    }
-    const { data: places } = await supabase
-      .from("product_placements")
-      .select("placement_id, display_order")
-      .eq("product_id", src);
-    if (places?.length) {
-      await supabase.from("product_placements").insert(
-        places.map((p: any) => ({
-          product_id: newId,
-          placement_id: p.placement_id,
-          display_order: p.display_order,
-        })),
-      );
-    }
-
-    // Components (independent copies)
-    const { data: components } = await supabase
-      .from("product_components")
-      .select("*")
-      .eq("product_id", src);
-    if (components?.length) {
-      await supabase.from("product_components").insert(
-        components.map((c: any) => ({
-          product_id: newId,
-          source_template_id: c.source_template_id,
-          internal_name: c.internal_name,
-          customer_name: c.customer_name,
-          customer_description: c.customer_description,
-          unit_basis: c.unit_basis,
-          internal_cost: c.internal_cost,
-          customer_price: c.customer_price,
-          min_quantity: c.min_quantity,
-          max_quantity: c.max_quantity,
-          default_quantity: c.default_quantity,
-          season_eligible: c.season_eligible,
-          promo_eligible: c.promo_eligible,
-          display_order: c.display_order,
-          is_active: c.is_active,
-        })),
-      );
-    }
-
-    // Configurator: flow -> steps -> fields -> options, then dependencies
-    const { data: newFlow, error: flowError } = await supabase
-      .from("config_flows")
-      .insert({ product_id: newId })
-      .select("id")
-      .single();
-    if (flowError || !newFlow) fail(SAFE_ERROR);
-
-    const stepMap = new Map<string, string>();
-    const fieldMap = new Map<string, string>();
-    const optionMap = new Map<string, string>();
-
-    const { data: oldFlow } = await supabase
-      .from("config_flows")
-      .select("id, internal_name, is_active")
-      .eq("product_id", src)
-      .maybeSingle();
-
-    if (oldFlow) {
-      await supabase
-        .from("config_flows")
-        .update({ internal_name: oldFlow.internal_name, is_active: oldFlow.is_active })
-        .eq("id", newFlow.id);
-
-      const { data: steps } = await supabase
-        .from("steps")
-        .select("*")
-        .eq("flow_id", oldFlow.id)
-        .order("display_order");
-      for (const s of steps ?? []) {
-        const { data: ns } = await supabase
-          .from("steps")
-          .insert({
-            flow_id: newFlow.id,
-            internal_name: s.internal_name,
-            customer_title: s.customer_title,
-            customer_description: s.customer_description,
-            display_order: s.display_order,
-            is_active: s.is_active,
-          })
-          .select("id")
-          .single();
-        if (ns) stepMap.set(s.id, ns.id);
-      }
-    }
-
-    const { data: fields } = await supabase
-      .from("fields")
-      .select("*")
-      .eq("product_id", src)
-      .order("display_order");
-    for (const f of fields ?? []) {
-      const newStepId = stepMap.get(f.step_id);
-      if (!newStepId) continue;
-      const { data: nf } = await supabase
-        .from("fields")
-        .insert({
-          product_id: newId,
-          step_id: newStepId,
-          internal_name: f.internal_name,
-          variable_name: f.variable_name,
-          customer_label: f.customer_label,
-          help_text: f.help_text,
-          field_type: f.field_type,
-          is_required: f.is_required,
-          is_active: f.is_active,
-          default_value: f.default_value,
-          min_value: f.min_value,
-          max_value: f.max_value,
-          display_order: f.display_order,
-        })
-        .select("id")
-        .single();
-      if (!nf) continue;
-      fieldMap.set(f.id, nf.id);
-
-      const { data: options } = await supabase
-        .from("field_options")
-        .select("*")
-        .eq("field_id", f.id)
-        .order("display_order");
-      for (const o of options ?? []) {
-        const { data: no } = await supabase
-          .from("field_options")
-          .insert({
-            field_id: nf.id,
-            internal_value: o.internal_value,
-            customer_label: o.customer_label,
-            description: o.description,
-            display_order: o.display_order,
-            is_active: o.is_active,
-            is_default: o.is_default,
-          })
-          .select("id")
-          .single();
-        if (no) optionMap.set(o.id, no.id);
-      }
-    }
-
-    const { data: deps } = await supabase.from("dependencies").select("*").eq("product_id", src);
-    const rows = (deps ?? [])
-      .map((d: any) => {
-        const sourceField = fieldMap.get(d.source_field_id);
-        if (!sourceField) return null;
-        const targetField = d.target_field_id ? fieldMap.get(d.target_field_id) : null;
-        const targetOption = d.target_option_id ? optionMap.get(d.target_option_id) : null;
-        if (!targetField && !targetOption) return null;
-        return {
-          product_id: newId,
-          source_field_id: sourceField,
-          source_option_id: d.source_option_id ? optionMap.get(d.source_option_id) ?? null : null,
-          operator: d.operator,
-          compare_value: d.compare_value,
-          action: d.action,
-          action_value: d.action_value,
-          target_field_id: targetField ?? null,
-          target_option_id: targetOption ?? null,
-          is_active: d.is_active,
-        };
-      })
-      .filter(Boolean);
-    if (rows.length) await supabase.from("dependencies").insert(rows);
-
-    await audit(supabase, userId, "product_duplicated", newId, original.internal_name, {
+    await audit(supabase, userId, "product_duplicated", newId as string, original.internal_name, {
       source_product_id: src,
     });
-    return { id: newId };
+    return { id: newId as string };
   });
 
 /**
