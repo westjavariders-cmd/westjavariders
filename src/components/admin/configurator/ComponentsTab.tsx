@@ -45,12 +45,8 @@ export function ComponentsTab({ bundle, canEdit, reload }: Props) {
       display_order: bundle.components.length,
     });
     if (error) return toast.error(error.message);
-    await recordAdminAction({
-      action: "product_component_added",
-      entityType: "product_components",
-      entityId: bundle.product.id,
-      entityRef: bundle.product.internal_name,
-      details: { source: "blank" },
+    await recordAdminAction("product_component_added", "product_components", bundle.product.internal_name, {
+      source: "blank",
     });
     toast.success("Component added.");
     reload();
@@ -210,13 +206,7 @@ function ComponentForm({
       .eq("id", component.id);
     setSaving(false);
     if (error) return toast.error(error.message);
-    await recordAdminAction({
-      action: "product_component_updated",
-      entityType: "product_components",
-      entityId: component.id,
-      entityRef: draft.internal_name,
-      details: {},
-    });
+    await recordAdminAction("product_component_updated", "product_components", draft.internal_name);
     toast.success("Component saved.");
     reload();
   }
