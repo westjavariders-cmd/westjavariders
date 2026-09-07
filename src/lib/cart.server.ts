@@ -15,7 +15,7 @@ import {
   type ProductBundle,
 } from "@/lib/catalog";
 import { exactToString, isPurchasable, resolveInputs, type PricingInputs } from "@/lib/pricing";
-import { priceCommercial, type SeasonConfig } from "@/lib/commercial";
+import { priceCommercial, type CommercialResult, type SeasonConfig } from "@/lib/commercial";
 
 export const CART_COOKIE = "cbr_cart";
 const SAFE_ERROR = "This action could not be completed. Please check your input and try again.";
@@ -217,7 +217,7 @@ export function configurationIssues(bundle: ProductBundle, values: PreviewValues
 }
 
 function serializeInputs(inputs: PricingInputs) {
-  const out: Record<string, { type: string; value: unknown }> = {};
+  const out: Record<string, { type: string; value: string | boolean | string[] }> = {};
   for (const [k, v] of Object.entries(inputs)) {
     out[k] = v.type === "number" ? { type: "number", value: exactToString(v.value) } : { type: v.type, value: v.value };
   }
@@ -235,8 +235,8 @@ export type QuoteOutcome = {
   season_discount_idr: number;
   promo_discount_idr: number;
   total_idr: number;
-  lines: unknown[];
-  resolved_inputs: Record<string, { type: string; value: unknown }>;
+  lines: CommercialResult["lines"];
+  resolved_inputs: Record<string, { type: string; value: string | boolean | string[] }>;
   promo_code: string | null;
   promo_code_id: string | null;
 };
