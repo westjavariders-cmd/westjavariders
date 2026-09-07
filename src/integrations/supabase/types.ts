@@ -14,6 +14,202 @@ export type Database = {
   }
   public: {
     Tables: {
+      accommodation_photos: {
+        Row: {
+          accommodation_id: string | null
+          alt_text: string | null
+          created_at: string
+          id: string
+          is_primary: boolean
+          room_id: string | null
+          sort_order: number
+          storage_path: string
+          updated_at: string
+        }
+        Insert: {
+          accommodation_id?: string | null
+          alt_text?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          room_id?: string | null
+          sort_order?: number
+          storage_path: string
+          updated_at?: string
+        }
+        Update: {
+          accommodation_id?: string | null
+          alt_text?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          room_id?: string | null
+          sort_order?: number
+          storage_path?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accommodation_photos_accommodation_id_fkey"
+            columns: ["accommodation_id"]
+            isOneToOne: false
+            referencedRelation: "accommodations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accommodation_photos_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "accommodation_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accommodation_room_characteristics: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          room_id: string
+          sort_order: number
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          room_id: string
+          sort_order?: number
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          room_id?: string
+          sort_order?: number
+          updated_at?: string
+          value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accommodation_room_characteristics_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "accommodation_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accommodation_rooms: {
+        Row: {
+          accommodation_id: string
+          active: boolean
+          created_at: string
+          customer_price_per_night_idr: number
+          description: string | null
+          id: string
+          internal_name: string
+          internal_notes: string | null
+          internal_reference: string | null
+          max_guests: number
+          public_name: string | null
+          sort_order: number
+          supplier_cost_per_night_idr: number
+          updated_at: string
+        }
+        Insert: {
+          accommodation_id: string
+          active?: boolean
+          created_at?: string
+          customer_price_per_night_idr?: number
+          description?: string | null
+          id?: string
+          internal_name: string
+          internal_notes?: string | null
+          internal_reference?: string | null
+          max_guests?: number
+          public_name?: string | null
+          sort_order?: number
+          supplier_cost_per_night_idr?: number
+          updated_at?: string
+        }
+        Update: {
+          accommodation_id?: string
+          active?: boolean
+          created_at?: string
+          customer_price_per_night_idr?: number
+          description?: string | null
+          id?: string
+          internal_name?: string
+          internal_notes?: string | null
+          internal_reference?: string | null
+          max_guests?: number
+          public_name?: string | null
+          sort_order?: number
+          supplier_cost_per_night_idr?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accommodation_rooms_accommodation_id_fkey"
+            columns: ["accommodation_id"]
+            isOneToOne: false
+            referencedRelation: "accommodations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accommodations: {
+        Row: {
+          accommodation_type: Database["public"]["Enums"]["accommodation_type"]
+          active: boolean
+          created_at: string
+          description: string | null
+          id: string
+          internal_name: string
+          internal_notes: string | null
+          internal_reference: string | null
+          location: string | null
+          public_name: string | null
+          sort_order: number
+          supplier_contact: string | null
+          updated_at: string
+        }
+        Insert: {
+          accommodation_type?: Database["public"]["Enums"]["accommodation_type"]
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          internal_name: string
+          internal_notes?: string | null
+          internal_reference?: string | null
+          location?: string | null
+          public_name?: string | null
+          sort_order?: number
+          supplier_contact?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accommodation_type?: Database["public"]["Enums"]["accommodation_type"]
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          internal_name?: string
+          internal_notes?: string | null
+          internal_reference?: string | null
+          location?: string | null
+          public_name?: string | null
+          sort_order?: number
+          supplier_contact?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_audit_log: {
         Row: {
           action: string
@@ -1315,6 +1511,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      duplicate_accommodation_room: {
+        Args: { _source: string }
+        Returns: string
+      }
       duplicate_product: { Args: { _source: string }; Returns: string }
       has_role: {
         Args: {
@@ -1327,6 +1527,7 @@ export type Database = {
       is_staff_or_admin: { Args: never; Returns: boolean }
     }
     Enums: {
+      accommodation_type: "hotel" | "beach_camping"
       dependency_action:
         | "show"
         | "hide"
@@ -1499,6 +1700,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      accommodation_type: ["hotel", "beach_camping"],
       dependency_action: [
         "show",
         "hide",
