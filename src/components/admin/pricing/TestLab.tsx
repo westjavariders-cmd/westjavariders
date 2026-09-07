@@ -5,7 +5,9 @@ import { toast } from "sonner";
 import { Play, Trash2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
-import { previewPrice, runPricingTests } from "@/lib/pricing.functions";
+import { runPricingTests } from "@/lib/pricing.functions";
+import { previewCommercialPrice } from "@/lib/commercial.functions";
+import { MONTHS } from "@/lib/commercial";
 import type { ProductPricing } from "@/lib/pricing";
 import { evaluateDependencies, type PreviewValues, type ProductBundle } from "@/lib/catalog";
 import { selectClass } from "@/components/admin/configurator/ui";
