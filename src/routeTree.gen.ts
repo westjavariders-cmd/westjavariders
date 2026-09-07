@@ -30,6 +30,8 @@ import { Route as AdminAppReviewsRouteImport } from './routes/admin/_app/reviews
 import { Route as AdminAppTeamRouteImport } from './routes/admin/_app/team'
 import { Route as AdminAppTransportRouteImport } from './routes/admin/_app/transport'
 import { Route as AdminAppVouchersRouteImport } from './routes/admin/_app/vouchers'
+import { Route as AdminAppHotelsIndexRouteImport } from './routes/admin/_app/hotels.index'
+import { Route as AdminAppHotelsAccommodationIdRouteImport } from './routes/admin/_app/hotels.$accommodationId'
 import { Route as AdminAppProductsIndexRouteImport } from './routes/admin/_app/products.index'
 import { Route as AdminAppProductsProductIdRouteImport } from './routes/admin/_app/products.$productId'
 import { Route as AdminAppSettingsIndexRouteImport } from './routes/admin/_app/settings.index'
@@ -144,6 +146,17 @@ const AdminAppVouchersRoute = AdminAppVouchersRouteImport.update({
   path: '/vouchers',
   getParentRoute: () => AdminAppRouteRoute,
 } as any)
+const AdminAppHotelsIndexRoute = AdminAppHotelsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminAppHotelsRoute,
+} as any)
+const AdminAppHotelsAccommodationIdRoute =
+  AdminAppHotelsAccommodationIdRouteImport.update({
+    id: '/$accommodationId',
+    path: '/$accommodationId',
+    getParentRoute: () => AdminAppHotelsRoute,
+  } as any)
 const AdminAppProductsIndexRoute = AdminAppProductsIndexRouteImport.update({
   id: '/products/',
   path: '/products/',
@@ -198,7 +211,7 @@ export interface FileRoutesByFullPath {
   '/admin/component-templates': typeof AdminAppComponentTemplatesRoute
   '/admin/customers': typeof AdminAppCustomersRoute
   '/admin/experiences': typeof AdminAppExperiencesRoute
-  '/admin/hotels': typeof AdminAppHotelsRoute
+  '/admin/hotels': typeof AdminAppHotelsRouteWithChildren
   '/admin/insurance': typeof AdminAppInsuranceRoute
   '/admin/motorbikes': typeof AdminAppMotorbikesRoute
   '/admin/orders': typeof AdminAppOrdersRoute
@@ -209,12 +222,14 @@ export interface FileRoutesByFullPath {
   '/admin/transport': typeof AdminAppTransportRoute
   '/admin/vouchers': typeof AdminAppVouchersRoute
   '/admin/': typeof AdminAppIndexRoute
+  '/admin/hotels/$accommodationId': typeof AdminAppHotelsAccommodationIdRoute
   '/admin/products/$productId': typeof AdminAppProductsProductIdRoute
   '/admin/settings/audit': typeof AdminAppSettingsAuditRoute
   '/admin/settings/currencies': typeof AdminAppSettingsCurrenciesRoute
   '/admin/settings/languages': typeof AdminAppSettingsLanguagesRoute
   '/admin/settings/markets': typeof AdminAppSettingsMarketsRoute
   '/admin/settings/users': typeof AdminAppSettingsUsersRoute
+  '/admin/hotels/': typeof AdminAppHotelsIndexRoute
   '/admin/products/': typeof AdminAppProductsIndexRoute
   '/admin/settings/': typeof AdminAppSettingsIndexRoute
 }
@@ -228,7 +243,6 @@ export interface FileRoutesByTo {
   '/admin/component-templates': typeof AdminAppComponentTemplatesRoute
   '/admin/customers': typeof AdminAppCustomersRoute
   '/admin/experiences': typeof AdminAppExperiencesRoute
-  '/admin/hotels': typeof AdminAppHotelsRoute
   '/admin/insurance': typeof AdminAppInsuranceRoute
   '/admin/motorbikes': typeof AdminAppMotorbikesRoute
   '/admin/orders': typeof AdminAppOrdersRoute
@@ -238,12 +252,14 @@ export interface FileRoutesByTo {
   '/admin/team': typeof AdminAppTeamRoute
   '/admin/transport': typeof AdminAppTransportRoute
   '/admin/vouchers': typeof AdminAppVouchersRoute
+  '/admin/hotels/$accommodationId': typeof AdminAppHotelsAccommodationIdRoute
   '/admin/products/$productId': typeof AdminAppProductsProductIdRoute
   '/admin/settings/audit': typeof AdminAppSettingsAuditRoute
   '/admin/settings/currencies': typeof AdminAppSettingsCurrenciesRoute
   '/admin/settings/languages': typeof AdminAppSettingsLanguagesRoute
   '/admin/settings/markets': typeof AdminAppSettingsMarketsRoute
   '/admin/settings/users': typeof AdminAppSettingsUsersRoute
+  '/admin/hotels': typeof AdminAppHotelsIndexRoute
   '/admin/products': typeof AdminAppProductsIndexRoute
   '/admin/settings': typeof AdminAppSettingsIndexRoute
 }
@@ -259,7 +275,7 @@ export interface FileRoutesById {
   '/admin/_app/component-templates': typeof AdminAppComponentTemplatesRoute
   '/admin/_app/customers': typeof AdminAppCustomersRoute
   '/admin/_app/experiences': typeof AdminAppExperiencesRoute
-  '/admin/_app/hotels': typeof AdminAppHotelsRoute
+  '/admin/_app/hotels': typeof AdminAppHotelsRouteWithChildren
   '/admin/_app/insurance': typeof AdminAppInsuranceRoute
   '/admin/_app/motorbikes': typeof AdminAppMotorbikesRoute
   '/admin/_app/orders': typeof AdminAppOrdersRoute
@@ -270,12 +286,14 @@ export interface FileRoutesById {
   '/admin/_app/transport': typeof AdminAppTransportRoute
   '/admin/_app/vouchers': typeof AdminAppVouchersRoute
   '/admin/_app/': typeof AdminAppIndexRoute
+  '/admin/_app/hotels/$accommodationId': typeof AdminAppHotelsAccommodationIdRoute
   '/admin/_app/products/$productId': typeof AdminAppProductsProductIdRoute
   '/admin/_app/settings/audit': typeof AdminAppSettingsAuditRoute
   '/admin/_app/settings/currencies': typeof AdminAppSettingsCurrenciesRoute
   '/admin/_app/settings/languages': typeof AdminAppSettingsLanguagesRoute
   '/admin/_app/settings/markets': typeof AdminAppSettingsMarketsRoute
   '/admin/_app/settings/users': typeof AdminAppSettingsUsersRoute
+  '/admin/_app/hotels/': typeof AdminAppHotelsIndexRoute
   '/admin/_app/products/': typeof AdminAppProductsIndexRoute
   '/admin/_app/settings/': typeof AdminAppSettingsIndexRoute
 }
@@ -302,12 +320,14 @@ export interface FileRouteTypes {
     | '/admin/transport'
     | '/admin/vouchers'
     | '/admin/'
+    | '/admin/hotels/$accommodationId'
     | '/admin/products/$productId'
     | '/admin/settings/audit'
     | '/admin/settings/currencies'
     | '/admin/settings/languages'
     | '/admin/settings/markets'
     | '/admin/settings/users'
+    | '/admin/hotels/'
     | '/admin/products/'
     | '/admin/settings/'
   fileRoutesByTo: FileRoutesByTo
@@ -321,7 +341,6 @@ export interface FileRouteTypes {
     | '/admin/component-templates'
     | '/admin/customers'
     | '/admin/experiences'
-    | '/admin/hotels'
     | '/admin/insurance'
     | '/admin/motorbikes'
     | '/admin/orders'
@@ -331,12 +350,14 @@ export interface FileRouteTypes {
     | '/admin/team'
     | '/admin/transport'
     | '/admin/vouchers'
+    | '/admin/hotels/$accommodationId'
     | '/admin/products/$productId'
     | '/admin/settings/audit'
     | '/admin/settings/currencies'
     | '/admin/settings/languages'
     | '/admin/settings/markets'
     | '/admin/settings/users'
+    | '/admin/hotels'
     | '/admin/products'
     | '/admin/settings'
   id:
@@ -362,12 +383,14 @@ export interface FileRouteTypes {
     | '/admin/_app/transport'
     | '/admin/_app/vouchers'
     | '/admin/_app/'
+    | '/admin/_app/hotels/$accommodationId'
     | '/admin/_app/products/$productId'
     | '/admin/_app/settings/audit'
     | '/admin/_app/settings/currencies'
     | '/admin/_app/settings/languages'
     | '/admin/_app/settings/markets'
     | '/admin/_app/settings/users'
+    | '/admin/_app/hotels/'
     | '/admin/_app/products/'
     | '/admin/_app/settings/'
   fileRoutesById: FileRoutesById
@@ -526,6 +549,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAppVouchersRouteImport
       parentRoute: typeof AdminAppRouteRoute
     }
+    '/admin/_app/hotels/': {
+      id: '/admin/_app/hotels/'
+      path: '/'
+      fullPath: '/admin/hotels/'
+      preLoaderRoute: typeof AdminAppHotelsIndexRouteImport
+      parentRoute: typeof AdminAppHotelsRoute
+    }
+    '/admin/_app/hotels/$accommodationId': {
+      id: '/admin/_app/hotels/$accommodationId'
+      path: '/$accommodationId'
+      fullPath: '/admin/hotels/$accommodationId'
+      preLoaderRoute: typeof AdminAppHotelsAccommodationIdRouteImport
+      parentRoute: typeof AdminAppHotelsRoute
+    }
     '/admin/_app/products/': {
       id: '/admin/_app/products/'
       path: '/products'
@@ -585,12 +622,26 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminAppHotelsRouteChildren {
+  AdminAppHotelsAccommodationIdRoute: typeof AdminAppHotelsAccommodationIdRoute
+  AdminAppHotelsIndexRoute: typeof AdminAppHotelsIndexRoute
+}
+
+const AdminAppHotelsRouteChildren: AdminAppHotelsRouteChildren = {
+  AdminAppHotelsAccommodationIdRoute: AdminAppHotelsAccommodationIdRoute,
+  AdminAppHotelsIndexRoute: AdminAppHotelsIndexRoute,
+}
+
+const AdminAppHotelsRouteWithChildren = AdminAppHotelsRoute._addFileChildren(
+  AdminAppHotelsRouteChildren,
+)
+
 interface AdminAppRouteRouteChildren {
   AdminAppCatalogTaxonomyRoute: typeof AdminAppCatalogTaxonomyRoute
   AdminAppComponentTemplatesRoute: typeof AdminAppComponentTemplatesRoute
   AdminAppCustomersRoute: typeof AdminAppCustomersRoute
   AdminAppExperiencesRoute: typeof AdminAppExperiencesRoute
-  AdminAppHotelsRoute: typeof AdminAppHotelsRoute
+  AdminAppHotelsRoute: typeof AdminAppHotelsRouteWithChildren
   AdminAppInsuranceRoute: typeof AdminAppInsuranceRoute
   AdminAppMotorbikesRoute: typeof AdminAppMotorbikesRoute
   AdminAppOrdersRoute: typeof AdminAppOrdersRoute
@@ -616,7 +667,7 @@ const AdminAppRouteRouteChildren: AdminAppRouteRouteChildren = {
   AdminAppComponentTemplatesRoute: AdminAppComponentTemplatesRoute,
   AdminAppCustomersRoute: AdminAppCustomersRoute,
   AdminAppExperiencesRoute: AdminAppExperiencesRoute,
-  AdminAppHotelsRoute: AdminAppHotelsRoute,
+  AdminAppHotelsRoute: AdminAppHotelsRouteWithChildren,
   AdminAppInsuranceRoute: AdminAppInsuranceRoute,
   AdminAppMotorbikesRoute: AdminAppMotorbikesRoute,
   AdminAppOrdersRoute: AdminAppOrdersRoute,
