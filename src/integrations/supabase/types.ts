@@ -14,16 +14,253 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      admin_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          details: Json
+          entity_id: string | null
+          entity_ref: string | null
+          entity_type: string
+          id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          entity_id?: string | null
+          entity_ref?: string | null
+          entity_type: string
+          id?: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          entity_id?: string | null
+          entity_ref?: string | null
+          entity_type?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      currencies: {
+        Row: {
+          code: string
+          created_at: string
+          display_order: number
+          is_active: boolean
+          is_base: boolean
+          name: string
+          symbol: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          display_order?: number
+          is_active?: boolean
+          is_base?: boolean
+          name: string
+          symbol: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          display_order?: number
+          is_active?: boolean
+          is_base?: boolean
+          name?: string
+          symbol?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      languages: {
+        Row: {
+          code: string
+          created_at: string
+          display_order: number
+          is_active: boolean
+          is_master: boolean
+          name: string
+          native_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          display_order?: number
+          is_active?: boolean
+          is_master?: boolean
+          name: string
+          native_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          display_order?: number
+          is_active?: boolean
+          is_master?: boolean
+          name?: string
+          native_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      markets: {
+        Row: {
+          code: string
+          created_at: string
+          default_currency_code: string
+          default_language_code: string
+          display_order: number
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          default_currency_code: string
+          default_language_code: string
+          display_order?: number
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          default_currency_code?: string
+          default_language_code?: string
+          display_order?: number
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "markets_default_currency_code_fkey"
+            columns: ["default_currency_code"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "markets_default_language_code_fkey"
+            columns: ["default_language_code"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          key: string
+          updated_at: string
+          value: string
+          value_type: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          key: string
+          updated_at?: string
+          value: string
+          value_type?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          key?: string
+          updated_at?: string
+          value?: string
+          value_type?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["user_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: never; Returns: boolean }
+      is_staff_or_admin: { Args: never; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      dependency_action:
+        | "show"
+        | "hide"
+        | "require"
+        | "enable"
+        | "disable"
+        | "set_value"
+        | "set_minimum"
+        | "set_maximum"
+        | "reset_remove"
+      field_type:
+        | "single_select"
+        | "multi_select"
+        | "quantity"
+        | "number"
+        | "text"
+        | "date"
+        | "date_range"
+        | "boolean"
+        | "info_block"
+      order_line_kind: "package" | "insurance"
+      payment_status:
+        | "PAYMENT_PENDING"
+        | "PARTIALLY_PAID"
+        | "FULLY_PAID"
+        | "PAYMENT_FAILED"
+        | "PAYMENT_UNKNOWN"
+      product_kind: "package" | "insurance"
+      unit_basis:
+        | "fixed"
+        | "per_person"
+        | "per_day"
+        | "per_night"
+        | "per_session"
+      user_role: "ADMIN" | "STAFF"
+      voucher_status: "ACTIVE" | "USED" | "EXPIRED" | "CANCELLED"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +387,47 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      dependency_action: [
+        "show",
+        "hide",
+        "require",
+        "enable",
+        "disable",
+        "set_value",
+        "set_minimum",
+        "set_maximum",
+        "reset_remove",
+      ],
+      field_type: [
+        "single_select",
+        "multi_select",
+        "quantity",
+        "number",
+        "text",
+        "date",
+        "date_range",
+        "boolean",
+        "info_block",
+      ],
+      order_line_kind: ["package", "insurance"],
+      payment_status: [
+        "PAYMENT_PENDING",
+        "PARTIALLY_PAID",
+        "FULLY_PAID",
+        "PAYMENT_FAILED",
+        "PAYMENT_UNKNOWN",
+      ],
+      product_kind: ["package", "insurance"],
+      unit_basis: [
+        "fixed",
+        "per_person",
+        "per_day",
+        "per_night",
+        "per_session",
+      ],
+      user_role: ["ADMIN", "STAFF"],
+      voucher_status: ["ACTIVE", "USED", "EXPIRED", "CANCELLED"],
+    },
   },
 } as const
