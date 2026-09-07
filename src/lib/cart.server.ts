@@ -8,14 +8,13 @@
  */
 import { getRequest, setResponseHeader } from "@tanstack/react-start/server";
 
-import { MASTER_LANGUAGE, evaluateDependencies, type ProductBundle } from "@/lib/catalog";
 import {
-  exactToString,
-  isPurchasable,
-  resolveInputs,
-  type PricingInputs,
-  type PreviewValuesLike,
-} from "@/lib/cart-types";
+  MASTER_LANGUAGE,
+  evaluateDependencies,
+  type PreviewValues,
+  type ProductBundle,
+} from "@/lib/catalog";
+import { exactToString, isPurchasable, resolveInputs, type PricingInputs } from "@/lib/pricing";
 import { priceCommercial, type SeasonConfig } from "@/lib/commercial";
 
 export const CART_COOKIE = "cbr_cart";
@@ -186,7 +185,7 @@ async function loadPricingContext(db: any, productId: string) {
 }
 
 /** Required/visible answer check on top of the existing dependency engine. */
-export function configurationIssues(bundle: ProductBundle, values: PreviewValuesLike): string[] {
+export function configurationIssues(bundle: ProductBundle, values: PreviewValues): string[] {
   const { fields: effects } = evaluateDependencies(bundle, values as never);
   const issues: string[] = [];
   for (const f of bundle.fields) {
@@ -242,7 +241,7 @@ export type QuoteOutcome = {
 /** One provisional quote. Never an immutable purchase price. */
 export async function quotePackage(args: {
   productId: string;
-  answers: PreviewValuesLike;
+  answers: PreviewValues;
   month: number | null;
   promoCode: string | null;
   isGift: boolean;
@@ -382,7 +381,7 @@ export async function startPackage(productId: string) {
 /** Saves answers and re-quotes server-side. Draft only. */
 export async function savePackage(args: {
   packageId: string;
-  answers: PreviewValuesLike;
+  answers: PreviewValues;
   month: number | null;
   promoCode: string | null;
 }) {
@@ -448,7 +447,7 @@ export async function completePackage(packageId: string) {
 
   const quote = await quotePackage({
     productId: pkg.product_id,
-    answers: (pkg.answers ?? {}) as PreviewValuesLike,
+    answers: (pkg.answers ?? {}) as PreviewValues,
     month: pkg.season_month,
     promoCode: pkg.promo_code,
     isGift: false,
