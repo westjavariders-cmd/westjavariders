@@ -1,5 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
+import { PublicPage } from "@/components/public/SiteHeader";
+import { Button } from "@/components/ui/button";
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -24,19 +27,29 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-6">
-      <div className="max-w-md text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Cimaja Boardriders</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Surf, travel and local experiences in Cimaja, West Java. The public site is in
-          preparation.
+    <PublicPage>
+      <div className="py-8">
+        <h1 className="text-3xl font-semibold tracking-tight">
+          Surf, travel and local experiences in Cimaja
+        </h1>
+        <p className="mt-3 text-sm text-muted-foreground">
+          West Java's warm-water pointbreaks, local guides and trips built exactly the way you want
+          them.
         </p>
-        <p className="mt-6 text-sm">
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Button asChild>
+            <Link to="/build-your-trip">Build your trip</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link to="/cart">View your cart</Link>
+          </Button>
+        </div>
+        <p className="mt-10 text-xs text-muted-foreground">
           <Link to="/admin" className="underline underline-offset-2">
             Staff sign in
           </Link>
         </p>
       </div>
-    </main>
+    </PublicPage>
   );
 }

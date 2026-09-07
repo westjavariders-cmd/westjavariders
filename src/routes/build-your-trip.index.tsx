@@ -1,0 +1,74 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+
+import { PublicPage } from "@/components/public/SiteHeader";
+import { listPublicProducts } from "@/lib/public.functions";
+import { Card, CardContent } from "@/components/ui/card";
+
+export const Route = createFileRoute("/build-your-trip/")({
+  head: () => ({
+    meta: [
+      { title: "Build Your Trip | Cimaja Boardriders" },
+      {
+        name: "description",
+        content:
+          "Choose a surf, travel or local experience in Cimaja, West Java, configure it your way and see your price instantly.",
+      },
+      { property: "og:title", content: "Build Your Trip — Cimaja Boardriders" },
+      {
+        property: "og:description",
+        content:
+          "Configure your surf trip, lessons or local experience in Cimaja, West Java and see your price instantly.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: BuildYourTrip,
+});
+
+function BuildYourTrip() {
+  const load = useServerFn(listPublicProducts);
+  const products = useQuery({ queryKey: ["public-products"], queryFn: () => load() });
+
+  return (
+    <PublicPage>
+      <h1 className="text-2xl font-semibold tracking-tight">Build your trip</h1>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Pick an experience, choose your options and see your price straight away.
+      </p>
+
+      <div className="mt-6 space-y-3">
+        {products.isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
+        {products.data?.products.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            Nothing is open for booking right now. Please check back soon.
+          </p>
+        )}
+        {products.data?.products.map((p) => (
+          <Link
+            key={p.id}
+            to="/build-your-trip/$productId"
+            params={{ productId: p.id }}
+            className="block"
+          >
+            <Card className="transition-colors hover:border-primary">
+              <CardContent className="p-4">
+                {p.categories.length > 0 && (
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                    {p.categories.join(" · ")}
+                  </p>
+                )}
+                <h2 className="mt-1 text-base font-medium">{p.title}</h2>
+                {p.summary && (
+                  <p className="mt-1 text-sm text-muted-foreground">{p.summary}</p>
+                )}
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </div>
+    </PublicPage>
+  );
+}
