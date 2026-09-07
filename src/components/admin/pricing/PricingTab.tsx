@@ -208,6 +208,8 @@ export function PricingTab({
         />
       )}
 
+      <SeasonSettings bundle={bundle} canEdit={canEdit} />
+
       <TestLab bundle={bundle} pricing={pricing} canEdit={canEdit} />
     </div>
   );
