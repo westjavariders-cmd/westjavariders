@@ -5,7 +5,9 @@ import { toast } from "sonner";
 import { Play, Trash2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
-import { previewPrice, runPricingTests } from "@/lib/pricing.functions";
+import { runPricingTests } from "@/lib/pricing.functions";
+import { previewCommercialPrice } from "@/lib/commercial.functions";
+import { MONTHS } from "@/lib/commercial";
 import type { ProductPricing } from "@/lib/pricing";
 import { evaluateDependencies, type PreviewValues, type ProductBundle } from "@/lib/catalog";
 import { selectClass } from "@/components/admin/configurator/ui";
@@ -29,7 +31,7 @@ export function TestLab({
   pricing: ProductPricing;
   canEdit: boolean;
 }) {
-  const preview = useServerFn(previewPrice);
+  const preview = useServerFn(previewCommercialPrice);
   const runTests = useServerFn(runPricingTests);
 
   const [values, setValues] = useState<PreviewValues>({});
@@ -37,6 +39,9 @@ export function TestLab({
   const [label, setLabel] = useState("");
   const [expected, setExpected] = useState("");
   const [runs, setRuns] = useState<Awaited<ReturnType<typeof runTests>> | null>(null);
+  const [month, setMonth] = useState(String(new Date().getUTCMonth() + 1));
+  const [promoCode, setPromoCode] = useState("");
+  const [isGift, setIsGift] = useState(false);
 
   const casesQuery = useQuery({
     queryKey: ["pricing-test-cases", pricing.id],
@@ -61,7 +66,13 @@ export function TestLab({
   async function calculate() {
     try {
       const res = await preview({
-        data: { productId: bundle.product.id, values: values as Record<string, unknown> },
+        data: {
+          productId: bundle.product.id,
+          values: values as Record<string, unknown>,
+          month: Number(month),
+          promoCode: promoCode.trim() === "" ? null : promoCode.trim(),
+          isGift,
+        },
       });
       setResult(res);
     } catch (e) {
@@ -177,6 +188,34 @@ export function TestLab({
               );
             })}
           </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div>
+              <Label className="text-xs">Month of the experience</Label>
+              <select className={selectClass} value={month} onChange={(e) => setMonth(e.target.value)}>
+                {MONTHS.map((m) => (
+                  <option key={m.value} value={String(m.value)}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label className="text-xs">Promo code</Label>
+              <Input
+                className="h-8 text-xs"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+                placeholder="optional"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Gift purchase</Label>
+              <div className="mt-1">
+                <Switch checked={isGift} onCheckedChange={setIsGift} />
+              </div>
+            </div>
+          </div>
+
           <Button size="sm" onClick={calculate}>
             <Play className="mr-1.5 h-3.5 w-3.5" />
             Calculate price
@@ -185,11 +224,23 @@ export function TestLab({
           {result && (
             <div className="space-y-2 rounded-md bg-muted/40 p-3">
               <p className="text-sm font-medium">
-                Total: Rp {result.total_idr.toLocaleString("en-US")}{" "}
+                Final total: Rp {result.final_total_idr.toLocaleString("en-US")}{" "}
                 <Badge variant={result.purchasable ? "default" : "secondary"}>
                   {result.purchasable ? "purchasable" : "not purchasable"}
                 </Badge>
               </p>
+              <p className="text-xs text-muted-foreground">
+                Before discounts: Rp {result.phase4_total_idr.toLocaleString("en-US")}
+                {result.season_period
+                  ? ` · season ${result.season_period} −${result.season_discount_percentage}% = Rp ${result.season_discount_idr.toLocaleString("en-US")}`
+                  : " · no season"}
+                {result.promo_code
+                  ? ` · promo ${result.promo_code} −${result.promo_discount_percentage}% = Rp ${result.promo_discount_idr.toLocaleString("en-US")}`
+                  : ""}
+              </p>
+              {result.promo_rejection && (
+                <p className="text-xs text-destructive">{result.promo_rejection}</p>
+              )}
               {result.errors.map((e, i) => (
                 <p key={i} className="text-xs text-destructive">
                   {e}
@@ -201,6 +252,10 @@ export function TestLab({
                     <tr key={i} className="border-t border-border/60">
                       <td className="py-1 pr-2">{l.label}</td>
                       <td className="py-1 pr-2 text-muted-foreground">{l.detail}</td>
+                      <td className="py-1 pr-2 text-right font-mono text-muted-foreground">
+                        {l.season_discount_idr_exact !== "0" ? `−${l.season_discount_idr_exact} season` : ""}
+                        {l.promo_discount_idr_exact !== "0" ? ` −${l.promo_discount_idr_exact} promo` : ""}
+                      </td>
                       <td className="py-1 text-right font-mono">{l.amount_idr_exact}</td>
                     </tr>
                   ))}

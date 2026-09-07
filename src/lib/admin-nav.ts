@@ -28,7 +28,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { label: "Team / Collaborators", to: "/admin/team", status: "planned" },
   { label: "Experiences", to: "/admin/experiences", status: "planned" },
   { label: "Insurance", to: "/admin/insurance", status: "planned" },
-  { label: "Promo Codes", to: "/admin/promo-codes", status: "planned" },
+  { label: "Promo Codes", to: "/admin/promo-codes", status: "available" },
   { label: "Reviews", to: "/admin/reviews", status: "planned" },
   {
     label: "Settings",

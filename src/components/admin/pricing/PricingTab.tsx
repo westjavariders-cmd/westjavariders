@@ -16,6 +16,7 @@ import type { ProductBundle } from "@/lib/catalog";
 import { RuleEditor } from "@/components/admin/pricing/RuleEditor";
 import { FormulaEditor } from "@/components/admin/pricing/FormulaEditor";
 import { TestLab } from "@/components/admin/pricing/TestLab";
+import { SeasonSettings } from "@/components/admin/pricing/SeasonSettings";
 import { selectClass } from "@/components/admin/configurator/ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -206,6 +207,8 @@ export function PricingTab({
           reload={reload}
         />
       )}
+
+      <SeasonSettings bundle={bundle} canEdit={canEdit} />
 
       <TestLab bundle={bundle} pricing={pricing} canEdit={canEdit} />
     </div>

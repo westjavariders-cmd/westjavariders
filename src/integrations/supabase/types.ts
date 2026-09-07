@@ -921,6 +921,108 @@ export type Database = {
           },
         ]
       }
+      product_season_months: {
+        Row: {
+          created_at: string
+          id: string
+          month: number
+          period: Database["public"]["Enums"]["season_period"]
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          month: number
+          period: Database["public"]["Enums"]["season_period"]
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          month?: number
+          period?: Database["public"]["Enums"]["season_period"]
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_season_months_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_season_periods: {
+        Row: {
+          created_at: string
+          discount_percentage: number
+          id: string
+          period: Database["public"]["Enums"]["season_period"]
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          discount_percentage?: number
+          id?: string
+          period: Database["public"]["Enums"]["season_period"]
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          discount_percentage?: number
+          id?: string
+          period?: Database["public"]["Enums"]["season_period"]
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_season_periods_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_season_settings: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_season_settings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_translations: {
         Row: {
           body: string | null
@@ -1004,6 +1106,114 @@ export type Database = {
           kind?: Database["public"]["Enums"]["product_kind"]
           sort_order?: number
           status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      promo_code_categories: {
+        Row: {
+          category_id: string
+          created_at: string
+          promo_code_id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          promo_code_id: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          promo_code_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_code_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promo_code_categories_promo_code_id_fkey"
+            columns: ["promo_code_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promo_code_products: {
+        Row: {
+          created_at: string
+          product_id: string
+          promo_code_id: string
+        }
+        Insert: {
+          created_at?: string
+          product_id: string
+          promo_code_id: string
+        }
+        Update: {
+          created_at?: string
+          product_id?: string
+          promo_code_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_code_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promo_code_products_promo_code_id_fkey"
+            columns: ["promo_code_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promo_codes: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          discount_percentage: number
+          expires_at: string | null
+          gift_eligible: boolean
+          id: string
+          internal_name: string
+          notes: string | null
+          starts_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          discount_percentage: number
+          expires_at?: string | null
+          gift_eligible?: boolean
+          id?: string
+          internal_name: string
+          notes?: string | null
+          starts_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          discount_percentage?: number
+          expires_at?: string | null
+          gift_eligible?: boolean
+          id?: string
+          internal_name?: string
+          notes?: string | null
+          starts_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1153,6 +1363,7 @@ export type Database = {
         | "tier"
       pricing_sign: "add" | "subtract"
       product_kind: "package" | "insurance"
+      season_period: "HIGH" | "MID" | "LOW"
       unit_basis:
         | "fixed"
         | "per_person"
@@ -1328,6 +1539,7 @@ export const Constants = {
       ],
       pricing_sign: ["add", "subtract"],
       product_kind: ["package", "insurance"],
+      season_period: ["HIGH", "MID", "LOW"],
       unit_basis: [
         "fixed",
         "per_person",
