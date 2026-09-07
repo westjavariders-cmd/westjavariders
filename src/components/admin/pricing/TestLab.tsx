@@ -66,7 +66,13 @@ export function TestLab({
   async function calculate() {
     try {
       const res = await preview({
-        data: { productId: bundle.product.id, values: values as Record<string, unknown> },
+        data: {
+          productId: bundle.product.id,
+          values: values as Record<string, unknown>,
+          month: Number(month),
+          promoCode: promoCode.trim() === "" ? null : promoCode.trim(),
+          isGift,
+        },
       });
       setResult(res);
     } catch (e) {
