@@ -850,6 +850,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      duplicate_product: { Args: { _source: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]
