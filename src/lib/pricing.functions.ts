@@ -336,7 +336,15 @@ export const runPricingTests = createServerFn({ method: "POST" })
       .order("created_at");
 
     const active = loaded.versions.find((v: any) => v.is_active) ?? null;
-    return (cases ?? []).map((c: any) => {
+    type TestRun = {
+      id: string;
+      label: string;
+      expected: number | null;
+      actual: number;
+      errors: string[];
+      passed: boolean;
+    };
+    const runs: TestRun[] = (cases ?? []).map((c: any) => {
       const inputs = resolveInputs(loaded.bundle, c.inputs ?? {});
       const result = priceProduct({
         bundle: loaded.bundle,
@@ -357,4 +365,5 @@ export const runPricingTests = createServerFn({ method: "POST" })
           (c.expected_total_idr == null || Number(c.expected_total_idr) === result.total_idr),
       };
     });
+    return runs;
   });

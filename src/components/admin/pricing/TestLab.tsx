@@ -53,7 +53,7 @@ export function TestLab({
 
   const evaluated = evaluateDependencies(bundle, values);
   const fields = bundle.fields.filter(
-    (f) => f.is_active && f.field_type !== "info_block" && !evaluated.hidden.has(f.id),
+    (f) => f.is_active && f.field_type !== "info_block" && !evaluated.fields[f.id]?.hidden,
   );
 
   const set = (name: string, v: PreviewValues[string]) => setValues({ ...values, [name]: v });
