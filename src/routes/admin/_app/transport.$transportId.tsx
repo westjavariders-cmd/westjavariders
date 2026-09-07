@@ -52,7 +52,7 @@ function TransportEditorPage() {
   const setActive = useServerFn(setTransportActive);
   const duplicate = useServerFn(duplicateTransport);
 
-  const [form, setForm] = useState<Form | null>(null);
+  const [form, setForm] = useState<{ id: string; values: Form } | null>(null);
   const [busy, setBusy] = useState(false);
 
   const record = useQuery({
@@ -66,21 +66,25 @@ function TransportEditorPage() {
 
   useEffect(() => {
     const t = record.data;
-    if (!t || form) return;
+    if (!t || form?.id === transportId) return;
     setForm({
-      transport_type: t.transport_type,
-      internal_name: t.internal_name,
-      public_name: t.public_name ?? "",
-      internal_reference: t.internal_reference ?? "",
-      description: t.description ?? "",
-      origin: t.origin ?? "",
-      destination: t.destination ?? "",
-      min_travel_hours: t.min_travel_hours == null ? "" : String(t.min_travel_hours),
-      max_travel_hours: t.max_travel_hours == null ? "" : String(t.max_travel_hours),
-      internal_notes: t.internal_notes ?? "",
-      active: t.active,
+      id: transportId,
+      values: {
+        transport_type: t.transport_type,
+        internal_name: t.internal_name,
+        public_name: t.public_name ?? "",
+        internal_reference: t.internal_reference ?? "",
+        description: t.description ?? "",
+        origin: t.origin ?? "",
+        destination: t.destination ?? "",
+        min_travel_hours: t.min_travel_hours == null ? "" : String(t.min_travel_hours),
+        max_travel_hours: t.max_travel_hours == null ? "" : String(t.max_travel_hours),
+        internal_notes: t.internal_notes ?? "",
+        active: t.active,
+      },
     });
-  }, [record.data, form]);
+  }, [record.data, form, transportId]);
+
 
   if (record.isLoading) return <p className="text-sm text-muted-foreground">Loading...</p>;
   if (!record.data)
