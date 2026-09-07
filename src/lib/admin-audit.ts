@@ -16,5 +16,5 @@ export async function recordAdminAction(
   if (!actorId) return;
   await supabase
     .from("admin_audit_log")
-    .insert({ actor_id: actorId, action, entity_type: entityType, entity_ref: entityRef, details });
+    .insert({ actor_id: actorId, action, entity_type: entityType, entity_ref: entityRef, details: details as never });
 }
