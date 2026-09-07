@@ -268,7 +268,7 @@ describe("season and promotion engine", () => {
     );
     expect(
       run({ month: 1, promoRow: promo(), promoCategoryIds: ["cat-surf"] }).promo_discount_idr,
-    ).toBe(180000);
+    ).toBe(150000); // only the base is promo eligible; the component is not
   });
 
   it("rejects an incomplete month mapping when seasons are on", () => {
