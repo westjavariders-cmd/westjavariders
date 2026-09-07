@@ -73,10 +73,17 @@ export const createProduct = createServerFn({ method: "POST" })
       .single();
     if (error || !product) fail("This product could not be created. The reference may already be in use.");
 
-    await supabase.from("config_flows").insert({ product_id: product.id });
-    await supabase
+    const { error: flowError } = await supabase
+      .from("config_flows")
+      .insert({ product_id: product.id });
+    const { error: contentError } = await supabase
       .from("product_translations")
       .insert({ product_id: product.id, language_code: "en" });
+    if (flowError || contentError) {
+      // Leave nothing half-built behind.
+      await supabase.from("products").delete().eq("id", product.id);
+      fail("This product could not be created. Please try again.");
+    }
 
     await audit(supabase, userId, "product_created", product.id, product.internal_name, {
       kind: data.kind,
@@ -312,6 +319,61 @@ export const duplicateProduct = createServerFn({ method: "POST" })
     return { id: newId };
   });
 
+/**
+ * Activation gate recomputed on the server. The browser also shows these
+ * problems, but the server never trusts the browser's verdict.
+ */
+async function assertActivatable(supabase: any, productId: string) {
+  const [{ data: translation }, { data: flow }, { data: fields }] = await Promise.all([
+    supabase
+      .from("product_translations")
+      .select("title")
+      .eq("product_id", productId)
+      .eq("language_code", "en")
+      .maybeSingle(),
+    supabase.from("config_flows").select("id").eq("product_id", productId).maybeSingle(),
+    supabase
+      .from("fields")
+      .select("id, step_id, variable_name, field_type, is_active")
+      .eq("product_id", productId),
+  ]);
+
+  if (!translation?.title?.trim()) fail("Add an English title before activating this product.");
+  if (!flow) fail("This product has no configurator flow and cannot be activated.");
+
+  const { data: steps } = await supabase
+    .from("steps")
+    .select("id, is_active")
+    .eq("flow_id", flow.id);
+  const activeSteps = (steps ?? []).filter((s: any) => s.is_active);
+  if (activeSteps.length === 0) fail("Add at least one active step before activating.");
+
+  const activeFields = (fields ?? []).filter(
+    (f: any) => f.is_active && activeSteps.some((s: any) => s.id === f.step_id),
+  );
+  const names = activeFields.map((f: any) => f.variable_name);
+  if (new Set(names).size !== names.length) {
+    fail("Two questions share the same variable name. Fix that before activating.");
+  }
+
+  const selectFields = activeFields.filter((f: any) =>
+    ["single_select", "multi_select"].includes(f.field_type),
+  );
+  if (selectFields.length) {
+    const { data: options } = await supabase
+      .from("field_options")
+      .select("field_id, is_active")
+      .in(
+        "field_id",
+        selectFields.map((f: any) => f.id),
+      );
+    for (const f of selectFields) {
+      const has = (options ?? []).some((o: any) => o.field_id === f.id && o.is_active);
+      if (!has) fail("Every choice question needs at least one active option before activating.");
+    }
+  }
+}
+
 export const setProductStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
@@ -319,7 +381,7 @@ export const setProductStatus = createServerFn({ method: "POST" })
       .object({
         productId: z.string().uuid(),
         status: z.enum(["draft", "active", "inactive", "archived"]),
-        errorCount: z.number().int().min(0),
+        errorCount: z.number().int().min(0).optional(),
       })
       .parse(data),
   )
@@ -327,9 +389,8 @@ export const setProductStatus = createServerFn({ method: "POST" })
     const { supabase, userId } = ctx(context);
     await assertAdmin(supabase);
 
-    if (data.status === "active" && data.errorCount > 0) {
-      fail("This product still has structural problems and cannot be activated yet.");
-    }
+    if (data.status === "active") await assertActivatable(supabase, data.productId);
+
 
     const { data: updated, error } = await supabase
       .from("products")

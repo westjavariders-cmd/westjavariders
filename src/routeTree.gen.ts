@@ -25,7 +25,6 @@ import { Route as AdminAppInsuranceRouteImport } from './routes/admin/_app/insur
 import { Route as AdminAppMotorbikesRouteImport } from './routes/admin/_app/motorbikes'
 import { Route as AdminAppOrdersRouteImport } from './routes/admin/_app/orders'
 import { Route as AdminAppPricesRouteImport } from './routes/admin/_app/prices'
-import { Route as AdminAppProductsRouteImport } from './routes/admin/_app/products'
 import { Route as AdminAppPromoCodesRouteImport } from './routes/admin/_app/promo-codes'
 import { Route as AdminAppReviewsRouteImport } from './routes/admin/_app/reviews'
 import { Route as AdminAppTeamRouteImport } from './routes/admin/_app/team'
@@ -120,11 +119,6 @@ const AdminAppPricesRoute = AdminAppPricesRouteImport.update({
   path: '/prices',
   getParentRoute: () => AdminAppRouteRoute,
 } as any)
-const AdminAppProductsRoute = AdminAppProductsRouteImport.update({
-  id: '/products',
-  path: '/products',
-  getParentRoute: () => AdminAppRouteRoute,
-} as any)
 const AdminAppPromoCodesRoute = AdminAppPromoCodesRouteImport.update({
   id: '/promo-codes',
   path: '/promo-codes',
@@ -151,15 +145,15 @@ const AdminAppVouchersRoute = AdminAppVouchersRouteImport.update({
   getParentRoute: () => AdminAppRouteRoute,
 } as any)
 const AdminAppProductsIndexRoute = AdminAppProductsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminAppProductsRoute,
+  id: '/products/',
+  path: '/products/',
+  getParentRoute: () => AdminAppRouteRoute,
 } as any)
 const AdminAppProductsProductIdRoute =
   AdminAppProductsProductIdRouteImport.update({
-    id: '/$productId',
-    path: '/$productId',
-    getParentRoute: () => AdminAppProductsRoute,
+    id: '/products/$productId',
+    path: '/products/$productId',
+    getParentRoute: () => AdminAppRouteRoute,
   } as any)
 const AdminAppSettingsIndexRoute = AdminAppSettingsIndexRouteImport.update({
   id: '/settings/',
@@ -209,7 +203,6 @@ export interface FileRoutesByFullPath {
   '/admin/motorbikes': typeof AdminAppMotorbikesRoute
   '/admin/orders': typeof AdminAppOrdersRoute
   '/admin/prices': typeof AdminAppPricesRoute
-  '/admin/products': typeof AdminAppProductsRouteWithChildren
   '/admin/promo-codes': typeof AdminAppPromoCodesRoute
   '/admin/reviews': typeof AdminAppReviewsRoute
   '/admin/team': typeof AdminAppTeamRoute
@@ -271,7 +264,6 @@ export interface FileRoutesById {
   '/admin/_app/motorbikes': typeof AdminAppMotorbikesRoute
   '/admin/_app/orders': typeof AdminAppOrdersRoute
   '/admin/_app/prices': typeof AdminAppPricesRoute
-  '/admin/_app/products': typeof AdminAppProductsRouteWithChildren
   '/admin/_app/promo-codes': typeof AdminAppPromoCodesRoute
   '/admin/_app/reviews': typeof AdminAppReviewsRoute
   '/admin/_app/team': typeof AdminAppTeamRoute
@@ -304,7 +296,6 @@ export interface FileRouteTypes {
     | '/admin/motorbikes'
     | '/admin/orders'
     | '/admin/prices'
-    | '/admin/products'
     | '/admin/promo-codes'
     | '/admin/reviews'
     | '/admin/team'
@@ -365,7 +356,6 @@ export interface FileRouteTypes {
     | '/admin/_app/motorbikes'
     | '/admin/_app/orders'
     | '/admin/_app/prices'
-    | '/admin/_app/products'
     | '/admin/_app/promo-codes'
     | '/admin/_app/reviews'
     | '/admin/_app/team'
@@ -501,13 +491,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAppPricesRouteImport
       parentRoute: typeof AdminAppRouteRoute
     }
-    '/admin/_app/products': {
-      id: '/admin/_app/products'
-      path: '/products'
-      fullPath: '/admin/products'
-      preLoaderRoute: typeof AdminAppProductsRouteImport
-      parentRoute: typeof AdminAppRouteRoute
-    }
     '/admin/_app/promo-codes': {
       id: '/admin/_app/promo-codes'
       path: '/promo-codes'
@@ -545,17 +528,17 @@ declare module '@tanstack/react-router' {
     }
     '/admin/_app/products/': {
       id: '/admin/_app/products/'
-      path: '/'
+      path: '/products'
       fullPath: '/admin/products/'
       preLoaderRoute: typeof AdminAppProductsIndexRouteImport
-      parentRoute: typeof AdminAppProductsRoute
+      parentRoute: typeof AdminAppRouteRoute
     }
     '/admin/_app/products/$productId': {
       id: '/admin/_app/products/$productId'
-      path: '/$productId'
+      path: '/products/$productId'
       fullPath: '/admin/products/$productId'
       preLoaderRoute: typeof AdminAppProductsProductIdRouteImport
-      parentRoute: typeof AdminAppProductsRoute
+      parentRoute: typeof AdminAppRouteRoute
     }
     '/admin/_app/settings/': {
       id: '/admin/_app/settings/'
@@ -602,19 +585,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AdminAppProductsRouteChildren {
-  AdminAppProductsProductIdRoute: typeof AdminAppProductsProductIdRoute
-  AdminAppProductsIndexRoute: typeof AdminAppProductsIndexRoute
-}
-
-const AdminAppProductsRouteChildren: AdminAppProductsRouteChildren = {
-  AdminAppProductsProductIdRoute: AdminAppProductsProductIdRoute,
-  AdminAppProductsIndexRoute: AdminAppProductsIndexRoute,
-}
-
-const AdminAppProductsRouteWithChildren =
-  AdminAppProductsRoute._addFileChildren(AdminAppProductsRouteChildren)
-
 interface AdminAppRouteRouteChildren {
   AdminAppCatalogTaxonomyRoute: typeof AdminAppCatalogTaxonomyRoute
   AdminAppComponentTemplatesRoute: typeof AdminAppComponentTemplatesRoute
@@ -625,18 +595,19 @@ interface AdminAppRouteRouteChildren {
   AdminAppMotorbikesRoute: typeof AdminAppMotorbikesRoute
   AdminAppOrdersRoute: typeof AdminAppOrdersRoute
   AdminAppPricesRoute: typeof AdminAppPricesRoute
-  AdminAppProductsRoute: typeof AdminAppProductsRouteWithChildren
   AdminAppPromoCodesRoute: typeof AdminAppPromoCodesRoute
   AdminAppReviewsRoute: typeof AdminAppReviewsRoute
   AdminAppTeamRoute: typeof AdminAppTeamRoute
   AdminAppTransportRoute: typeof AdminAppTransportRoute
   AdminAppVouchersRoute: typeof AdminAppVouchersRoute
   AdminAppIndexRoute: typeof AdminAppIndexRoute
+  AdminAppProductsProductIdRoute: typeof AdminAppProductsProductIdRoute
   AdminAppSettingsAuditRoute: typeof AdminAppSettingsAuditRoute
   AdminAppSettingsCurrenciesRoute: typeof AdminAppSettingsCurrenciesRoute
   AdminAppSettingsLanguagesRoute: typeof AdminAppSettingsLanguagesRoute
   AdminAppSettingsMarketsRoute: typeof AdminAppSettingsMarketsRoute
   AdminAppSettingsUsersRoute: typeof AdminAppSettingsUsersRoute
+  AdminAppProductsIndexRoute: typeof AdminAppProductsIndexRoute
   AdminAppSettingsIndexRoute: typeof AdminAppSettingsIndexRoute
 }
 
@@ -650,18 +621,19 @@ const AdminAppRouteRouteChildren: AdminAppRouteRouteChildren = {
   AdminAppMotorbikesRoute: AdminAppMotorbikesRoute,
   AdminAppOrdersRoute: AdminAppOrdersRoute,
   AdminAppPricesRoute: AdminAppPricesRoute,
-  AdminAppProductsRoute: AdminAppProductsRouteWithChildren,
   AdminAppPromoCodesRoute: AdminAppPromoCodesRoute,
   AdminAppReviewsRoute: AdminAppReviewsRoute,
   AdminAppTeamRoute: AdminAppTeamRoute,
   AdminAppTransportRoute: AdminAppTransportRoute,
   AdminAppVouchersRoute: AdminAppVouchersRoute,
   AdminAppIndexRoute: AdminAppIndexRoute,
+  AdminAppProductsProductIdRoute: AdminAppProductsProductIdRoute,
   AdminAppSettingsAuditRoute: AdminAppSettingsAuditRoute,
   AdminAppSettingsCurrenciesRoute: AdminAppSettingsCurrenciesRoute,
   AdminAppSettingsLanguagesRoute: AdminAppSettingsLanguagesRoute,
   AdminAppSettingsMarketsRoute: AdminAppSettingsMarketsRoute,
   AdminAppSettingsUsersRoute: AdminAppSettingsUsersRoute,
+  AdminAppProductsIndexRoute: AdminAppProductsIndexRoute,
   AdminAppSettingsIndexRoute: AdminAppSettingsIndexRoute,
 }
 

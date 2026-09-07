@@ -11,7 +11,7 @@ Phase 2 — Admin foundation: DONE (auth, first-admin setup, shell, settings/cur
 - [ ] Phase 1E — Operations schema (hotels, rooms, transport, motorbikes, experiences, team, insurance plans)
 - [ ] Phase 1F — Customers, carts, orders, payments, purchases, snapshots
 - [ ] Phase 1G — FX + vouchers + legal/reviews/analytics
-- [ ] Phase 3 — Product + configurator builder
+- [x] Phase 3 — Product + configurator builder (Admin: products, content, components, configurator, dependencies, preview, status)
 - [ ] Phase 4 — Pricing engine
 - [ ] Phase 5 — Customer configurator + cart
 - [ ] Phase 6 — Checkout + payments
