@@ -22,7 +22,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { label: "Packages / Orders", to: "/admin/orders", status: "planned" },
   { label: "Vouchers", to: "/admin/vouchers", status: "planned" },
   { label: "Customers", to: "/admin/customers", status: "planned" },
-  { label: "Hotels / Rooms", to: "/admin/hotels", status: "planned" },
+  { label: "Hotels / Rooms", to: "/admin/hotels", status: "available" },
   { label: "Transport", to: "/admin/transport", status: "planned" },
   { label: "Motorbikes", to: "/admin/motorbikes", status: "planned" },
   { label: "Team / Collaborators", to: "/admin/team", status: "planned" },
