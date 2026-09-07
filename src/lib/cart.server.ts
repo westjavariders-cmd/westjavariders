@@ -82,9 +82,12 @@ async function findCart(token: string): Promise<CartRow | null> {
   return data ?? null;
 }
 
-/** Returns the open cart for this browser, creating one only when asked. */
-export async function currentCart(create: boolean): Promise<CartRow | null> {
-  const token = readCookieToken();
+/**
+ * Returns the open cart for this browser, creating one only when asked.
+ * `explicitToken` exists for server-side tests; requests always use the cookie.
+ */
+export async function currentCart(create: boolean, explicitToken?: string): Promise<CartRow | null> {
+  const token = explicitToken ?? readCookieToken();
   if (token) {
     const existing = await findCart(token);
     if (existing) return existing;
@@ -92,14 +95,14 @@ export async function currentCart(create: boolean): Promise<CartRow | null> {
   if (!create) return null;
 
   const db = await admin();
-  const fresh = token && !(await findCart(token)) ? token : newToken();
+  const fresh = token ?? newToken();
   const { data, error } = await db
     .from("carts")
     .insert({ session_token: fresh })
     .select("id, status, market_code, currency_code")
     .single();
   if (error || !data) fail(SAFE_ERROR);
-  writeCookieToken(fresh);
+  if (!explicitToken) writeCookieToken(fresh);
   return data;
 }
 
@@ -346,8 +349,8 @@ async function nextPosition(cartId: string) {
 }
 
 /** Starts a draft Package for a product. At most one draft per cart. */
-export async function startPackage(productId: string) {
-  const cart = (await currentCart(true))!;
+export async function startPackage(productId: string, token?: string) {
+  const cart = (await currentCart(true, token))!;
   const existingDraft = await getDraft(cart.id);
   if (existingDraft) {
     fail("You already have a package in progress. Finish or discard it first.");
@@ -384,8 +387,9 @@ export async function savePackage(args: {
   answers: PreviewValues;
   month: number | null;
   promoCode: string | null;
+  token?: string;
 }) {
-  const cart = await currentCart(false);
+  const cart = await currentCart(false, args.token);
   if (!cart) fail("Your cart could not be found.");
   await assertPackageInCart(cart.id, args.packageId);
 
@@ -431,8 +435,8 @@ export async function savePackage(args: {
 }
 
 /** Marks a Package complete only when valid, priced and purchasable. */
-export async function completePackage(packageId: string) {
-  const cart = await currentCart(false);
+export async function completePackage(packageId: string, token?: string) {
+  const cart = await currentCart(false, token);
   if (!cart) fail("Your cart could not be found.");
   await assertPackageInCart(cart.id, packageId);
 
@@ -481,8 +485,8 @@ export async function completePackage(packageId: string) {
 }
 
 /** Cart contents. Only complete packages contribute to the payable total. */
-export async function listCart() {
-  const cart = await currentCart(false);
+export async function listCart(token?: string) {
+  const cart = await currentCart(false, token);
   if (!cart) {
     return { cart: null, packages: [], draft: null, payable_total_idr: 0 };
   }
@@ -505,8 +509,8 @@ export async function listCart() {
 }
 
 /** Removes a complete package. Other packages are untouched. */
-export async function removePackage(packageId: string) {
-  const cart = await currentCart(false);
+export async function removePackage(packageId: string, token?: string) {
+  const cart = await currentCart(false, token);
   if (!cart) fail("Your cart could not be found.");
   await assertPackageInCart(cart.id, packageId);
 
@@ -521,8 +525,8 @@ export async function removePackage(packageId: string) {
 }
 
 /** Discards the in-progress package so a new one can be started. */
-export async function discardDraft() {
-  const cart = await currentCart(false);
+export async function discardDraft(token?: string) {
+  const cart = await currentCart(false, token);
   if (!cart) return { ok: true };
   const draft = await getDraft(cart.id);
   if (!draft) return { ok: true };
@@ -532,8 +536,8 @@ export async function discardDraft() {
 }
 
 /** The current draft package, if any. */
-export async function continueDraft() {
-  const cart = await currentCart(false);
+export async function continueDraft(token?: string) {
+  const cart = await currentCart(false, token);
   if (!cart) return { draft: null };
   return { draft: await getDraft(cart.id) };
 }
