@@ -9,12 +9,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { setProductStatus } from "@/lib/catalog.functions";
 import { recordAdminAction } from "@/lib/admin-audit";
 import {
-  fetchProductBundle,
   MASTER_LANGUAGE,
   PRODUCT_STATUSES,
   validateBundle,
   type ProductBundle,
 } from "@/lib/catalog";
+import { fetchProductBundle } from "@/lib/catalog-fetch";
 import { ComponentsTab } from "@/components/admin/configurator/ComponentsTab";
 import { ConfiguratorTab } from "@/components/admin/configurator/ConfiguratorTab";
 import { DependenciesTab } from "@/components/admin/configurator/DependenciesTab";
