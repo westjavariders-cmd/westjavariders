@@ -1,0 +1,539 @@
+import { useState } from "react";
+import { toast } from "sonner";
+import { Plus, Trash2 } from "lucide-react";
+
+import { supabase } from "@/integrations/supabase/client";
+import { recordAdminAction } from "@/lib/admin-audit";
+import {
+  FIELD_TYPES,
+  SELECT_FIELD_TYPES,
+  type Field,
+  type FieldOption,
+  type ProductBundle,
+  type Step,
+} from "@/lib/catalog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import { selectClass } from "./ui";
+
+type Props = { bundle: ProductBundle; canEdit: boolean; reload: () => void };
+
+const numeric = (v: string) => (v.trim() === "" ? null : Number(v));
+
+export function ConfiguratorTab({ bundle, canEdit, reload }: Props) {
+  const [openStep, setOpenStep] = useState<string | null>(bundle.steps[0]?.id ?? null);
+
+  async function addStep() {
+    if (!bundle.flow) return toast.error("This product has no configurator flow yet.");
+    const { error } = await supabase.from("steps").insert({
+      flow_id: bundle.flow.id,
+      internal_name: `Step ${bundle.steps.length + 1}`,
+      display_order: bundle.steps.length,
+    });
+    if (error) return toast.error(error.message);
+    await recordAdminAction("configurator_step_added", "steps", bundle.product.internal_name);
+    reload();
+  }
+
+  return (
+    <div className="space-y-4">
+      {canEdit && (
+        <Button size="sm" variant="outline" onClick={addStep}>
+          <Plus className="mr-1.5 h-3.5 w-3.5" />
+          Add step
+        </Button>
+      )}
+      {bundle.steps.length === 0 && (
+        <p className="text-sm text-muted-foreground">No steps yet.</p>
+      )}
+      {bundle.steps.map((step) => (
+        <Card key={step.id}>
+          <CardContent className="space-y-3 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <button
+                type="button"
+                className="text-left text-sm font-medium"
+                onClick={() => setOpenStep(openStep === step.id ? null : step.id)}
+              >
+                {step.internal_name}
+                <span className="ml-2 text-xs text-muted-foreground">
+                  {bundle.fields.filter((f) => f.step_id === step.id).length} field(s)
+                  {step.is_active ? "" : " · inactive"}
+                </span>
+              </button>
+            </div>
+            {openStep === step.id && (
+              <StepEditor bundle={bundle} step={step} canEdit={canEdit} reload={reload} />
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function StepEditor({
+  bundle,
+  step,
+  canEdit,
+  reload,
+}: Props & { step: Step }) {
+  const [draft, setDraft] = useState({
+    internal_name: step.internal_name,
+    customer_title: step.customer_title ?? "",
+    customer_description: step.customer_description ?? "",
+    display_order: String(step.display_order),
+    is_active: step.is_active,
+  });
+  const [openField, setOpenField] = useState<string | null>(null);
+  const fields = bundle.fields.filter((f) => f.step_id === step.id);
+
+  async function save() {
+    const { error } = await supabase
+      .from("steps")
+      .update({
+        internal_name: draft.internal_name.trim(),
+        customer_title: draft.customer_title.trim() || null,
+        customer_description: draft.customer_description.trim() || null,
+        display_order: Number(draft.display_order || 0),
+        is_active: draft.is_active,
+      })
+      .eq("id", step.id);
+    if (error) return toast.error(error.message);
+    await recordAdminAction("configurator_step_updated", "steps", draft.internal_name);
+    toast.success("Step saved.");
+    reload();
+  }
+
+  async function removeStep() {
+    const { error } = await supabase.from("steps").delete().eq("id", step.id);
+    if (error) return toast.error(error.message);
+    await recordAdminAction("configurator_step_removed", "steps", step.internal_name);
+    toast.success("Step removed.");
+    reload();
+  }
+
+  async function addField() {
+    const n = bundle.fields.length + 1;
+    const { error } = await supabase.from("fields").insert({
+      product_id: bundle.product.id,
+      step_id: step.id,
+      internal_name: `Field ${n}`,
+      variable_name: `field_${n}`,
+      field_type: "text",
+      display_order: fields.length,
+    });
+    if (error) return toast.error(error.message);
+    await recordAdminAction("configurator_field_added", "fields", bundle.product.internal_name);
+    reload();
+  }
+
+  return (
+    <div className="space-y-4 border-t border-border pt-3">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <Label className="text-xs">Internal name</Label>
+          <Input
+            value={draft.internal_name}
+            disabled={!canEdit}
+            onChange={(e) => setDraft({ ...draft, internal_name: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Customer-facing title</Label>
+          <Input
+            value={draft.customer_title}
+            disabled={!canEdit}
+            onChange={(e) => setDraft({ ...draft, customer_title: e.target.value })}
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <Label className="text-xs">Description</Label>
+          <Textarea
+            rows={2}
+            value={draft.customer_description}
+            disabled={!canEdit}
+            onChange={(e) => setDraft({ ...draft, customer_description: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Display order</Label>
+          <Input
+            value={draft.display_order}
+            disabled={!canEdit}
+            onChange={(e) => setDraft({ ...draft, display_order: e.target.value })}
+          />
+        </div>
+        <label className="flex items-end gap-2 pb-1 text-sm">
+          <Switch
+            checked={draft.is_active}
+            disabled={!canEdit}
+            onCheckedChange={(v) => setDraft({ ...draft, is_active: v })}
+          />
+          Active
+        </label>
+      </div>
+      {canEdit && (
+        <div className="flex gap-2">
+          <Button size="sm" onClick={save}>
+            Save step
+          </Button>
+          <Button size="sm" variant="outline" onClick={addField}>
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
+            Add field
+          </Button>
+          <Button size="sm" variant="ghost" onClick={removeStep}>
+            <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+            Delete step
+          </Button>
+        </div>
+      )}
+
+      <div className="space-y-2">
+        {fields.map((field) => (
+          <div key={field.id} className="rounded-md border border-border p-3">
+            <button
+              type="button"
+              className="text-left text-sm font-medium"
+              onClick={() => setOpenField(openField === field.id ? null : field.id)}
+            >
+              {field.internal_name}
+              <span className="ml-2 font-mono text-xs text-muted-foreground">
+                {field.variable_name}
+              </span>
+              <span className="ml-2 text-xs text-muted-foreground">
+                {FIELD_TYPES.find((t) => t.value === field.field_type)?.label}
+                {field.is_active ? "" : " · inactive"}
+              </span>
+            </button>
+            {openField === field.id && (
+              <FieldEditor bundle={bundle} field={field} canEdit={canEdit} reload={reload} />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FieldEditor({
+  bundle,
+  field,
+  canEdit,
+  reload,
+}: Props & { field: Field }) {
+  const [draft, setDraft] = useState({
+    internal_name: field.internal_name,
+    variable_name: field.variable_name,
+    customer_label: field.customer_label ?? "",
+    help_text: field.help_text ?? "",
+    field_type: field.field_type as string,
+    is_required: field.is_required,
+    is_active: field.is_active,
+    default_value: field.default_value ?? "",
+    min_value: field.min_value == null ? "" : String(field.min_value),
+    max_value: field.max_value == null ? "" : String(field.max_value),
+    display_order: String(field.display_order),
+  });
+  const options = bundle.options.filter((o) => o.field_id === field.id);
+  const isSelect = SELECT_FIELD_TYPES.includes(draft.field_type);
+
+  async function save() {
+    if (!/^[a-z][a-z0-9_]*$/.test(draft.variable_name)) {
+      return toast.error("Variable name must be lowercase letters, numbers and underscores.");
+    }
+    if (draft.variable_name !== field.variable_name) {
+      const duplicate = bundle.fields.some(
+        (f) => f.id !== field.id && f.variable_name === draft.variable_name,
+      );
+      if (duplicate) return toast.error("This variable name is already used in this product.");
+    }
+    const { error } = await supabase
+      .from("fields")
+      .update({
+        internal_name: draft.internal_name.trim(),
+        variable_name: draft.variable_name.trim(),
+        customer_label: draft.customer_label.trim() || null,
+        help_text: draft.help_text.trim() || null,
+        field_type: draft.field_type as never,
+        is_required: draft.is_required,
+        is_active: draft.is_active,
+        default_value: draft.default_value.trim() || null,
+        min_value: numeric(draft.min_value),
+        max_value: numeric(draft.max_value),
+        display_order: Number(draft.display_order || 0),
+      })
+      .eq("id", field.id);
+    if (error) return toast.error(error.message);
+    await recordAdminAction("configurator_field_updated", "fields", draft.internal_name, {
+      variable_name: draft.variable_name,
+      renamed_from: draft.variable_name === field.variable_name ? null : field.variable_name,
+    });
+    toast.success("Field saved.");
+    reload();
+  }
+
+  async function removeField() {
+    const { error } = await supabase.from("fields").delete().eq("id", field.id);
+    if (error) return toast.error(error.message);
+    await recordAdminAction("configurator_field_removed", "fields", field.internal_name);
+    reload();
+  }
+
+  async function addOption() {
+    const { error } = await supabase.from("field_options").insert({
+      field_id: field.id,
+      internal_value: `option_${options.length + 1}`,
+      customer_label: `Option ${options.length + 1}`,
+      display_order: options.length,
+    });
+    if (error) return toast.error(error.message);
+    reload();
+  }
+
+  return (
+    <div className="mt-3 space-y-3 border-t border-border pt-3">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <Label className="text-xs">Internal name</Label>
+          <Input
+            value={draft.internal_name}
+            disabled={!canEdit}
+            onChange={(e) => setDraft({ ...draft, internal_name: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Variable name (used by future pricing)</Label>
+          <Input
+            className="font-mono"
+            value={draft.variable_name}
+            disabled={!canEdit}
+            onChange={(e) => setDraft({ ...draft, variable_name: e.target.value })}
+          />
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Change with care: future pricing formulas will reference this name.
+          </p>
+        </div>
+        <div>
+          <Label className="text-xs">Customer-facing label</Label>
+          <Input
+            value={draft.customer_label}
+            disabled={!canEdit}
+            onChange={(e) => setDraft({ ...draft, customer_label: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Field type</Label>
+          <select
+            className={selectClass}
+            value={draft.field_type}
+            disabled={!canEdit}
+            onChange={(e) => setDraft({ ...draft, field_type: e.target.value })}
+          >
+            {FIELD_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="sm:col-span-2">
+          <Label className="text-xs">Help text</Label>
+          <Textarea
+            rows={2}
+            value={draft.help_text}
+            disabled={!canEdit}
+            onChange={(e) => setDraft({ ...draft, help_text: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Default value</Label>
+          <Input
+            value={draft.default_value}
+            disabled={!canEdit}
+            onChange={(e) => setDraft({ ...draft, default_value: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Display order</Label>
+          <Input
+            value={draft.display_order}
+            disabled={!canEdit}
+            onChange={(e) => setDraft({ ...draft, display_order: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Minimum value</Label>
+          <Input
+            inputMode="decimal"
+            value={draft.min_value}
+            disabled={!canEdit}
+            onChange={(e) => setDraft({ ...draft, min_value: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Maximum value</Label>
+          <Input
+            inputMode="decimal"
+            value={draft.max_value}
+            disabled={!canEdit}
+            onChange={(e) => setDraft({ ...draft, max_value: e.target.value })}
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-4 sm:col-span-2">
+          <label className="flex items-center gap-2 text-sm">
+            <Switch
+              checked={draft.is_required}
+              disabled={!canEdit}
+              onCheckedChange={(v) => setDraft({ ...draft, is_required: v })}
+            />
+            Required
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <Switch
+              checked={draft.is_active}
+              disabled={!canEdit}
+              onCheckedChange={(v) => setDraft({ ...draft, is_active: v })}
+            />
+            Active
+          </label>
+        </div>
+      </div>
+
+      {canEdit && (
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" onClick={save}>
+            Save field
+          </Button>
+          {isSelect && (
+            <Button size="sm" variant="outline" onClick={addOption}>
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              Add option
+            </Button>
+          )}
+          <Button size="sm" variant="ghost" onClick={removeField}>
+            <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+            Delete field
+          </Button>
+        </div>
+      )}
+
+      {isSelect && (
+        <div className="space-y-2">
+          {options.map((o) => (
+            <OptionRow key={o.id} option={o} canEdit={canEdit} reload={reload} />
+          ))}
+          {options.length === 0 && (
+            <p className="text-xs text-muted-foreground">This select field has no option yet.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OptionRow({
+  option,
+  canEdit,
+  reload,
+}: {
+  option: FieldOption;
+  canEdit: boolean;
+  reload: () => void;
+}) {
+  const [draft, setDraft] = useState({
+    internal_value: option.internal_value,
+    customer_label: option.customer_label ?? "",
+    description: option.description ?? "",
+    display_order: String(option.display_order),
+    is_active: option.is_active,
+    is_default: option.is_default,
+  });
+
+  async function save() {
+    const { error } = await supabase
+      .from("field_options")
+      .update({
+        internal_value: draft.internal_value.trim(),
+        customer_label: draft.customer_label.trim() || null,
+        description: draft.description.trim() || null,
+        display_order: Number(draft.display_order || 0),
+        is_active: draft.is_active,
+        is_default: draft.is_default,
+      })
+      .eq("id", option.id);
+    if (error) return toast.error(error.message);
+    toast.success("Option saved.");
+    reload();
+  }
+
+  async function remove() {
+    const { error } = await supabase.from("field_options").delete().eq("id", option.id);
+    if (error) return toast.error(error.message);
+    reload();
+  }
+
+  return (
+    <div className="grid items-end gap-2 rounded-md bg-muted/40 p-2 sm:grid-cols-[1fr_1fr_5rem_auto]">
+      <div>
+        <Label className="text-[11px]">Internal value</Label>
+        <Input
+          className="h-8 font-mono text-xs"
+          value={draft.internal_value}
+          disabled={!canEdit}
+          onChange={(e) => setDraft({ ...draft, internal_value: e.target.value })}
+        />
+      </div>
+      <div>
+        <Label className="text-[11px]">Customer label</Label>
+        <Input
+          className="h-8 text-xs"
+          value={draft.customer_label}
+          disabled={!canEdit}
+          onChange={(e) => setDraft({ ...draft, customer_label: e.target.value })}
+        />
+      </div>
+      <div>
+        <Label className="text-[11px]">Order</Label>
+        <Input
+          className="h-8 text-xs"
+          value={draft.display_order}
+          disabled={!canEdit}
+          onChange={(e) => setDraft({ ...draft, display_order: e.target.value })}
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        <label className="flex items-center gap-1 text-[11px]">
+          <Switch
+            checked={draft.is_active}
+            disabled={!canEdit}
+            onCheckedChange={(v) => setDraft({ ...draft, is_active: v })}
+          />
+          Active
+        </label>
+        <label className="flex items-center gap-1 text-[11px]">
+          <Switch
+            checked={draft.is_default}
+            disabled={!canEdit}
+            onCheckedChange={(v) => setDraft({ ...draft, is_default: v })}
+          />
+          Default
+        </label>
+        {canEdit && (
+          <>
+            <Button size="sm" variant="outline" onClick={save}>
+              Save
+            </Button>
+            <Button size="sm" variant="ghost" onClick={remove}>
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
