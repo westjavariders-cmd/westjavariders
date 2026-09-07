@@ -31,7 +31,7 @@ export function TestLab({
   pricing: ProductPricing;
   canEdit: boolean;
 }) {
-  const preview = useServerFn(previewPrice);
+  const preview = useServerFn(previewCommercialPrice);
   const runTests = useServerFn(runPricingTests);
 
   const [values, setValues] = useState<PreviewValues>({});
@@ -39,6 +39,9 @@ export function TestLab({
   const [label, setLabel] = useState("");
   const [expected, setExpected] = useState("");
   const [runs, setRuns] = useState<Awaited<ReturnType<typeof runTests>> | null>(null);
+  const [month, setMonth] = useState(String(new Date().getUTCMonth() + 1));
+  const [promoCode, setPromoCode] = useState("");
+  const [isGift, setIsGift] = useState(false);
 
   const casesQuery = useQuery({
     queryKey: ["pricing-test-cases", pricing.id],
