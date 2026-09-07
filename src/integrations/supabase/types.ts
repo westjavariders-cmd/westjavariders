@@ -1485,6 +1485,136 @@ export type Database = {
           },
         ]
       }
+      transport_people_prices: {
+        Row: {
+          created_at: string
+          customer_price_idr: number
+          id: string
+          people: number
+          supplier_cost_idr: number
+          transport_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_price_idr?: number
+          id?: string
+          people: number
+          supplier_cost_idr?: number
+          transport_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_price_idr?: number
+          id?: string
+          people?: number
+          supplier_cost_idr?: number
+          transport_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transport_people_prices_transport_id_fkey"
+            columns: ["transport_id"]
+            isOneToOne: false
+            referencedRelation: "transports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transport_time_prices: {
+        Row: {
+          created_at: string
+          customer_price_idr: number
+          id: string
+          supplier_cost_idr: number
+          transport_id: string
+          travel_hours: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_price_idr?: number
+          id?: string
+          supplier_cost_idr?: number
+          transport_id: string
+          travel_hours: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_price_idr?: number
+          id?: string
+          supplier_cost_idr?: number
+          transport_id?: string
+          travel_hours?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transport_time_prices_transport_id_fkey"
+            columns: ["transport_id"]
+            isOneToOne: false
+            referencedRelation: "transports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transports: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          destination: string | null
+          id: string
+          internal_name: string
+          internal_notes: string | null
+          internal_reference: string | null
+          max_travel_hours: number | null
+          min_travel_hours: number | null
+          origin: string | null
+          public_name: string | null
+          sort_order: number
+          transport_type: Database["public"]["Enums"]["transport_type"]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          destination?: string | null
+          id?: string
+          internal_name: string
+          internal_notes?: string | null
+          internal_reference?: string | null
+          max_travel_hours?: number | null
+          min_travel_hours?: number | null
+          origin?: string | null
+          public_name?: string | null
+          sort_order?: number
+          transport_type: Database["public"]["Enums"]["transport_type"]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          destination?: string | null
+          id?: string
+          internal_name?: string
+          internal_notes?: string | null
+          internal_reference?: string | null
+          max_travel_hours?: number | null
+          min_travel_hours?: number | null
+          origin?: string | null
+          public_name?: string | null
+          sort_order?: number
+          transport_type?: Database["public"]["Enums"]["transport_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1516,6 +1646,7 @@ export type Database = {
         Returns: string
       }
       duplicate_product: { Args: { _source: string }; Returns: string }
+      duplicate_transport: { Args: { _source: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]
@@ -1565,6 +1696,7 @@ export type Database = {
       pricing_sign: "add" | "subtract"
       product_kind: "package" | "insurance"
       season_period: "HIGH" | "MID" | "LOW"
+      transport_type: "predefined_route" | "other_location"
       unit_basis:
         | "fixed"
         | "per_person"
@@ -1742,6 +1874,7 @@ export const Constants = {
       pricing_sign: ["add", "subtract"],
       product_kind: ["package", "insurance"],
       season_period: ["HIGH", "MID", "LOW"],
+      transport_type: ["predefined_route", "other_location"],
       unit_basis: [
         "fixed",
         "per_person",
