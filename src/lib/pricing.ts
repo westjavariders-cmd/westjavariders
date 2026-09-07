@@ -56,7 +56,9 @@ export function fromNumberLike(value: string | number): Exact {
   const text = String(value).trim();
   if (!/^-?\d+(\.\d+)?$/.test(text)) throw new PricingError(`"${value}" is not a number.`);
   const negative = text.startsWith("-");
-  const [whole, frac = ""] = text.replace("-", "").split(".");
+  const parts = text.replace("-", "").split(".");
+  const whole = parts[0] ?? "0";
+  const frac = parts[1] ?? "";
   const padded = (frac + "000000").slice(0, 6);
   const result = BigInt(whole) * SCALE + BigInt(padded);
   return negative ? -result : result;
