@@ -96,6 +96,7 @@ export async function fetchProductBundle(productId: string): Promise<ProductBund
   const product = unwrap(
     await supabase.from("products").select("*").eq("id", productId).single(),
   );
+  if (!product) throw new Error("This product no longer exists.");
   const [translation, cats, places, components, flow] = await Promise.all([
     supabase
       .from("product_translations")
