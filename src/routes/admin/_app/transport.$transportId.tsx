@@ -127,9 +127,9 @@ function TransportEditorPage() {
   return (
     <div>
       <PageHeader
-        breadcrumb={["Transport", form.internal_name]}
-        title={form.internal_name}
-        description={TRANSPORT_TYPE_LABELS[form.transport_type]}
+        breadcrumb={["Transport", values.internal_name]}
+        title={values.internal_name}
+        description={TRANSPORT_TYPE_LABELS[values.transport_type]}
         actions={
           <div className="flex items-center gap-2">
             <Badge variant={record.data.active ? "default" : "secondary"}>
@@ -168,9 +168,9 @@ function TransportEditorPage() {
                   <Label className="text-xs">Type</Label>
                   <select
                     className={selectClass}
-                    value={form.transport_type}
+                    value={values.transport_type}
                     disabled={!canEdit}
-                    onChange={(e) => setForm({ ...form, transport_type: e.target.value as TransportType })}
+                    onChange={(e) => setValues({ ...values, transport_type: e.target.value as TransportType })}
                   >
                     {TRANSPORT_TYPES.map((t) => (
                       <option key={t} value={t}>
@@ -184,8 +184,8 @@ function TransportEditorPage() {
                   <Input
                     className="h-8 text-xs"
                     disabled={!canEdit}
-                    value={form.internal_name}
-                    onChange={(e) => setForm({ ...form, internal_name: e.target.value })}
+                    value={values.internal_name}
+                    onChange={(e) => setValues({ ...values, internal_name: e.target.value })}
                   />
                 </div>
                 <div>
@@ -193,8 +193,8 @@ function TransportEditorPage() {
                   <Input
                     className="h-8 text-xs"
                     disabled={!canEdit}
-                    value={form.public_name}
-                    onChange={(e) => setForm({ ...form, public_name: e.target.value })}
+                    value={values.public_name}
+                    onChange={(e) => setValues({ ...values, public_name: e.target.value })}
                   />
                 </div>
                 <div>
@@ -202,8 +202,8 @@ function TransportEditorPage() {
                   <Input
                     className="h-8 text-xs"
                     disabled={!canEdit}
-                    value={form.internal_reference}
-                    onChange={(e) => setForm({ ...form, internal_reference: e.target.value })}
+                    value={values.internal_reference}
+                    onChange={(e) => setValues({ ...values, internal_reference: e.target.value })}
                   />
                 </div>
                 <div>
@@ -211,8 +211,8 @@ function TransportEditorPage() {
                   <Input
                     className="h-8 text-xs"
                     disabled={!canEdit}
-                    value={form.origin}
-                    onChange={(e) => setForm({ ...form, origin: e.target.value })}
+                    value={values.origin}
+                    onChange={(e) => setValues({ ...values, origin: e.target.value })}
                   />
                 </div>
                 <div>
@@ -220,8 +220,8 @@ function TransportEditorPage() {
                   <Input
                     className="h-8 text-xs"
                     disabled={!canEdit}
-                    value={form.destination}
-                    onChange={(e) => setForm({ ...form, destination: e.target.value })}
+                    value={values.destination}
+                    onChange={(e) => setValues({ ...values, destination: e.target.value })}
                   />
                 </div>
                 {isOther && (
@@ -231,8 +231,8 @@ function TransportEditorPage() {
                       <select
                         className={selectClass}
                         disabled={!canEdit}
-                        value={form.min_travel_hours}
-                        onChange={(e) => setForm({ ...form, min_travel_hours: e.target.value })}
+                        value={values.min_travel_hours}
+                        onChange={(e) => setValues({ ...values, min_travel_hours: e.target.value })}
                       >
                         <option value="">Not set</option>
                         {TRAVEL_HOUR_OPTIONS.map((h) => (
@@ -247,8 +247,8 @@ function TransportEditorPage() {
                       <select
                         className={selectClass}
                         disabled={!canEdit}
-                        value={form.max_travel_hours}
-                        onChange={(e) => setForm({ ...form, max_travel_hours: e.target.value })}
+                        value={values.max_travel_hours}
+                        onChange={(e) => setValues({ ...values, max_travel_hours: e.target.value })}
                       >
                         <option value="">Not set</option>
                         {TRAVEL_HOUR_OPTIONS.map((h) => (
@@ -268,8 +268,8 @@ function TransportEditorPage() {
                   className="text-xs"
                   rows={4}
                   disabled={!canEdit}
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  value={values.description}
+                  onChange={(e) => setValues({ ...values, description: e.target.value })}
                 />
               </div>
 
@@ -280,8 +280,8 @@ function TransportEditorPage() {
                   className="text-xs"
                   rows={3}
                   disabled={!canEdit}
-                  value={form.internal_notes}
-                  onChange={(e) => setForm({ ...form, internal_notes: e.target.value })}
+                  value={values.internal_notes}
+                  onChange={(e) => setValues({ ...values, internal_notes: e.target.value })}
                 />
               </div>
             </CardContent>
