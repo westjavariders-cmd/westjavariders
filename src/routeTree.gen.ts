@@ -10,33 +10,333 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteRouteImport } from './routes/admin/route'
+import { Route as AdminAppRouteRouteImport } from './routes/admin/_app/route'
+import { Route as AdminLoginRouteImport } from './routes/admin/login'
+import { Route as AdminNoAccessRouteImport } from './routes/admin/no-access'
+import { Route as AdminSetupRouteImport } from './routes/admin/setup'
+import { Route as AdminAppIndexRouteImport } from './routes/admin/_app/index'
+import { Route as AdminAppCustomersRouteImport } from './routes/admin/_app/customers'
+import { Route as AdminAppExperiencesRouteImport } from './routes/admin/_app/experiences'
+import { Route as AdminAppHotelsRouteImport } from './routes/admin/_app/hotels'
+import { Route as AdminAppInsuranceRouteImport } from './routes/admin/_app/insurance'
+import { Route as AdminAppMotorbikesRouteImport } from './routes/admin/_app/motorbikes'
+import { Route as AdminAppOrdersRouteImport } from './routes/admin/_app/orders'
+import { Route as AdminAppPricesRouteImport } from './routes/admin/_app/prices'
+import { Route as AdminAppProductsRouteImport } from './routes/admin/_app/products'
+import { Route as AdminAppPromoCodesRouteImport } from './routes/admin/_app/promo-codes'
+import { Route as AdminAppReviewsRouteImport } from './routes/admin/_app/reviews'
+import { Route as AdminAppTeamRouteImport } from './routes/admin/_app/team'
+import { Route as AdminAppTransportRouteImport } from './routes/admin/_app/transport'
+import { Route as AdminAppVouchersRouteImport } from './routes/admin/_app/vouchers'
+import { Route as AdminAppSettingsIndexRouteImport } from './routes/admin/_app/settings.index'
+import { Route as AdminAppSettingsAuditRouteImport } from './routes/admin/_app/settings.audit'
+import { Route as AdminAppSettingsCurrenciesRouteImport } from './routes/admin/_app/settings.currencies'
+import { Route as AdminAppSettingsLanguagesRouteImport } from './routes/admin/_app/settings.languages'
+import { Route as AdminAppSettingsMarketsRouteImport } from './routes/admin/_app/settings.markets'
+import { Route as AdminAppSettingsUsersRouteImport } from './routes/admin/_app/settings.users'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRouteRoute = AdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAppRouteRoute = AdminAppRouteRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminNoAccessRoute = AdminNoAccessRouteImport.update({
+  id: '/no-access',
+  path: '/no-access',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminSetupRoute = AdminSetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminAppIndexRoute = AdminAppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppCustomersRoute = AdminAppCustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppExperiencesRoute = AdminAppExperiencesRouteImport.update({
+  id: '/experiences',
+  path: '/experiences',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppHotelsRoute = AdminAppHotelsRouteImport.update({
+  id: '/hotels',
+  path: '/hotels',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppInsuranceRoute = AdminAppInsuranceRouteImport.update({
+  id: '/insurance',
+  path: '/insurance',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppMotorbikesRoute = AdminAppMotorbikesRouteImport.update({
+  id: '/motorbikes',
+  path: '/motorbikes',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppOrdersRoute = AdminAppOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppPricesRoute = AdminAppPricesRouteImport.update({
+  id: '/prices',
+  path: '/prices',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppProductsRoute = AdminAppProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppPromoCodesRoute = AdminAppPromoCodesRouteImport.update({
+  id: '/promo-codes',
+  path: '/promo-codes',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppReviewsRoute = AdminAppReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppTeamRoute = AdminAppTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppTransportRoute = AdminAppTransportRouteImport.update({
+  id: '/transport',
+  path: '/transport',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppVouchersRoute = AdminAppVouchersRouteImport.update({
+  id: '/vouchers',
+  path: '/vouchers',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppSettingsIndexRoute = AdminAppSettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppSettingsAuditRoute = AdminAppSettingsAuditRouteImport.update({
+  id: '/settings/audit',
+  path: '/settings/audit',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppSettingsCurrenciesRoute =
+  AdminAppSettingsCurrenciesRouteImport.update({
+    id: '/settings/currencies',
+    path: '/settings/currencies',
+    getParentRoute: () => AdminAppRouteRoute,
+  } as any)
+const AdminAppSettingsLanguagesRoute =
+  AdminAppSettingsLanguagesRouteImport.update({
+    id: '/settings/languages',
+    path: '/settings/languages',
+    getParentRoute: () => AdminAppRouteRoute,
+  } as any)
+const AdminAppSettingsMarketsRoute = AdminAppSettingsMarketsRouteImport.update({
+  id: '/settings/markets',
+  path: '/settings/markets',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppSettingsUsersRoute = AdminAppSettingsUsersRouteImport.update({
+  id: '/settings/users',
+  path: '/settings/users',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteRouteWithChildren
+  '/admin/login': typeof AdminLoginRoute
+  '/admin/no-access': typeof AdminNoAccessRoute
+  '/admin/setup': typeof AdminSetupRoute
+  '/admin/customers': typeof AdminAppCustomersRoute
+  '/admin/experiences': typeof AdminAppExperiencesRoute
+  '/admin/hotels': typeof AdminAppHotelsRoute
+  '/admin/insurance': typeof AdminAppInsuranceRoute
+  '/admin/motorbikes': typeof AdminAppMotorbikesRoute
+  '/admin/orders': typeof AdminAppOrdersRoute
+  '/admin/prices': typeof AdminAppPricesRoute
+  '/admin/products': typeof AdminAppProductsRoute
+  '/admin/promo-codes': typeof AdminAppPromoCodesRoute
+  '/admin/reviews': typeof AdminAppReviewsRoute
+  '/admin/team': typeof AdminAppTeamRoute
+  '/admin/transport': typeof AdminAppTransportRoute
+  '/admin/vouchers': typeof AdminAppVouchersRoute
+  '/admin/': typeof AdminAppIndexRoute
+  '/admin/settings/audit': typeof AdminAppSettingsAuditRoute
+  '/admin/settings/currencies': typeof AdminAppSettingsCurrenciesRoute
+  '/admin/settings/languages': typeof AdminAppSettingsLanguagesRoute
+  '/admin/settings/markets': typeof AdminAppSettingsMarketsRoute
+  '/admin/settings/users': typeof AdminAppSettingsUsersRoute
+  '/admin/settings/': typeof AdminAppSettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminAppIndexRoute
+  '/admin/login': typeof AdminLoginRoute
+  '/admin/no-access': typeof AdminNoAccessRoute
+  '/admin/setup': typeof AdminSetupRoute
+  '/admin/customers': typeof AdminAppCustomersRoute
+  '/admin/experiences': typeof AdminAppExperiencesRoute
+  '/admin/hotels': typeof AdminAppHotelsRoute
+  '/admin/insurance': typeof AdminAppInsuranceRoute
+  '/admin/motorbikes': typeof AdminAppMotorbikesRoute
+  '/admin/orders': typeof AdminAppOrdersRoute
+  '/admin/prices': typeof AdminAppPricesRoute
+  '/admin/products': typeof AdminAppProductsRoute
+  '/admin/promo-codes': typeof AdminAppPromoCodesRoute
+  '/admin/reviews': typeof AdminAppReviewsRoute
+  '/admin/team': typeof AdminAppTeamRoute
+  '/admin/transport': typeof AdminAppTransportRoute
+  '/admin/vouchers': typeof AdminAppVouchersRoute
+  '/admin/settings/audit': typeof AdminAppSettingsAuditRoute
+  '/admin/settings/currencies': typeof AdminAppSettingsCurrenciesRoute
+  '/admin/settings/languages': typeof AdminAppSettingsLanguagesRoute
+  '/admin/settings/markets': typeof AdminAppSettingsMarketsRoute
+  '/admin/settings/users': typeof AdminAppSettingsUsersRoute
+  '/admin/settings': typeof AdminAppSettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteRouteWithChildren
+  '/admin/_app': typeof AdminAppRouteRouteWithChildren
+  '/admin/login': typeof AdminLoginRoute
+  '/admin/no-access': typeof AdminNoAccessRoute
+  '/admin/setup': typeof AdminSetupRoute
+  '/admin/_app/customers': typeof AdminAppCustomersRoute
+  '/admin/_app/experiences': typeof AdminAppExperiencesRoute
+  '/admin/_app/hotels': typeof AdminAppHotelsRoute
+  '/admin/_app/insurance': typeof AdminAppInsuranceRoute
+  '/admin/_app/motorbikes': typeof AdminAppMotorbikesRoute
+  '/admin/_app/orders': typeof AdminAppOrdersRoute
+  '/admin/_app/prices': typeof AdminAppPricesRoute
+  '/admin/_app/products': typeof AdminAppProductsRoute
+  '/admin/_app/promo-codes': typeof AdminAppPromoCodesRoute
+  '/admin/_app/reviews': typeof AdminAppReviewsRoute
+  '/admin/_app/team': typeof AdminAppTeamRoute
+  '/admin/_app/transport': typeof AdminAppTransportRoute
+  '/admin/_app/vouchers': typeof AdminAppVouchersRoute
+  '/admin/_app/': typeof AdminAppIndexRoute
+  '/admin/_app/settings/audit': typeof AdminAppSettingsAuditRoute
+  '/admin/_app/settings/currencies': typeof AdminAppSettingsCurrenciesRoute
+  '/admin/_app/settings/languages': typeof AdminAppSettingsLanguagesRoute
+  '/admin/_app/settings/markets': typeof AdminAppSettingsMarketsRoute
+  '/admin/_app/settings/users': typeof AdminAppSettingsUsersRoute
+  '/admin/_app/settings/': typeof AdminAppSettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/admin/login'
+    | '/admin/no-access'
+    | '/admin/setup'
+    | '/admin/customers'
+    | '/admin/experiences'
+    | '/admin/hotels'
+    | '/admin/insurance'
+    | '/admin/motorbikes'
+    | '/admin/orders'
+    | '/admin/prices'
+    | '/admin/products'
+    | '/admin/promo-codes'
+    | '/admin/reviews'
+    | '/admin/team'
+    | '/admin/transport'
+    | '/admin/vouchers'
+    | '/admin/'
+    | '/admin/settings/audit'
+    | '/admin/settings/currencies'
+    | '/admin/settings/languages'
+    | '/admin/settings/markets'
+    | '/admin/settings/users'
+    | '/admin/settings/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/admin'
+    | '/admin/login'
+    | '/admin/no-access'
+    | '/admin/setup'
+    | '/admin/customers'
+    | '/admin/experiences'
+    | '/admin/hotels'
+    | '/admin/insurance'
+    | '/admin/motorbikes'
+    | '/admin/orders'
+    | '/admin/prices'
+    | '/admin/products'
+    | '/admin/promo-codes'
+    | '/admin/reviews'
+    | '/admin/team'
+    | '/admin/transport'
+    | '/admin/vouchers'
+    | '/admin/settings/audit'
+    | '/admin/settings/currencies'
+    | '/admin/settings/languages'
+    | '/admin/settings/markets'
+    | '/admin/settings/users'
+    | '/admin/settings'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/admin/_app'
+    | '/admin/login'
+    | '/admin/no-access'
+    | '/admin/setup'
+    | '/admin/_app/customers'
+    | '/admin/_app/experiences'
+    | '/admin/_app/hotels'
+    | '/admin/_app/insurance'
+    | '/admin/_app/motorbikes'
+    | '/admin/_app/orders'
+    | '/admin/_app/prices'
+    | '/admin/_app/products'
+    | '/admin/_app/promo-codes'
+    | '/admin/_app/reviews'
+    | '/admin/_app/team'
+    | '/admin/_app/transport'
+    | '/admin/_app/vouchers'
+    | '/admin/_app/'
+    | '/admin/_app/settings/audit'
+    | '/admin/_app/settings/currencies'
+    | '/admin/_app/settings/languages'
+    | '/admin/_app/settings/markets'
+    | '/admin/_app/settings/users'
+    | '/admin/_app/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRouteRoute: typeof AdminRouteRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +348,255 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/_app': {
+      id: '/admin/_app'
+      path: ''
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminAppRouteRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/no-access': {
+      id: '/admin/no-access'
+      path: '/no-access'
+      fullPath: '/admin/no-access'
+      preLoaderRoute: typeof AdminNoAccessRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/setup': {
+      id: '/admin/setup'
+      path: '/setup'
+      fullPath: '/admin/setup'
+      preLoaderRoute: typeof AdminSetupRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/_app/': {
+      id: '/admin/_app/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminAppIndexRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/customers': {
+      id: '/admin/_app/customers'
+      path: '/customers'
+      fullPath: '/admin/customers'
+      preLoaderRoute: typeof AdminAppCustomersRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/experiences': {
+      id: '/admin/_app/experiences'
+      path: '/experiences'
+      fullPath: '/admin/experiences'
+      preLoaderRoute: typeof AdminAppExperiencesRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/hotels': {
+      id: '/admin/_app/hotels'
+      path: '/hotels'
+      fullPath: '/admin/hotels'
+      preLoaderRoute: typeof AdminAppHotelsRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/insurance': {
+      id: '/admin/_app/insurance'
+      path: '/insurance'
+      fullPath: '/admin/insurance'
+      preLoaderRoute: typeof AdminAppInsuranceRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/motorbikes': {
+      id: '/admin/_app/motorbikes'
+      path: '/motorbikes'
+      fullPath: '/admin/motorbikes'
+      preLoaderRoute: typeof AdminAppMotorbikesRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/orders': {
+      id: '/admin/_app/orders'
+      path: '/orders'
+      fullPath: '/admin/orders'
+      preLoaderRoute: typeof AdminAppOrdersRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/prices': {
+      id: '/admin/_app/prices'
+      path: '/prices'
+      fullPath: '/admin/prices'
+      preLoaderRoute: typeof AdminAppPricesRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/products': {
+      id: '/admin/_app/products'
+      path: '/products'
+      fullPath: '/admin/products'
+      preLoaderRoute: typeof AdminAppProductsRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/promo-codes': {
+      id: '/admin/_app/promo-codes'
+      path: '/promo-codes'
+      fullPath: '/admin/promo-codes'
+      preLoaderRoute: typeof AdminAppPromoCodesRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/reviews': {
+      id: '/admin/_app/reviews'
+      path: '/reviews'
+      fullPath: '/admin/reviews'
+      preLoaderRoute: typeof AdminAppReviewsRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/team': {
+      id: '/admin/_app/team'
+      path: '/team'
+      fullPath: '/admin/team'
+      preLoaderRoute: typeof AdminAppTeamRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/transport': {
+      id: '/admin/_app/transport'
+      path: '/transport'
+      fullPath: '/admin/transport'
+      preLoaderRoute: typeof AdminAppTransportRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/vouchers': {
+      id: '/admin/_app/vouchers'
+      path: '/vouchers'
+      fullPath: '/admin/vouchers'
+      preLoaderRoute: typeof AdminAppVouchersRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/settings/': {
+      id: '/admin/_app/settings/'
+      path: '/settings'
+      fullPath: '/admin/settings/'
+      preLoaderRoute: typeof AdminAppSettingsIndexRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/settings/audit': {
+      id: '/admin/_app/settings/audit'
+      path: '/settings/audit'
+      fullPath: '/admin/settings/audit'
+      preLoaderRoute: typeof AdminAppSettingsAuditRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/settings/currencies': {
+      id: '/admin/_app/settings/currencies'
+      path: '/settings/currencies'
+      fullPath: '/admin/settings/currencies'
+      preLoaderRoute: typeof AdminAppSettingsCurrenciesRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/settings/languages': {
+      id: '/admin/_app/settings/languages'
+      path: '/settings/languages'
+      fullPath: '/admin/settings/languages'
+      preLoaderRoute: typeof AdminAppSettingsLanguagesRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/settings/markets': {
+      id: '/admin/_app/settings/markets'
+      path: '/settings/markets'
+      fullPath: '/admin/settings/markets'
+      preLoaderRoute: typeof AdminAppSettingsMarketsRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/settings/users': {
+      id: '/admin/_app/settings/users'
+      path: '/settings/users'
+      fullPath: '/admin/settings/users'
+      preLoaderRoute: typeof AdminAppSettingsUsersRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
   }
 }
 
+interface AdminAppRouteRouteChildren {
+  AdminAppCustomersRoute: typeof AdminAppCustomersRoute
+  AdminAppExperiencesRoute: typeof AdminAppExperiencesRoute
+  AdminAppHotelsRoute: typeof AdminAppHotelsRoute
+  AdminAppInsuranceRoute: typeof AdminAppInsuranceRoute
+  AdminAppMotorbikesRoute: typeof AdminAppMotorbikesRoute
+  AdminAppOrdersRoute: typeof AdminAppOrdersRoute
+  AdminAppPricesRoute: typeof AdminAppPricesRoute
+  AdminAppProductsRoute: typeof AdminAppProductsRoute
+  AdminAppPromoCodesRoute: typeof AdminAppPromoCodesRoute
+  AdminAppReviewsRoute: typeof AdminAppReviewsRoute
+  AdminAppTeamRoute: typeof AdminAppTeamRoute
+  AdminAppTransportRoute: typeof AdminAppTransportRoute
+  AdminAppVouchersRoute: typeof AdminAppVouchersRoute
+  AdminAppIndexRoute: typeof AdminAppIndexRoute
+  AdminAppSettingsAuditRoute: typeof AdminAppSettingsAuditRoute
+  AdminAppSettingsCurrenciesRoute: typeof AdminAppSettingsCurrenciesRoute
+  AdminAppSettingsLanguagesRoute: typeof AdminAppSettingsLanguagesRoute
+  AdminAppSettingsMarketsRoute: typeof AdminAppSettingsMarketsRoute
+  AdminAppSettingsUsersRoute: typeof AdminAppSettingsUsersRoute
+  AdminAppSettingsIndexRoute: typeof AdminAppSettingsIndexRoute
+}
+
+const AdminAppRouteRouteChildren: AdminAppRouteRouteChildren = {
+  AdminAppCustomersRoute: AdminAppCustomersRoute,
+  AdminAppExperiencesRoute: AdminAppExperiencesRoute,
+  AdminAppHotelsRoute: AdminAppHotelsRoute,
+  AdminAppInsuranceRoute: AdminAppInsuranceRoute,
+  AdminAppMotorbikesRoute: AdminAppMotorbikesRoute,
+  AdminAppOrdersRoute: AdminAppOrdersRoute,
+  AdminAppPricesRoute: AdminAppPricesRoute,
+  AdminAppProductsRoute: AdminAppProductsRoute,
+  AdminAppPromoCodesRoute: AdminAppPromoCodesRoute,
+  AdminAppReviewsRoute: AdminAppReviewsRoute,
+  AdminAppTeamRoute: AdminAppTeamRoute,
+  AdminAppTransportRoute: AdminAppTransportRoute,
+  AdminAppVouchersRoute: AdminAppVouchersRoute,
+  AdminAppIndexRoute: AdminAppIndexRoute,
+  AdminAppSettingsAuditRoute: AdminAppSettingsAuditRoute,
+  AdminAppSettingsCurrenciesRoute: AdminAppSettingsCurrenciesRoute,
+  AdminAppSettingsLanguagesRoute: AdminAppSettingsLanguagesRoute,
+  AdminAppSettingsMarketsRoute: AdminAppSettingsMarketsRoute,
+  AdminAppSettingsUsersRoute: AdminAppSettingsUsersRoute,
+  AdminAppSettingsIndexRoute: AdminAppSettingsIndexRoute,
+}
+
+const AdminAppRouteRouteWithChildren = AdminAppRouteRoute._addFileChildren(
+  AdminAppRouteRouteChildren,
+)
+
+interface AdminRouteRouteChildren {
+  AdminAppRouteRoute: typeof AdminAppRouteRouteWithChildren
+  AdminLoginRoute: typeof AdminLoginRoute
+  AdminNoAccessRoute: typeof AdminNoAccessRoute
+  AdminSetupRoute: typeof AdminSetupRoute
+}
+
+const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminAppRouteRoute: AdminAppRouteRouteWithChildren,
+  AdminLoginRoute: AdminLoginRoute,
+  AdminNoAccessRoute: AdminNoAccessRoute,
+  AdminSetupRoute: AdminSetupRoute,
+}
+
+const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
+  AdminRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRouteRoute: AdminRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

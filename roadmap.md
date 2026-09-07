@@ -2,6 +2,7 @@
 
 Phase 0 — Architecture freeze: DONE (.lovable/plan/cimaja-boardriders-phase-0-architecture-frozen-2026-09-07.md)
 Phase 1A — Database foundations + security: DONE (enums, money domains, settings, currencies, languages, markets, user_roles + role functions, admin_audit_log, RLS, seed data)
+Phase 2 — Admin foundation: DONE (auth, first-admin setup, shell, settings/currencies/languages/markets, users & roles, audit view)
 
 ## Open phases (do not jump ahead without instruction)
 - [ ] Phase 1B — Catalog core (products, translations, categories, placements)
@@ -10,7 +11,6 @@ Phase 1A — Database foundations + security: DONE (enums, money domains, settin
 - [ ] Phase 1E — Operations schema (hotels, rooms, transport, motorbikes, experiences, team, insurance plans)
 - [ ] Phase 1F — Customers, carts, orders, payments, purchases, snapshots
 - [ ] Phase 1G — FX + vouchers + legal/reviews/analytics
-- [ ] Phase 2 — Admin foundation
 - [ ] Phase 3 — Product + configurator builder
 - [ ] Phase 4 — Pricing engine
 - [ ] Phase 5 — Customer configurator + cart
