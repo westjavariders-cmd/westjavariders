@@ -1,24 +1,42 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Cimaja Boardriders | Surf & Travel in West Java" },
+      {
+        name: "description",
+        content:
+          "Cimaja Boardriders — surf, travel and local experiences based in Cimaja, West Java, Indonesia. The public site is in preparation.",
+      },
+      { property: "og:title", content: "Cimaja Boardriders" },
+      {
+        property: "og:description",
+        content:
+          "Surf, travel and local experiences based in Cimaja, West Java, Indonesia. The public site is in preparation.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <main className="flex min-h-screen items-center justify-center bg-background px-6">
+      <div className="max-w-md text-center">
+        <h1 className="text-2xl font-semibold tracking-tight">Cimaja Boardriders</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Surf, travel and local experiences in Cimaja, West Java. The public site is in
+          preparation.
+        </p>
+        <p className="mt-6 text-sm">
+          <Link to="/admin" className="underline underline-offset-2">
+            Staff sign in
+          </Link>
+        </p>
+      </div>
+    </main>
   );
 }
