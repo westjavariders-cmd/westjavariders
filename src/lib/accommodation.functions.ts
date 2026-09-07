@@ -175,7 +175,7 @@ async function assertAccommodationExists(supabase: any, accommodationId: string)
 async function replaceCharacteristics(
   supabase: any,
   roomId: string,
-  characteristics: { name: string; value?: string | null }[],
+  characteristics: { name: string; value?: string | null | undefined }[],
 ) {
   const { error: delError } = await supabase
     .from("accommodation_room_characteristics")
