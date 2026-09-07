@@ -96,14 +96,17 @@ function TransportEditorPage() {
         </Button>
       </div>
     );
-  if (!form) return null;
+  if (!form || form.id !== transportId) return null;
 
-  const isOther = form.transport_type === "other_location";
+  const values = form.values;
+  const setValues = (next: Form) => setForm({ id: transportId, values: next });
+  const isOther = values.transport_type === "other_location";
 
   async function save() {
     setBusy(true);
     try {
-      const { min_travel_hours, max_travel_hours, ...rest } = form!;
+      const { min_travel_hours, max_travel_hours, ...rest } = form!.values;
+
       await update({
         data: {
           id: transportId,
