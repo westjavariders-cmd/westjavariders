@@ -336,11 +336,12 @@ export function ConfiguratorForm({
               ))}
             </ul>
           )}
-          {quote?.errors.map((i) => (
-            <p key={i} className="text-xs text-destructive">
-              {i}
+          {quote && quote.errors.length > 0 && (
+            <p className="text-xs text-destructive">
+              Please finish the questions above to see your final price.
             </p>
-          ))}
+          )}
+
 
           <Button className="w-full" disabled={!ready || quoting || booking} onClick={book}>
             {booking ? "Adding…" : "Add to cart"}
