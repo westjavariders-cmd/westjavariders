@@ -200,6 +200,9 @@ export async function publicCart(token?: string): Promise<PublicCartView> {
       (fields.data ?? []).filter((f: any) => f.product_id === row.product_id),
       options,
       (row.answers ?? {}) as never,
+      Object.fromEntries(
+        ((row.catalogue_selections ?? []) as any[]).map((c) => [c.item_id, c.name]),
+      ),
     ),
   });
 
