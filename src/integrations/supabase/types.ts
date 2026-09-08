@@ -1206,6 +1206,7 @@ export type Database = {
           is_active: boolean
           label: string
           pricing_id: string
+          quantity_variable: string | null
           rule_type: Database["public"]["Enums"]["pricing_rule_type"]
           sign: Database["public"]["Enums"]["pricing_sign"]
           updated_at: string
@@ -1223,6 +1224,7 @@ export type Database = {
           is_active?: boolean
           label: string
           pricing_id: string
+          quantity_variable?: string | null
           rule_type: Database["public"]["Enums"]["pricing_rule_type"]
           sign?: Database["public"]["Enums"]["pricing_sign"]
           updated_at?: string
@@ -1240,6 +1242,7 @@ export type Database = {
           is_active?: boolean
           label?: string
           pricing_id?: string
+          quantity_variable?: string | null
           rule_type?: Database["public"]["Enums"]["pricing_rule_type"]
           sign?: Database["public"]["Enums"]["pricing_sign"]
           updated_at?: string

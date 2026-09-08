@@ -1,0 +1,1 @@
+ALTER TABLE public.pricing_rules ADD COLUMN IF NOT EXISTS quantity_variable text;

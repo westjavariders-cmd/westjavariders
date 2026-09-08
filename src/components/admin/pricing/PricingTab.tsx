@@ -14,6 +14,7 @@ import {
 import { NUMERIC_FIELD_TYPES, PRICING_MODES, type ProductPricing } from "@/lib/pricing";
 import type { ProductBundle } from "@/lib/catalog";
 import { RuleEditor } from "@/components/admin/pricing/RuleEditor";
+import { ComponentPricingEditor } from "@/components/admin/pricing/ComponentPricingEditor";
 import { FormulaEditor } from "@/components/admin/pricing/FormulaEditor";
 import { TestLab } from "@/components/admin/pricing/TestLab";
 import { SeasonSettings } from "@/components/admin/pricing/SeasonSettings";
@@ -103,6 +104,8 @@ export function PricingTab({
   }
 
   const pricing = data.pricing;
+  const componentRules = data.rules.filter((r) => r.rule_type === "component_quantity");
+  const otherRules = data.rules.filter((r) => r.rule_type !== "component_quantity");
   const errors = (issuesQuery.data?.issues ?? []).filter((i) => i.level === "error");
   const warnings = (issuesQuery.data?.issues ?? []).filter((i) => i.level === "warning");
 
@@ -156,47 +159,96 @@ export function PricingTab({
       <PricingSettings bundle={bundle} pricing={pricing} canEdit={canEdit} reload={reload} />
 
       {pricing.mode === "structured" ? (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium">Pricing rules</h3>
-            {canEdit && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={async () => {
-                  const { error } = await supabase.from("pricing_rules").insert({
-                    pricing_id: pricing.id,
-                    label: "New rule",
-                    rule_type: "fixed",
-                    display_order: data.rules.length,
-                  });
-                  if (error) {
-                    toast.error(error.message);
-                    return;
-                  }
-                  reload();
-                }}
-              >
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
-                Add rule
-              </Button>
-            )}
-          </div>
-          {data.rules.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No rules yet. The price is the base amount alone.
+        <div className="space-y-5">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium">Component pricing</h3>
+              {canEdit && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={bundle.components.length === 0}
+                  onClick={async () => {
+                    const { error } = await supabase.from("pricing_rules").insert({
+                      pricing_id: pricing.id,
+                      label: "New component charge",
+                      rule_type: "component_quantity",
+                      display_order: data.rules.length,
+                    });
+                    if (error) {
+                      toast.error(error.message);
+                      return;
+                    }
+                    reload();
+                  }}
+                >
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  Add component
+                </Button>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Each entry charges one of this product's components. The component keeps its own price; here you
+              choose how many units are charged and, if needed, when.
             </p>
-          )}
-          {data.rules.map((rule) => (
-            <RuleEditor
-              key={rule.id}
-              bundle={bundle}
-              rule={rule}
-              tiers={data.tiers.filter((t) => t.rule_id === rule.id)}
-              canEdit={canEdit}
-              reload={reload}
-            />
-          ))}
+            {bundle.components.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                This product has no components yet — add them on the Components tab first.
+              </p>
+            )}
+            {componentRules.map((rule) => (
+              <ComponentPricingEditor
+                key={rule.id}
+                bundle={bundle}
+                rule={rule}
+                canEdit={canEdit}
+                reload={reload}
+              />
+            ))}
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium">Other pricing rules</h3>
+              {canEdit && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    const { error } = await supabase.from("pricing_rules").insert({
+                      pricing_id: pricing.id,
+                      label: "New rule",
+                      rule_type: "fixed",
+                      display_order: data.rules.length,
+                    });
+                    if (error) {
+                      toast.error(error.message);
+                      return;
+                    }
+                    reload();
+                  }}
+                >
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  Add rule
+                </Button>
+              )}
+            </div>
+            {otherRules.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No other rules. The price is the base amount plus component charges.
+              </p>
+            )}
+            {otherRules.map((rule) => (
+              <RuleEditor
+                key={rule.id}
+                bundle={bundle}
+                rule={rule}
+                tiers={data.tiers.filter((t) => t.rule_id === rule.id)}
+                canEdit={canEdit}
+                reload={reload}
+              />
+            ))}
+          </div>
         </div>
       ) : (
         <FormulaEditor
