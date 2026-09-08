@@ -31,7 +31,6 @@ import { Route as AdminAppPricesRouteImport } from './routes/admin/_app/prices'
 import { Route as AdminAppPromoCodesRouteImport } from './routes/admin/_app/promo-codes'
 import { Route as AdminAppReviewsRouteImport } from './routes/admin/_app/reviews'
 import { Route as AdminAppTeamRouteImport } from './routes/admin/_app/team'
-import { Route as AdminAppVouchersRouteImport } from './routes/admin/_app/vouchers'
 import { Route as AdminAppHotelsIndexRouteImport } from './routes/admin/_app/hotels.index'
 import { Route as AdminAppHotelsAccommodationIdRouteImport } from './routes/admin/_app/hotels.$accommodationId'
 import { Route as AdminAppOrdersIndexRouteImport } from './routes/admin/_app/orders.index'
@@ -158,11 +157,6 @@ const AdminAppTeamRoute = AdminAppTeamRouteImport.update({
   path: '/team',
   getParentRoute: () => AdminAppRouteRoute,
 } as any)
-const AdminAppVouchersRoute = AdminAppVouchersRouteImport.update({
-  id: '/vouchers',
-  path: '/vouchers',
-  getParentRoute: () => AdminAppRouteRoute,
-} as any)
 const AdminAppHotelsIndexRoute = AdminAppHotelsIndexRouteImport.update({
   id: '/hotels/',
   path: '/hotels/',
@@ -266,7 +260,6 @@ export interface FileRoutesByFullPath {
   '/admin/promo-codes': typeof AdminAppPromoCodesRoute
   '/admin/reviews': typeof AdminAppReviewsRoute
   '/admin/team': typeof AdminAppTeamRoute
-  '/admin/vouchers': typeof AdminAppVouchersRoute
   '/admin/': typeof AdminAppIndexRoute
   '/admin/hotels/$accommodationId': typeof AdminAppHotelsAccommodationIdRoute
   '/admin/orders/$purchaseId': typeof AdminAppOrdersPurchaseIdRoute
@@ -305,7 +298,6 @@ export interface FileRoutesByTo {
   '/admin/promo-codes': typeof AdminAppPromoCodesRoute
   '/admin/reviews': typeof AdminAppReviewsRoute
   '/admin/team': typeof AdminAppTeamRoute
-  '/admin/vouchers': typeof AdminAppVouchersRoute
   '/admin/hotels/$accommodationId': typeof AdminAppHotelsAccommodationIdRoute
   '/admin/orders/$purchaseId': typeof AdminAppOrdersPurchaseIdRoute
   '/admin/products/$productId': typeof AdminAppProductsProductIdRoute
@@ -345,7 +337,6 @@ export interface FileRoutesById {
   '/admin/_app/promo-codes': typeof AdminAppPromoCodesRoute
   '/admin/_app/reviews': typeof AdminAppReviewsRoute
   '/admin/_app/team': typeof AdminAppTeamRoute
-  '/admin/_app/vouchers': typeof AdminAppVouchersRoute
   '/admin/_app/': typeof AdminAppIndexRoute
   '/admin/_app/hotels/$accommodationId': typeof AdminAppHotelsAccommodationIdRoute
   '/admin/_app/orders/$purchaseId': typeof AdminAppOrdersPurchaseIdRoute
@@ -386,7 +377,6 @@ export interface FileRouteTypes {
     | '/admin/promo-codes'
     | '/admin/reviews'
     | '/admin/team'
-    | '/admin/vouchers'
     | '/admin/'
     | '/admin/hotels/$accommodationId'
     | '/admin/orders/$purchaseId'
@@ -425,7 +415,6 @@ export interface FileRouteTypes {
     | '/admin/promo-codes'
     | '/admin/reviews'
     | '/admin/team'
-    | '/admin/vouchers'
     | '/admin/hotels/$accommodationId'
     | '/admin/orders/$purchaseId'
     | '/admin/products/$productId'
@@ -464,7 +453,6 @@ export interface FileRouteTypes {
     | '/admin/_app/promo-codes'
     | '/admin/_app/reviews'
     | '/admin/_app/team'
-    | '/admin/_app/vouchers'
     | '/admin/_app/'
     | '/admin/_app/hotels/$accommodationId'
     | '/admin/_app/orders/$purchaseId'
@@ -650,13 +638,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAppTeamRouteImport
       parentRoute: typeof AdminAppRouteRoute
     }
-    '/admin/_app/vouchers': {
-      id: '/admin/_app/vouchers'
-      path: '/vouchers'
-      fullPath: '/admin/vouchers'
-      preLoaderRoute: typeof AdminAppVouchersRouteImport
-      parentRoute: typeof AdminAppRouteRoute
-    }
     '/admin/_app/hotels/': {
       id: '/admin/_app/hotels/'
       path: '/hotels'
@@ -776,7 +757,6 @@ interface AdminAppRouteRouteChildren {
   AdminAppPromoCodesRoute: typeof AdminAppPromoCodesRoute
   AdminAppReviewsRoute: typeof AdminAppReviewsRoute
   AdminAppTeamRoute: typeof AdminAppTeamRoute
-  AdminAppVouchersRoute: typeof AdminAppVouchersRoute
   AdminAppIndexRoute: typeof AdminAppIndexRoute
   AdminAppHotelsAccommodationIdRoute: typeof AdminAppHotelsAccommodationIdRoute
   AdminAppOrdersPurchaseIdRoute: typeof AdminAppOrdersPurchaseIdRoute
@@ -805,7 +785,6 @@ const AdminAppRouteRouteChildren: AdminAppRouteRouteChildren = {
   AdminAppPromoCodesRoute: AdminAppPromoCodesRoute,
   AdminAppReviewsRoute: AdminAppReviewsRoute,
   AdminAppTeamRoute: AdminAppTeamRoute,
-  AdminAppVouchersRoute: AdminAppVouchersRoute,
   AdminAppIndexRoute: AdminAppIndexRoute,
   AdminAppHotelsAccommodationIdRoute: AdminAppHotelsAccommodationIdRoute,
   AdminAppOrdersPurchaseIdRoute: AdminAppOrdersPurchaseIdRoute,
