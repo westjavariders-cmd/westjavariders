@@ -362,6 +362,8 @@ export async function quotePackage(args: {
     resolved_inputs: serializeInputs(inputs),
     promo_code: promo ? promo.code : null,
     promo_code_id: promo ? promo.id : null,
+    catalogue_selections: selections,
+    answers,
   };
 }
 
