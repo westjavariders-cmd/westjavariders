@@ -30,7 +30,7 @@ export const listVouchers = createServerFn({ method: "POST" })
     let query = (context as any).supabase
       .from("vouchers")
       .select(
-        "id, code, voucher_type, status, issued_at, valid_until, validity_months, redeemed_at, purchase_id, gift_recipient_name, purchases(reference, status, total_idr, paid_idr, outstanding_idr), customers(id, full_name, email, phone)",
+        "id, code, voucher_type, status, issued_at, valid_until, validity_months, redeemed_at, purchase_id, package_id, entitlement, gift_recipient_name, purchases(reference, status, total_idr, paid_idr, outstanding_idr), customers(id, full_name, email, phone)",
       )
       .order("issued_at", { ascending: false })
       .limit(200);
@@ -44,7 +44,7 @@ export const listVouchers = createServerFn({ method: "POST" })
     const term = (data?.search ?? "").trim().toLowerCase();
     const vouchers = (rows ?? []).filter((v: any) => {
       if (!term) return true;
-      return [v.code, v.purchases?.reference, v.customers?.full_name, v.customers?.email, v.gift_recipient_name]
+      return [v.code, v.purchases?.reference, v.customers?.full_name, v.customers?.email, v.gift_recipient_name, v.entitlement?.package_title]
         .filter(Boolean)
         .join(" ")
         .toLowerCase()
@@ -62,7 +62,7 @@ export const getVoucherDetail = createServerFn({ method: "POST" })
     const { data: voucher, error } = await db
       .from("vouchers")
       .select(
-        "id, code, voucher_type, status, issued_at, valid_until, validity_months, entitlement, gift_recipient_name, gift_message, redeemed_at, redeemed_by, redemption_note, cancelled_at, representation_version, purchase_id, customers(id, full_name, email, phone, country), purchases(id, reference, status, fulfillment_status, total_idr, paid_idr, outstanding_idr, first_payment_idr, created_at, is_gift)",
+        "id, code, voucher_type, status, issued_at, valid_until, validity_months, package_id, entitlement, gift_recipient_name, gift_message, redeemed_at, redeemed_by, redemption_note, cancelled_at, representation_version, purchase_id, customers(id, full_name, email, phone, country), purchases(id, reference, status, fulfillment_status, total_idr, paid_idr, outstanding_idr, first_payment_idr, created_at, is_gift)",
       )
       .eq("id", data.voucherId)
       .maybeSingle();
