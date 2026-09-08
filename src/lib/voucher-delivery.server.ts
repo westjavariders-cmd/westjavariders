@@ -105,7 +105,11 @@ export async function generateVoucherDocument(voucherId: string): Promise<Docume
       })
       .eq("id", voucherId);
     if (previous && previous !== path) {
-      await db.storage.from(BUCKET).remove([previous]).catch?.(() => undefined);
+      try {
+        await db.storage.from(BUCKET).remove([previous]);
+      } catch {
+        // A stale document left behind must never fail delivery.
+      }
     }
 
     return { ok: true, path, bytes, contact: contactCheck.contact };
