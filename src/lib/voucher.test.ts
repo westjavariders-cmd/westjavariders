@@ -44,7 +44,7 @@ describe("validity", () => {
   });
 
   it("adds calendar months and clamps a shorter month", () => {
-    expect(addMonths(new Date("2026-01-31T00:00:00Z")).toString).toBeDefined();
+    expect(addMonths(new Date("2026-03-15T00:00:00Z"), 2).toISOString()).toContain("2026-05-15");
     expect(addMonths(new Date("2026-01-31T00:00:00Z"), 1).toISOString()).toContain("2026-02-28");
     expect(validUntil(new Date("2026-01-15T00:00:00Z"), 8).toISOString()).toContain("2026-09-15");
   });
