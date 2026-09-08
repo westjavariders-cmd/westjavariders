@@ -1,0 +1,528 @@
+/**
+ * Purchase + Payment core. Server-only.
+ *
+ * CART -> SERVER REVALIDATION -> PURCHASE -> IMMUTABLE SNAPSHOT
+ *      -> PAYMENT REQUEST -> PROVIDER -> PAYMENT CONFIRMATION
+ *
+ * Nothing here re-implements configuration, pricing, seasonality or promos:
+ * every amount comes from the existing quote engine via quotePackage().
+ */
+import { getRequest } from "@tanstack/react-start/server";
+
+import type { PreviewValues } from "@/lib/catalog";
+import { currentCart, quotePackage, fail, CartError } from "@/lib/cart.server";
+import {
+  balanceFor,
+  depositFor,
+  parseFirstPaymentPercentage,
+  purchaseStatusFor,
+  type PaymentRequestKind,
+} from "@/lib/purchase";
+import { activePaymentProvider, providerByName } from "@/lib/payments/provider.server";
+
+export { CartError };
+
+const SAFE_ERROR = "This action could not be completed. Please try again.";
+
+async function admin() {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return supabaseAdmin as any;
+}
+
+async function firstPaymentPercentage(db: any): Promise<number> {
+  const { data } = await db
+    .from("settings")
+    .select("value")
+    .eq("key", "first_payment_percentage")
+    .maybeSingle();
+  return parseFirstPaymentPercentage(data?.value);
+}
+
+function origin(): string {
+  try {
+    return new URL(getRequest().url).origin;
+  } catch {
+    return "";
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Revalidation                                                        */
+/* ------------------------------------------------------------------ */
+
+export type RevalidatedPackage = {
+  package_id: string;
+  product_id: string;
+  product_title: string;
+  pricing_mode: string;
+  answers: Record<string, unknown>;
+  resolved_inputs: Record<string, unknown>;
+  lines: unknown;
+  season_month: number;
+  season_period: string | null;
+  promo_code: string | null;
+  subtotal_idr: number;
+  season_discount_idr: number;
+  promo_discount_idr: number;
+  total_idr: number;
+  /** Reasons this package cannot be purchased right now, in plain language. */
+  blockers: string[];
+  /** True when the stored quote no longer matches the recomputed price. */
+  price_changed: boolean;
+  previous_total_idr: number;
+};
+
+export type CheckoutRevalidation = {
+  cart_id: string | null;
+  packages: RevalidatedPackage[];
+  total_idr: number;
+  first_payment_percentage: number;
+  first_payment_idr: number;
+  outstanding_idr: number;
+  blockers: string[];
+  /** An already-created purchase for this cart, when checkout was completed. */
+  existing_purchase_id: string | null;
+};
+
+/**
+ * Recomputes every complete package in the cart from live configuration and
+ * pricing. The client total is never trusted.
+ */
+export async function revalidateCart(token?: string): Promise<CheckoutRevalidation> {
+  const db = await admin();
+  const cart = await currentCart(false, token);
+  const percentage = await firstPaymentPercentage(db);
+
+  if (!cart) {
+    return {
+      cart_id: null,
+      packages: [],
+      total_idr: 0,
+      first_payment_percentage: percentage,
+      first_payment_idr: 0,
+      outstanding_idr: 0,
+      blockers: ["Your cart is empty."],
+      existing_purchase_id: null,
+    };
+  }
+
+  const { data: rows } = await db
+    .from("cart_packages")
+    .select(
+      "position, packages!inner(id, product_id, status, answers, season_month, promo_code, total_idr)",
+    )
+    .eq("cart_id", cart.id)
+    .order("position");
+
+  const complete = (rows ?? [])
+    .map((r: any) => r.packages)
+    .filter((p: any) => p && p.status === "complete");
+
+  const { data: purchase } = await db
+    .from("purchases")
+    .select("id")
+    .eq("cart_id", cart.id)
+    .maybeSingle();
+
+  const packages: RevalidatedPackage[] = [];
+  const blockers: string[] = [];
+
+  for (const pkg of complete) {
+    const [{ data: product }, { data: translation }, { data: pricing }] = await Promise.all([
+      db.from("products").select("id, internal_name").eq("id", pkg.product_id).maybeSingle(),
+      db
+        .from("product_translations")
+        .select("title")
+        .eq("product_id", pkg.product_id)
+        .eq("language_code", "en")
+        .maybeSingle(),
+      db.from("product_pricing").select("mode").eq("product_id", pkg.product_id).maybeSingle(),
+    ]);
+
+    const quote = await quotePackage({
+      productId: pkg.product_id,
+      answers: (pkg.answers ?? {}) as PreviewValues,
+      month: pkg.season_month,
+      promoCode: pkg.promo_code,
+      isGift: false,
+    });
+
+    const title = translation?.title || product?.internal_name || "Package";
+    const own: string[] = [];
+    if (!quote.purchasable) own.push(`${title} is no longer available to book.`);
+    for (const issue of quote.configuration_issues) own.push(`${title}: ${issue}`);
+    if (quote.errors.length > 0) own.push(`${title}: this package needs to be configured again.`);
+    if (quote.promo_rejection) own.push(`${title}: ${quote.promo_rejection}`);
+
+    const previous = Number(pkg.total_idr);
+    packages.push({
+      package_id: pkg.id,
+      product_id: pkg.product_id,
+      product_title: title,
+      pricing_mode: pricing?.mode ?? "structured",
+      answers: (pkg.answers ?? {}) as Record<string, unknown>,
+      resolved_inputs: quote.resolved_inputs as Record<string, unknown>,
+      lines: quote.lines,
+      season_month: quote.month,
+      season_period: quote.season_period,
+      promo_code: quote.promo_code,
+      subtotal_idr: quote.subtotal_idr,
+      season_discount_idr: quote.season_discount_idr,
+      promo_discount_idr: quote.promo_discount_idr,
+      total_idr: quote.total_idr,
+      blockers: own,
+      price_changed: own.length === 0 && quote.total_idr !== previous,
+      previous_total_idr: previous,
+    });
+    blockers.push(...own);
+  }
+
+  if (packages.length === 0) blockers.push("Your cart is empty.");
+
+  const total = packages.reduce((sum, p) => sum + p.total_idr, 0);
+  const deposit = depositFor(total, percentage);
+
+  return {
+    cart_id: cart.id,
+    packages,
+    total_idr: total,
+    first_payment_percentage: percentage,
+    first_payment_idr: deposit,
+    outstanding_idr: balanceFor(total, deposit),
+    blockers,
+    existing_purchase_id: purchase?.id ?? null,
+  };
+}
+
+/**
+ * Refreshes the stored package quotes so the cart matches the revalidation
+ * the customer just saw. Prices are only ever written by the server.
+ */
+async function syncPackageQuotes(revalidation: CheckoutRevalidation) {
+  const db = await admin();
+  for (const p of revalidation.packages) {
+    if (!p.price_changed) continue;
+    await db
+      .from("packages")
+      .update({
+        subtotal_idr: p.subtotal_idr,
+        season_discount_idr: p.season_discount_idr,
+        promo_discount_idr: p.promo_discount_idr,
+        total_idr: p.total_idr,
+        season_period: p.season_period,
+        quoted_at: new Date().toISOString(),
+      })
+      .eq("id", p.package_id);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Purchase creation                                                   */
+/* ------------------------------------------------------------------ */
+
+function buildSnapshot(revalidation: CheckoutRevalidation) {
+  return {
+    snapshot_version: 1,
+    taken_at: new Date().toISOString(),
+    currency_code: "IDR",
+    first_payment_percentage: revalidation.first_payment_percentage,
+    first_payment_idr: revalidation.first_payment_idr,
+    outstanding_idr: revalidation.outstanding_idr,
+    total_idr: revalidation.total_idr,
+    packages: revalidation.packages.map((p) => ({
+      package_id: p.package_id,
+      product_id: p.product_id,
+      product_title: p.product_title,
+      pricing_mode: p.pricing_mode,
+      answers: p.answers,
+      resolved_inputs: p.resolved_inputs,
+      quote_lines: p.lines,
+      season_month: p.season_month,
+      season_period: p.season_period,
+      promo_code: p.promo_code,
+      subtotal_idr: p.subtotal_idr,
+      season_discount_idr: p.season_discount_idr,
+      promo_discount_idr: p.promo_discount_idr,
+      total_idr: p.total_idr,
+    })),
+  };
+}
+
+export type PurchaseView = {
+  id: string;
+  status: string;
+  currency_code: string;
+  total_idr: number;
+  first_payment_percentage: number;
+  first_payment_idr: number;
+  outstanding_idr: number;
+  paid_idr: number;
+  created_at: string;
+  payment: {
+    id: string;
+    kind: PaymentRequestKind;
+    status: string;
+    amount_idr: number;
+    provider: string | null;
+    payment_url: string | null;
+  } | null;
+  snapshot: any;
+};
+
+async function loadPurchase(purchaseId: string): Promise<PurchaseView | null> {
+  const db = await admin();
+  const { data: purchase } = await db
+    .from("purchases")
+    .select(
+      "id, status, currency_code, total_idr, first_payment_percentage, first_payment_idr, outstanding_idr, paid_idr, created_at",
+    )
+    .eq("id", purchaseId)
+    .maybeSingle();
+  if (!purchase) return null;
+
+  const [{ data: requests }, { data: snapshot }] = await Promise.all([
+    db
+      .from("payment_requests")
+      .select("id, kind, status, amount_idr, provider, provider_payment_url, created_at")
+      .eq("purchase_id", purchaseId)
+      .order("created_at", { ascending: false }),
+    db.from("purchase_snapshots").select("data").eq("purchase_id", purchaseId).maybeSingle(),
+  ]);
+
+  const open =
+    (requests ?? []).find((r: any) => r.status === "created" || r.status === "pending") ??
+    (requests ?? [])[0] ??
+    null;
+
+  return {
+    ...purchase,
+    total_idr: Number(purchase.total_idr),
+    first_payment_percentage: Number(purchase.first_payment_percentage),
+    first_payment_idr: Number(purchase.first_payment_idr),
+    outstanding_idr: Number(purchase.outstanding_idr),
+    paid_idr: Number(purchase.paid_idr),
+    payment: open
+      ? {
+          id: open.id,
+          kind: open.kind,
+          status: open.status,
+          amount_idr: Number(open.amount_idr),
+          provider: open.provider,
+          payment_url: open.provider_payment_url,
+        }
+      : null,
+    snapshot: snapshot?.data ?? null,
+  };
+}
+
+export async function getPurchase(purchaseId: string) {
+  return loadPurchase(purchaseId);
+}
+
+/**
+ * Converts the cart into one Purchase, one immutable snapshot and the first
+ * payment request, in a single database transaction. Repeating the call for
+ * the same cart returns the same purchase — never a second one.
+ */
+export async function createPurchaseFromCart(token?: string) {
+  const db = await admin();
+  const revalidation = await revalidateCart(token);
+  if (!revalidation.cart_id) fail("Your cart could not be found.");
+
+  if (revalidation.existing_purchase_id) {
+    return {
+      purchase: await loadPurchase(revalidation.existing_purchase_id),
+      revalidation,
+      reused: true,
+    };
+  }
+
+  const hard = revalidation.blockers;
+  if (hard.length > 0) fail(hard[0]!);
+  if (revalidation.total_idr <= 0) fail("This booking has no amount to pay.");
+
+  const { data: purchaseId, error } = await db.rpc("create_purchase", {
+    _cart_id: revalidation.cart_id,
+    _total_idr: revalidation.total_idr,
+    _percentage: revalidation.first_payment_percentage,
+    _first_payment_idr: revalidation.first_payment_idr,
+    _outstanding_idr: revalidation.outstanding_idr,
+    _snapshot: buildSnapshot(revalidation) as never,
+  });
+  if (error || !purchaseId) fail(SAFE_ERROR);
+
+  await syncPackageQuotes(revalidation);
+
+  // The payment link is a provider concern and never blocks the Purchase.
+  await ensurePaymentLink(purchaseId as string, "first_payment").catch(() => undefined);
+
+  return { purchase: await loadPurchase(purchaseId as string), revalidation, reused: false };
+}
+
+/* ------------------------------------------------------------------ */
+/* Payment requests                                                    */
+/* ------------------------------------------------------------------ */
+
+/** Creates or refreshes the provider payment link for one payment request. */
+export async function ensurePaymentLink(purchaseId: string, kind: PaymentRequestKind) {
+  const db = await admin();
+  const { data: request } = await db
+    .from("payment_requests")
+    .select("id, kind, status, amount_idr, currency_code, provider, provider_payment_url")
+    .eq("purchase_id", purchaseId)
+    .eq("kind", kind)
+    .in("status", ["created", "pending", "paid"])
+    .maybeSingle();
+  if (!request) return null;
+  if (request.status === "paid") return request;
+  if (request.provider_payment_url) return request;
+
+  const provider = await activePaymentProvider();
+  if (!provider) return request;
+
+  const link = await provider.createPaymentLink({
+    paymentRequestId: request.id,
+    purchaseId,
+    amountIdr: Number(request.amount_idr),
+    currencyCode: request.currency_code,
+    description:
+      kind === "first_payment" ? "Cimaja Boardriders booking deposit" : "Cimaja Boardriders balance",
+    returnUrl: `${origin()}/purchase/${purchaseId}`,
+  });
+
+  const { data: updated } = await db
+    .from("payment_requests")
+    .update({
+      status: "pending",
+      provider: link.provider,
+      provider_reference: link.reference,
+      provider_payment_url: link.url,
+      expires_at: link.expiresAt,
+    })
+    .eq("id", request.id)
+    .select("id, kind, status, amount_idr, currency_code, provider, provider_payment_url")
+    .single();
+  return updated ?? request;
+}
+
+/** Admin-triggered collection of the remaining balance on the same purchase. */
+export async function createBalanceRequest(purchaseId: string) {
+  const db = await admin();
+  const { data: purchase } = await db
+    .from("purchases")
+    .select("id, outstanding_idr, status")
+    .eq("id", purchaseId)
+    .maybeSingle();
+  if (!purchase) fail("This purchase could not be found.");
+  if (Number(purchase.outstanding_idr) <= 0) fail("There is no outstanding balance on this purchase.");
+
+  const { data: existing } = await db
+    .from("payment_requests")
+    .select("id")
+    .eq("purchase_id", purchaseId)
+    .eq("kind", "balance")
+    .in("status", ["created", "pending", "paid"])
+    .maybeSingle();
+
+  if (!existing) {
+    const { error } = await db.from("payment_requests").insert({
+      purchase_id: purchaseId,
+      kind: "balance",
+      amount_idr: Number(purchase.outstanding_idr),
+    });
+    if (error) fail(SAFE_ERROR);
+  }
+  return ensurePaymentLink(purchaseId, "balance");
+}
+
+/* ------------------------------------------------------------------ */
+/* Payment confirmation (provider notifications)                       */
+/* ------------------------------------------------------------------ */
+
+/** Recomputes purchase money from confirmed payment requests only. */
+async function recomputePurchaseMoney(purchaseId: string) {
+  const db = await admin();
+  const [{ data: purchase }, { data: requests }] = await Promise.all([
+    db.from("purchases").select("id, total_idr, status").eq("id", purchaseId).maybeSingle(),
+    db.from("payment_requests").select("amount_idr, status").eq("purchase_id", purchaseId),
+  ]);
+  if (!purchase) return;
+  const paid = (requests ?? [])
+    .filter((r: any) => r.status === "paid")
+    .reduce((sum: number, r: any) => sum + Number(r.amount_idr), 0);
+  const total = Number(purchase.total_idr);
+  const status = purchase.status === "cancelled" ? "cancelled" : purchaseStatusFor(total, paid);
+  await db.from("purchases").update({ paid_idr: Math.min(paid, total), status }).eq("id", purchaseId);
+}
+
+/**
+ * Applies one provider notification. Every notification is stored once per
+ * provider event id, so replays and duplicates are inert.
+ */
+export async function applyProviderNotification(
+  providerName: string,
+  headers: Headers,
+  rawBody: string,
+): Promise<{ ok: boolean; duplicate: boolean; reason?: string }> {
+  const provider = await providerByName(providerName);
+  if (!provider) return { ok: false, duplicate: false, reason: "unknown_provider" };
+  if (!provider.verifyNotification(headers)) return { ok: false, duplicate: false, reason: "unverified" };
+
+  let payload: unknown;
+  try {
+    payload = JSON.parse(rawBody);
+  } catch {
+    return { ok: false, duplicate: false, reason: "invalid_payload" };
+  }
+
+  const event = provider.parseNotification(payload);
+  if (!event) return { ok: false, duplicate: false, reason: "invalid_payload" };
+
+  const db = await admin();
+  const { data: request } = event.paymentRequestId
+    ? await db
+        .from("payment_requests")
+        .select("id, purchase_id, status, amount_idr")
+        .eq("id", event.paymentRequestId)
+        .maybeSingle()
+    : event.reference
+      ? await db
+          .from("payment_requests")
+          .select("id, purchase_id, status, amount_idr")
+          .eq("provider", provider.name)
+          .eq("provider_reference", event.reference)
+          .maybeSingle()
+      : { data: null };
+
+  const { error: insertError } = await db.from("payment_events").insert({
+    payment_request_id: request?.id ?? null,
+    provider: provider.name,
+    provider_event_id: event.eventId,
+    event_type: event.eventType,
+    payload: payload as never,
+  });
+  // Unique (provider, provider_event_id): a repeat is recorded once and ignored.
+  if (insertError) return { ok: true, duplicate: true };
+
+  if (!request) return { ok: true, duplicate: false, reason: "unmatched" };
+  if (request.status === "paid") return { ok: true, duplicate: false };
+
+  const next =
+    event.status === "paid"
+      ? "paid"
+      : event.status === "expired"
+        ? "expired"
+        : event.status === "failed"
+          ? "failed"
+          : event.status === "cancelled"
+            ? "cancelled"
+            : "pending";
+
+  await db
+    .from("payment_requests")
+    .update({ status: next, paid_at: next === "paid" ? new Date().toISOString() : null })
+    .eq("id", request.id);
+
+  await recomputePurchaseMoney(request.purchase_id);
+  return { ok: true, duplicate: false };
+}
