@@ -12,12 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as CartRouteImport } from './routes/cart'
+import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as AdminAppRouteRouteImport } from './routes/admin/_app/route'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminNoAccessRouteImport } from './routes/admin/no-access'
 import { Route as AdminSetupRouteImport } from './routes/admin/setup'
 import { Route as BuildYourTripIndexRouteImport } from './routes/build-your-trip.index'
 import { Route as BuildYourTripProductIdRouteImport } from './routes/build-your-trip.$productId'
+import { Route as PurchasePurchaseIdRouteImport } from './routes/purchase.$purchaseId'
 import { Route as AdminAppIndexRouteImport } from './routes/admin/_app/index'
 import { Route as AdminAppCatalogTaxonomyRouteImport } from './routes/admin/_app/catalog-taxonomy'
 import { Route as AdminAppComponentTemplatesRouteImport } from './routes/admin/_app/component-templates'
@@ -60,6 +62,11 @@ const CartRoute = CartRouteImport.update({
   path: '/cart',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CheckoutRoute = CheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminAppRouteRoute = AdminAppRouteRouteImport.update({
   id: '/_app',
   getParentRoute: () => AdminRouteRoute,
@@ -87,6 +94,11 @@ const BuildYourTripIndexRoute = BuildYourTripIndexRouteImport.update({
 const BuildYourTripProductIdRoute = BuildYourTripProductIdRouteImport.update({
   id: '/build-your-trip/$productId',
   path: '/build-your-trip/$productId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PurchasePurchaseIdRoute = PurchasePurchaseIdRouteImport.update({
+  id: '/purchase/$purchaseId',
+  path: '/purchase/$purchaseId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminAppIndexRoute = AdminAppIndexRouteImport.update({
@@ -230,10 +242,12 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
   '/cart': typeof CartRoute
+  '/checkout': typeof CheckoutRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/no-access': typeof AdminNoAccessRoute
   '/admin/setup': typeof AdminSetupRoute
   '/build-your-trip/$productId': typeof BuildYourTripProductIdRoute
+  '/purchase/$purchaseId': typeof PurchasePurchaseIdRoute
   '/build-your-trip/': typeof BuildYourTripIndexRoute
   '/admin/catalog-taxonomy': typeof AdminAppCatalogTaxonomyRoute
   '/admin/component-templates': typeof AdminAppComponentTemplatesRoute
@@ -266,10 +280,12 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminAppIndexRoute
   '/cart': typeof CartRoute
+  '/checkout': typeof CheckoutRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/no-access': typeof AdminNoAccessRoute
   '/admin/setup': typeof AdminSetupRoute
   '/build-your-trip/$productId': typeof BuildYourTripProductIdRoute
+  '/purchase/$purchaseId': typeof PurchasePurchaseIdRoute
   '/build-your-trip': typeof BuildYourTripIndexRoute
   '/admin/catalog-taxonomy': typeof AdminAppCatalogTaxonomyRoute
   '/admin/component-templates': typeof AdminAppComponentTemplatesRoute
@@ -302,11 +318,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
   '/cart': typeof CartRoute
+  '/checkout': typeof CheckoutRoute
   '/admin/_app': typeof AdminAppRouteRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
   '/admin/no-access': typeof AdminNoAccessRoute
   '/admin/setup': typeof AdminSetupRoute
   '/build-your-trip/$productId': typeof BuildYourTripProductIdRoute
+  '/purchase/$purchaseId': typeof PurchasePurchaseIdRoute
   '/build-your-trip/': typeof BuildYourTripIndexRoute
   '/admin/_app/catalog-taxonomy': typeof AdminAppCatalogTaxonomyRoute
   '/admin/_app/component-templates': typeof AdminAppComponentTemplatesRoute
@@ -341,10 +359,12 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/cart'
+    | '/checkout'
     | '/admin/login'
     | '/admin/no-access'
     | '/admin/setup'
     | '/build-your-trip/$productId'
+    | '/purchase/$purchaseId'
     | '/build-your-trip/'
     | '/admin/catalog-taxonomy'
     | '/admin/component-templates'
@@ -377,10 +397,12 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/cart'
+    | '/checkout'
     | '/admin/login'
     | '/admin/no-access'
     | '/admin/setup'
     | '/build-your-trip/$productId'
+    | '/purchase/$purchaseId'
     | '/build-your-trip'
     | '/admin/catalog-taxonomy'
     | '/admin/component-templates'
@@ -412,11 +434,13 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/cart'
+    | '/checkout'
     | '/admin/_app'
     | '/admin/login'
     | '/admin/no-access'
     | '/admin/setup'
     | '/build-your-trip/$productId'
+    | '/purchase/$purchaseId'
     | '/build-your-trip/'
     | '/admin/_app/catalog-taxonomy'
     | '/admin/_app/component-templates'
@@ -450,7 +474,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   CartRoute: typeof CartRoute
+  CheckoutRoute: typeof CheckoutRoute
   BuildYourTripProductIdRoute: typeof BuildYourTripProductIdRoute
+  PurchasePurchaseIdRoute: typeof PurchasePurchaseIdRoute
   BuildYourTripIndexRoute: typeof BuildYourTripIndexRoute
   ApiPublicPaymentsXenditRoute: typeof ApiPublicPaymentsXenditRoute
 }
@@ -476,6 +502,13 @@ declare module '@tanstack/react-router' {
       path: '/cart'
       fullPath: '/cart'
       preLoaderRoute: typeof CartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout': {
+      id: '/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof CheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/_app': {
@@ -518,6 +551,13 @@ declare module '@tanstack/react-router' {
       path: '/build-your-trip/$productId'
       fullPath: '/build-your-trip/$productId'
       preLoaderRoute: typeof BuildYourTripProductIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/purchase/$purchaseId': {
+      id: '/purchase/$purchaseId'
+      path: '/purchase/$purchaseId'
+      fullPath: '/purchase/$purchaseId'
+      preLoaderRoute: typeof PurchasePurchaseIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/_app/': {
@@ -787,7 +827,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRouteRoute: AdminRouteRouteWithChildren,
   CartRoute: CartRoute,
+  CheckoutRoute: CheckoutRoute,
   BuildYourTripProductIdRoute: BuildYourTripProductIdRoute,
+  PurchasePurchaseIdRoute: PurchasePurchaseIdRoute,
   BuildYourTripIndexRoute: BuildYourTripIndexRoute,
   ApiPublicPaymentsXenditRoute: ApiPublicPaymentsXenditRoute,
 }

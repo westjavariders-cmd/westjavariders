@@ -17,16 +17,18 @@ Phase 2 — Admin foundation: DONE (auth, first-admin setup, shell, settings/cur
 - [x] Phase 6 — Accommodation catalogue (hotels, rooms, beach camping, characteristics, photos)
 - [x] Phase 7 — Transport catalogue (predefined routes, other location, people/time pricing, calculator, duplication)
 
-- [ ] Phase 6b — Customer configurator + cart
-- [ ] Phase 6 — Checkout + payments
-- [ ] Phase 7 — Purchase, snapshot, voucher PDF, email
+- [x] Phase 8 — Package + cart persistence (server-authoritative quotes, anonymous session cookie)
+- [x] Phase 9 — Build Your Trip + package/cart public UI
+- [x] Phase 10 — Global purchase + payment core (revalidation, purchase, immutable snapshot, payment requests, Xendit adapter, webhook idempotency)
+- [ ] Phase 11 — Voucher, snapshot PDF, email delivery
 - [ ] Phase 8 — Special modules
 - [ ] Phase 9 — Public website
 - [ ] Phase 10 — SEO, analytics, QA, launch
 
 ## Open decisions
 - [ ] FX source, refresh frequency, safety margin (Phase 4)
-- [ ] Payment provider + charge currency (Phase 6)
+- [x] Payment provider: Xendit adapter behind a provider-neutral interface; charged in IDR
+- [ ] Xendit credentials (XENDIT_SECRET_KEY, XENDIT_CALLBACK_TOKEN) not yet supplied — payment links stay unissued until then
 - [ ] Voucher PDF layout, branding, legal text (Phase 7)
 - [ ] Insurance voucher content (Phase 7/8)
 - [ ] Field marking "experience start" for balance collection (Phase 6/7)
