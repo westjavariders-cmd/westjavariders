@@ -61,7 +61,14 @@ function CheckoutPage() {
   async function book() {
     setBusy(true);
     try {
-      const result = await confirm({ data: contact });
+      const result = await confirm({
+        data: {
+          ...contact,
+          is_gift: isGift,
+          gift_recipient_name: isGift ? gift.recipient : undefined,
+          gift_message: isGift ? gift.message : undefined,
+        },
+      });
       await queryClient.invalidateQueries({ queryKey: PUBLIC_CART_KEY });
       await cart.refetch();
       const id = result.purchase?.id;
