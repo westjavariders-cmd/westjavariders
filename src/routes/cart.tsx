@@ -173,7 +173,11 @@ function CartPage() {
           <p className="text-xs text-muted-foreground">
             Indicative total. It is confirmed when you book.
           </p>
-          <Button className="w-full" disabled={packages.length === 0} onClick={() => toast.info("Booking opens soon.")}>
+          <Button
+            className="w-full"
+            disabled={packages.length === 0}
+            onClick={() => navigate({ to: "/checkout" })}
+          >
             Book now
           </Button>
           <Link
