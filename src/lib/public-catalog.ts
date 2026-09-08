@@ -15,6 +15,8 @@ export function summarizeAnswers(
   fields: Pick<Field, "id" | "variable_name" | "customer_label" | "internal_name" | "field_type" | "is_active">[],
   options: Pick<FieldOption, "field_id" | "internal_value" | "customer_label">[],
   answers: PreviewValues,
+  /** Catalogue item id → public name, for questions fed by a catalogue. */
+  catalogueNames: Record<string, string> = {},
 ): AnswerSummaryLine[] {
   const lines: AnswerSummaryLine[] = [];
   for (const f of fields) {
