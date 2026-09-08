@@ -78,8 +78,17 @@ export const getVoucherDetail = createServerFn({ method: "POST" })
         .order("created_at", { ascending: true }),
     ]);
 
+    const { data: contactRows } = await db
+      .from("settings")
+      .select("key, value")
+      .in("key", ["business_name", "contact_email", "contact_whatsapp", "contact_location"]);
+    const { readContactSettings } = await import("@/lib/voucher-delivery");
+    const contactCheck = readContactSettings(contactRows ?? []);
+
     return {
       voucher,
+      contact_ready: contactCheck.ok,
+      contact_missing: contactCheck.ok ? [] : (contactCheck as any).missing,
       snapshot_reference: snapshot?.id ?? null,
       snapshot_taken_at: snapshot?.created_at ?? null,
       payments: payments ?? [],
