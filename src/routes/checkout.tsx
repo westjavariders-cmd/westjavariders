@@ -4,7 +4,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { PublicPage, PUBLIC_CART_KEY, usePublicCart } from "@/components/public/SiteHeader";
+import {
+  PublicPage,
+  PUBLIC_CART_KEY,
+  displayTotal,
+  usePublicCart,
+} from "@/components/public/SiteHeader";
 import { formatIdr } from "@/lib/public-catalog";
 import { confirmCheckout, getCheckoutSummary } from "@/lib/purchase.functions";
 import { Button } from "@/components/ui/button";

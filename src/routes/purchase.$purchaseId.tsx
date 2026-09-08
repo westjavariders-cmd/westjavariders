@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
-import { PublicPage } from "@/components/public/SiteHeader";
+import { PublicPage, displayTotal } from "@/components/public/SiteHeader";
 import { formatIdr } from "@/lib/public-catalog";
 import { getPurchaseView } from "@/lib/purchase.functions";
 import { PURCHASE_STATUS_LABELS, type PurchaseStatus } from "@/lib/purchase";
@@ -79,11 +79,27 @@ function PurchasePage() {
           <div className="space-y-2 border-t border-border pt-4">
             <div className="flex items-baseline justify-between">
               <span className="text-sm text-muted-foreground">Total price</span>
-              <span className="text-base font-semibold">{formatIdr(purchase.total_idr)}</span>
+              <span className="text-base font-semibold">
+                {displayTotal(
+                  purchase.total_idr,
+                  purchase.customer_currency_code
+                    ? { currency_code: purchase.customer_currency_code, symbol: "" }
+                    : null,
+                  purchase.customer_total_amount,
+                )}
+              </span>
             </div>
             <div className="flex items-baseline justify-between">
               <span className="text-sm">Due today ({purchase.first_payment_percentage}%)</span>
-              <span className="text-xl font-semibold">{formatIdr(purchase.first_payment_idr)}</span>
+              <span className="text-xl font-semibold">
+                {displayTotal(
+                  purchase.first_payment_idr,
+                  purchase.customer_currency_code
+                    ? { currency_code: purchase.customer_currency_code, symbol: "" }
+                    : null,
+                  purchase.customer_first_payment_amount,
+                )}
+              </span>
             </div>
             <div className="flex items-baseline justify-between">
               <span className="text-sm text-muted-foreground">Received</span>
@@ -93,8 +109,22 @@ function PurchasePage() {
               <span className="text-sm text-muted-foreground">
                 Balance, settled with us before your trip
               </span>
-              <span className="text-base">{formatIdr(purchase.outstanding_idr)}</span>
+              <span className="text-base">
+                {displayTotal(
+                  purchase.outstanding_idr,
+                  purchase.customer_currency_code
+                    ? { currency_code: purchase.customer_currency_code, symbol: "" }
+                    : null,
+                  purchase.customer_outstanding_amount,
+                )}
+              </span>
             </div>
+            {purchase.customer_currency_code && (
+              <p className="text-xs text-muted-foreground">
+                Fixed at {purchase.fx_rate} Rupiah per {purchase.customer_currency_code} when you
+                booked. Payments are taken in Rupiah: {formatIdr(purchase.total_idr)} in total.
+              </p>
+            )}
           </div>
 
           {purchase.payment && purchase.payment.status !== "paid" && (
