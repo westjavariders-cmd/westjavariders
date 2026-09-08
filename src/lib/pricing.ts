@@ -292,7 +292,13 @@ export function priceProduct(args: {
             errors.push(`Rule "${rule.label}" refers to a component that is missing or inactive.`);
             continue;
           }
-          const m = componentMultiplier(component.unit_basis, pricing, inputs);
+          // A component entry may be limited to a configurator condition, e.g.
+          // "media_services contains photography". No condition means always charged.
+          if (rule.condition_variable && !conditionHolds(rule, inputs)) {
+            push(`rule:${rule.id}`, rule.label, "condition not met", 0n);
+            continue;
+          }
+          const m = componentMultiplier(component.unit_basis, pricing, inputs, rule.quantity_variable);
           if (m.missing) {
             errors.push(
               `Component "${component.internal_name}" needs a value for ${m.variable ?? "its quantity"}.`,
@@ -301,7 +307,9 @@ export function priceProduct(args: {
           }
           const unit = fromNumberLike(component.customer_price);
           amount = exactMul(unit, m.value);
-          detail = `${component.internal_name}: ${exactToString(unit)} × ${exactToString(m.value)}`;
+          detail = `${component.internal_name}: ${exactToString(unit)} × ${exactToString(m.value)}${
+            m.variable ? ` (${m.variable})` : ""
+          }`;
           break;
         }
         case "conditional": {
