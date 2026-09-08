@@ -103,6 +103,8 @@ export function PricingTab({
   }
 
   const pricing = data.pricing;
+  const componentRules = data.rules.filter((r) => r.rule_type === "component_quantity");
+  const otherRules = data.rules.filter((r) => r.rule_type !== "component_quantity");
   const errors = (issuesQuery.data?.issues ?? []).filter((i) => i.level === "error");
   const warnings = (issuesQuery.data?.issues ?? []).filter((i) => i.level === "warning");
 
