@@ -296,7 +296,34 @@ export async function quotePackage(args: {
     }
   }
 
-  const inputs = resolveInputs(loaded.bundle, args.answers as never);
+  // Catalogue Bridge: resolve active items, drop invalidated selections and
+  // expose each selected catalogue price to the existing pricing engine as
+  // `<variable>_price`. The bridge never decides how that value is used.
+  const catalogueFields = loaded.bundle.fields.filter((f: any) => f.is_active);
+  const catalogue = await resolveCatalogues(
+    catalogueFields
+      .map((f: any) => fieldCatalogueType(f))
+      .filter((t: CatalogueType | null): t is CatalogueType => t != null),
+  );
+  const answers = stripInvalidCatalogueAnswers(
+    catalogueFields as never,
+    args.answers as Record<string, unknown>,
+    catalogue,
+  ) as PreviewValues;
+  const { selections, invalid } = resolveCatalogueSelections(
+    catalogueFields as never,
+    args.answers as Record<string, unknown>,
+    catalogue,
+    (f) => {
+      const field = catalogueFields.find((x: any) => x.variable_name === f.variable_name) as any;
+      return field?.customer_label || field?.internal_name || f.variable_name;
+    },
+  );
+
+  const inputs = resolveInputs(loaded.bundle, answers as never);
+  for (const [name, amount] of Object.entries(cataloguePriceVariables(selections))) {
+    inputs[name] = { type: "number", value: fromNumberLike(amount) };
+  }
   const active = loaded.versions.find((v: any) => v.is_active) ?? null;
   const month = args.month ?? new Date().getUTCMonth() + 1;
 
