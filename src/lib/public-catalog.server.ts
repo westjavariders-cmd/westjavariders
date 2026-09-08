@@ -60,6 +60,8 @@ export async function listPurchasableProducts(): Promise<PublicProduct[]> {
 export type PublicBundle = {
   product: { id: string; title: string; summary: string | null; body: string | null };
   bundle: ProductBundle;
+  /** Active, customer-safe catalogue items per catalogue type used by the fields. */
+  catalogue: Partial<Record<CatalogueType, CatalogueItem[]>>;
 };
 
 /** The saved Phase 3 configuration of one purchasable product, without internal data. */
