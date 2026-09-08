@@ -45,6 +45,7 @@ import { Route as AdminAppSettingsMarketsRouteImport } from './routes/admin/_app
 import { Route as AdminAppSettingsUsersRouteImport } from './routes/admin/_app/settings.users'
 import { Route as AdminAppTransportIndexRouteImport } from './routes/admin/_app/transport.index'
 import { Route as AdminAppTransportTransportIdRouteImport } from './routes/admin/_app/transport.$transportId'
+import { Route as AdminAppVouchersIndexRouteImport } from './routes/admin/_app/vouchers.index'
 import { Route as ApiPublicPaymentsXenditRouteImport } from './routes/api/public/payments/xendit'
 
 const IndexRoute = IndexRouteImport.update({
@@ -233,6 +234,11 @@ const AdminAppTransportTransportIdRoute =
     path: '/transport/$transportId',
     getParentRoute: () => AdminAppRouteRoute,
   } as any)
+const AdminAppVouchersIndexRoute = AdminAppVouchersIndexRouteImport.update({
+  id: '/vouchers/',
+  path: '/vouchers/',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
 const ApiPublicPaymentsXenditRoute = ApiPublicPaymentsXenditRouteImport.update({
   id: '/api/public/payments/xendit',
   path: '/api/public/payments/xendit',
@@ -276,6 +282,7 @@ export interface FileRoutesByFullPath {
   '/admin/products/': typeof AdminAppProductsIndexRoute
   '/admin/settings/': typeof AdminAppSettingsIndexRoute
   '/admin/transport/': typeof AdminAppTransportIndexRoute
+  '/admin/vouchers/': typeof AdminAppVouchersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -313,6 +320,7 @@ export interface FileRoutesByTo {
   '/admin/products': typeof AdminAppProductsIndexRoute
   '/admin/settings': typeof AdminAppSettingsIndexRoute
   '/admin/transport': typeof AdminAppTransportIndexRoute
+  '/admin/vouchers': typeof AdminAppVouchersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -353,6 +361,7 @@ export interface FileRoutesById {
   '/admin/_app/products/': typeof AdminAppProductsIndexRoute
   '/admin/_app/settings/': typeof AdminAppSettingsIndexRoute
   '/admin/_app/transport/': typeof AdminAppTransportIndexRoute
+  '/admin/_app/vouchers/': typeof AdminAppVouchersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -393,6 +402,7 @@ export interface FileRouteTypes {
     | '/admin/products/'
     | '/admin/settings/'
     | '/admin/transport/'
+    | '/admin/vouchers/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -430,6 +440,7 @@ export interface FileRouteTypes {
     | '/admin/products'
     | '/admin/settings'
     | '/admin/transport'
+    | '/admin/vouchers'
   id:
     | '__root__'
     | '/'
@@ -469,6 +480,7 @@ export interface FileRouteTypes {
     | '/admin/_app/products/'
     | '/admin/_app/settings/'
     | '/admin/_app/transport/'
+    | '/admin/_app/vouchers/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -736,6 +748,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAppTransportTransportIdRouteImport
       parentRoute: typeof AdminAppRouteRoute
     }
+    '/admin/_app/vouchers/': {
+      id: '/admin/_app/vouchers/'
+      path: '/vouchers'
+      fullPath: '/admin/vouchers/'
+      preLoaderRoute: typeof AdminAppVouchersIndexRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
     '/api/public/payments/xendit': {
       id: '/api/public/payments/xendit'
       path: '/api/public/payments/xendit'
@@ -772,6 +791,7 @@ interface AdminAppRouteRouteChildren {
   AdminAppProductsIndexRoute: typeof AdminAppProductsIndexRoute
   AdminAppSettingsIndexRoute: typeof AdminAppSettingsIndexRoute
   AdminAppTransportIndexRoute: typeof AdminAppTransportIndexRoute
+  AdminAppVouchersIndexRoute: typeof AdminAppVouchersIndexRoute
 }
 
 const AdminAppRouteRouteChildren: AdminAppRouteRouteChildren = {
@@ -800,6 +820,7 @@ const AdminAppRouteRouteChildren: AdminAppRouteRouteChildren = {
   AdminAppProductsIndexRoute: AdminAppProductsIndexRoute,
   AdminAppSettingsIndexRoute: AdminAppSettingsIndexRoute,
   AdminAppTransportIndexRoute: AdminAppTransportIndexRoute,
+  AdminAppVouchersIndexRoute: AdminAppVouchersIndexRoute,
 }
 
 const AdminAppRouteRouteWithChildren = AdminAppRouteRoute._addFileChildren(
