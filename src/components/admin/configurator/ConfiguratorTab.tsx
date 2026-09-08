@@ -19,6 +19,13 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { selectClass } from "./ui";
+import { CATALOGUE_TYPES, type CatalogueType } from "@/lib/catalogue-bridge";
+
+const CATALOGUE_TYPE_LABELS: Record<CatalogueType, string> = {
+  accommodation_room: "Accommodation rooms",
+  transport: "Transport",
+  motorbike: "Motorbikes",
+};
 
 type Props = { bundle: ProductBundle; canEdit: boolean; reload: () => void };
 
