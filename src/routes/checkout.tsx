@@ -45,6 +45,8 @@ function CheckoutPage() {
     phone: "",
     country: "",
   });
+  const [isGift, setIsGift] = useState(false);
+  const [gift, setGift] = useState({ recipient: "", message: "" });
 
   const summary = useQuery({
     queryKey: ["checkout-summary"],
