@@ -14,8 +14,23 @@ import {
   type PreviewValues,
   type ProductBundle,
 } from "@/lib/catalog";
-import { exactToString, isPurchasable, resolveInputs, type PricingInputs } from "@/lib/pricing";
+import {
+  exactToString,
+  fromNumberLike,
+  isPurchasable,
+  resolveInputs,
+  type PricingInputs,
+} from "@/lib/pricing";
 import { priceCommercial, type CommercialResult, type SeasonConfig } from "@/lib/commercial";
+import {
+  cataloguePriceVariables,
+  fieldCatalogueType,
+  resolveCatalogueSelections,
+  stripInvalidCatalogueAnswers,
+  type CatalogueSelection,
+  type CatalogueType,
+} from "@/lib/catalogue-bridge";
+import { resolveCatalogues } from "@/lib/catalogue-bridge.server";
 
 export const CART_COOKIE = "cbr_cart";
 const SAFE_ERROR = "This action could not be completed. Please check your input and try again.";
@@ -239,6 +254,10 @@ export type QuoteOutcome = {
   resolved_inputs: Record<string, { type: string; value: string | boolean | string[] }>;
   promo_code: string | null;
   promo_code_id: string | null;
+  /** Catalogue items the customer selected, as resolved for this quote. */
+  catalogue_selections: CatalogueSelection[];
+  /** Answers with invalidated catalogue choices removed (never replaced). */
+  answers: PreviewValues;
 };
 
 /** One provisional quote. Never an immutable purchase price. */
@@ -277,7 +296,34 @@ export async function quotePackage(args: {
     }
   }
 
-  const inputs = resolveInputs(loaded.bundle, args.answers as never);
+  // Catalogue Bridge: resolve active items, drop invalidated selections and
+  // expose each selected catalogue price to the existing pricing engine as
+  // `<variable>_price`. The bridge never decides how that value is used.
+  const catalogueFields = loaded.bundle.fields.filter((f: any) => f.is_active);
+  const catalogue = await resolveCatalogues(
+    catalogueFields
+      .map((f: any) => fieldCatalogueType(f))
+      .filter((t: CatalogueType | null): t is CatalogueType => t != null),
+  );
+  const answers = stripInvalidCatalogueAnswers(
+    catalogueFields as never,
+    args.answers as Record<string, unknown>,
+    catalogue,
+  ) as PreviewValues;
+  const { selections, invalid } = resolveCatalogueSelections(
+    catalogueFields as never,
+    args.answers as Record<string, unknown>,
+    catalogue,
+    (f) => {
+      const field = catalogueFields.find((x: any) => x.variable_name === f.variable_name) as any;
+      return field?.customer_label || field?.internal_name || f.variable_name;
+    },
+  );
+
+  const inputs = resolveInputs(loaded.bundle, answers as never);
+  for (const [name, amount] of Object.entries(cataloguePriceVariables(selections))) {
+    inputs[name] = { type: "number", value: fromNumberLike(amount) };
+  }
   const active = loaded.versions.find((v: any) => v.is_active) ?? null;
   const month = args.month ?? new Date().getUTCMonth() + 1;
 
@@ -303,7 +349,7 @@ export async function quotePackage(args: {
 
   return {
     purchasable,
-    configuration_issues: configurationIssues(loaded.bundle, args.answers),
+    configuration_issues: [...invalid, ...configurationIssues(loaded.bundle, answers)],
     errors: result.errors,
     promo_rejection: promoRejection ?? result.promo_rejection,
     month,
@@ -316,6 +362,8 @@ export async function quotePackage(args: {
     resolved_inputs: serializeInputs(inputs),
     promo_code: promo ? promo.code : null,
     promo_code_id: promo ? promo.id : null,
+    catalogue_selections: selections,
+    answers,
   };
 }
 
@@ -324,7 +372,7 @@ export async function quotePackage(args: {
 /* ------------------------------------------------------------------ */
 
 const PACKAGE_FIELDS =
-  "id, product_id, status, answers, resolved_inputs, quote_lines, subtotal_idr, season_discount_idr, promo_discount_idr, total_idr, season_month, season_period, promo_code, quoted_at, created_at, updated_at";
+  "id, product_id, status, answers, resolved_inputs, quote_lines, subtotal_idr, season_discount_idr, promo_discount_idr, total_idr, season_month, season_period, promo_code, catalogue_selections, quoted_at, created_at, updated_at";
 
 async function getDraft(cartId: string) {
   const db = await admin();
@@ -413,8 +461,9 @@ export async function savePackage(args: {
   const { data: updated, error } = await db
     .from("packages")
     .update({
-      answers: args.answers as never,
+      answers: quote.answers as never,
       resolved_inputs: quote.resolved_inputs as never,
+      catalogue_selections: quote.catalogue_selections as never,
       quote_lines: quote.lines as never,
       subtotal_idr: quote.subtotal_idr,
       season_discount_idr: quote.season_discount_idr,
@@ -464,7 +513,9 @@ export async function completePackage(packageId: string, token?: string) {
     .from("packages")
     .update({
       status: "complete",
+      answers: quote.answers as never,
       resolved_inputs: quote.resolved_inputs as never,
+      catalogue_selections: quote.catalogue_selections as never,
       quote_lines: quote.lines as never,
       subtotal_idr: quote.subtotal_idr,
       season_discount_idr: quote.season_discount_idr,

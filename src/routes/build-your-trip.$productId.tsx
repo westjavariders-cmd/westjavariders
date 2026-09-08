@@ -153,6 +153,7 @@ function ConfigurePage() {
               packageId={session.data.draft.id}
               savedAnswers={(session.data.draft.answers ?? null) as PreviewValues | null}
               savedPromo={session.data.draft.promo_code ?? null}
+              catalogue={(product.data as any)?.catalogue ?? {}}
             />
           )
         )}

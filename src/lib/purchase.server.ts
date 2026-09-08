@@ -64,6 +64,8 @@ export type RevalidatedPackage = {
   pricing_mode: string;
   answers: Record<string, unknown>;
   resolved_inputs: Record<string, unknown>;
+  /** Catalogue items selected in this package, as resolved at quote time. */
+  catalogue_selections: unknown[];
   lines: unknown;
   season_month: number;
   season_period: string | null;
@@ -169,6 +171,7 @@ export async function revalidateCart(token?: string): Promise<CheckoutRevalidati
       pricing_mode: pricing?.mode ?? "structured",
       answers: (pkg.answers ?? {}) as Record<string, unknown>,
       resolved_inputs: quote.resolved_inputs as Record<string, unknown>,
+      catalogue_selections: quote.catalogue_selections,
       lines: quote.lines,
       season_month: quote.month,
       season_period: quote.season_period,
@@ -247,6 +250,7 @@ function buildSnapshot(
       pricing_mode: p.pricing_mode,
       answers: p.answers,
       resolved_inputs: p.resolved_inputs,
+      catalogue_selections: p.catalogue_selections,
       quote_lines: p.lines,
       season_month: p.season_month,
       season_period: p.season_period,

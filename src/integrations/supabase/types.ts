@@ -659,6 +659,9 @@ export type Database = {
       }
       fields: {
         Row: {
+          catalogue_type:
+            | Database["public"]["Enums"]["catalogue_source_type"]
+            | null
           created_at: string
           customer_label: string | null
           default_value: string | null
@@ -671,12 +674,16 @@ export type Database = {
           is_required: boolean
           max_value: number | null
           min_value: number | null
+          option_source: string
           product_id: string
           step_id: string
           updated_at: string
           variable_name: string
         }
         Insert: {
+          catalogue_type?:
+            | Database["public"]["Enums"]["catalogue_source_type"]
+            | null
           created_at?: string
           customer_label?: string | null
           default_value?: string | null
@@ -689,12 +696,16 @@ export type Database = {
           is_required?: boolean
           max_value?: number | null
           min_value?: number | null
+          option_source?: string
           product_id: string
           step_id: string
           updated_at?: string
           variable_name: string
         }
         Update: {
+          catalogue_type?:
+            | Database["public"]["Enums"]["catalogue_source_type"]
+            | null
           created_at?: string
           customer_label?: string | null
           default_value?: string | null
@@ -707,6 +718,7 @@ export type Database = {
           is_required?: boolean
           max_value?: number | null
           min_value?: number | null
+          option_source?: string
           product_id?: string
           step_id?: string
           updated_at?: string
@@ -905,6 +917,7 @@ export type Database = {
       packages: {
         Row: {
           answers: Json
+          catalogue_selections: Json
           created_at: string
           id: string
           product_id: string
@@ -924,6 +937,7 @@ export type Database = {
         }
         Insert: {
           answers?: Json
+          catalogue_selections?: Json
           created_at?: string
           id?: string
           product_id: string
@@ -943,6 +957,7 @@ export type Database = {
         }
         Update: {
           answers?: Json
+          catalogue_selections?: Json
           created_at?: string
           id?: string
           product_id?: string
@@ -2303,6 +2318,7 @@ export type Database = {
     }
     Enums: {
       accommodation_type: "hotel" | "beach_camping"
+      catalogue_source_type: "accommodation_room" | "transport" | "motorbike"
       dependency_action:
         | "show"
         | "hide"
@@ -2492,6 +2508,7 @@ export const Constants = {
   public: {
     Enums: {
       accommodation_type: ["hotel", "beach_camping"],
+      catalogue_source_type: ["accommodation_room", "transport", "motorbike"],
       dependency_action: [
         "show",
         "hide",

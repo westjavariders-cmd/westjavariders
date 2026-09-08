@@ -6,6 +6,12 @@
  * (supplier costs, internal notes, margins are never returned).
  */
 import { MASTER_LANGUAGE, type ProductBundle } from "@/lib/catalog";
+import {
+  fieldCatalogueType,
+  type CatalogueItem,
+  type CatalogueType,
+} from "@/lib/catalogue-bridge";
+import { resolveCatalogues } from "@/lib/catalogue-bridge.server";
 import { isPurchasable } from "@/lib/pricing";
 import { fail, listCart } from "@/lib/cart.server";
 import { summarizeAnswers, type AnswerSummaryLine } from "@/lib/public-catalog";
@@ -60,6 +66,8 @@ export async function listPurchasableProducts(): Promise<PublicProduct[]> {
 export type PublicBundle = {
   product: { id: string; title: string; summary: string | null; body: string | null };
   bundle: ProductBundle;
+  /** Active, customer-safe catalogue items per catalogue type used by the fields. */
+  catalogue: Partial<Record<CatalogueType, CatalogueItem[]>>;
 };
 
 /** The saved Phase 3 configuration of one purchasable product, without internal data. */
@@ -101,7 +109,14 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
     ? ((await db.from("field_options").select("*").in("field_id", fieldIds).order("display_order")).data ?? [])
     : [];
 
+  const catalogueTypes = (fields.data ?? [])
+    .filter((f: any) => f.is_active)
+    .map((f: any) => fieldCatalogueType(f))
+    .filter((t: CatalogueType | null): t is CatalogueType => t != null);
+  const catalogue = await resolveCatalogues(catalogueTypes);
+
   return {
+    catalogue,
     product: {
       id: product.id,
       title: translation.data?.title || product.internal_name,
@@ -185,6 +200,9 @@ export async function publicCart(token?: string): Promise<PublicCartView> {
       (fields.data ?? []).filter((f: any) => f.product_id === row.product_id),
       options,
       (row.answers ?? {}) as never,
+      Object.fromEntries(
+        ((row.catalogue_selections ?? []) as any[]).map((c) => [c.item_id, c.name]),
+      ),
     ),
   });
 
