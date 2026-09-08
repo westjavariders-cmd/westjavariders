@@ -2083,6 +2083,7 @@ export type Database = {
           gift_recipient_name: string | null
           id: string
           issued_at: string
+          package_id: string
           purchase_id: string
           redeemed_at: string | null
           redeemed_by: string | null
@@ -2104,6 +2105,7 @@ export type Database = {
           gift_recipient_name?: string | null
           id?: string
           issued_at?: string
+          package_id: string
           purchase_id: string
           redeemed_at?: string | null
           redeemed_by?: string | null
@@ -2125,6 +2127,7 @@ export type Database = {
           gift_recipient_name?: string | null
           id?: string
           issued_at?: string
+          package_id?: string
           purchase_id?: string
           redeemed_at?: string | null
           redeemed_by?: string | null
@@ -2145,9 +2148,16 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "vouchers_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: true
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "vouchers_purchase_id_fkey"
             columns: ["purchase_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "purchases"
             referencedColumns: ["id"]
           },
@@ -2204,6 +2214,7 @@ export type Database = {
       issue_voucher: {
         Args: {
           _entitlement: Json
+          _package_id: string
           _purchase_id: string
           _validity_months: number
         }

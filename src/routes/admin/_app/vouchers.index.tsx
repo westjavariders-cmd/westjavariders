@@ -44,13 +44,13 @@ function VouchersPage() {
     <div className="space-y-6">
       <PageHeader
         title="Vouchers"
-        description="Every voucher issued from a paid booking, standard or gift, with its validity and redemption state."
+        description="One voucher per purchased package. A booking with several packages has several vouchers, all linked to that booking."
       />
 
       <div className="flex flex-wrap items-center gap-2">
         <Input
           className="max-w-xs"
-          placeholder="Search voucher number, booking, name or email"
+          placeholder="Search voucher number, package, booking, name or email"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -103,6 +103,9 @@ function VouchersPage() {
                     >
                       {v.code}
                     </Link>
+                    <p className="text-sm font-medium">
+                      {v.entitlement?.package_title ?? "Purchased package"}
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       {v.customers?.full_name ?? "No contact"}
                       {v.customers?.email ? ` · ${v.customers.email}` : ""}

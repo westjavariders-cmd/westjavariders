@@ -46,13 +46,14 @@ async function purchaseWithSnapshot(db: any, purchaseId: string) {
   return { purchase, snapshot: snapshot?.data ?? null };
 }
 
-function entitlementFor(purchase: any, snapshot: any) {
+function entitlementFor(purchase: any, snapshot: any, packageId: string | null) {
   const type: VoucherType = purchase.is_gift ? "GIFT" : "STANDARD";
   return buildEntitlement({
     snapshot,
     voucherType: type,
     purchaseReference: purchase.reference ?? null,
     purchaseCreatedAt: purchase.created_at ?? null,
+    packageId,
     totalIdr: Number(purchase.total_idr),
     paidIdr: Number(purchase.paid_idr),
     recipientName: purchase.gift_recipient_name ?? null,
@@ -60,52 +61,77 @@ function entitlementFor(purchase: any, snapshot: any) {
   });
 }
 
+/** The purchased Packages of a Purchase, read from the immutable snapshot. */
+function snapshotPackageIds(snapshot: any): string[] {
+  const rows: any[] = Array.isArray(snapshot?.packages) ? snapshot.packages : [];
+  const ids: string[] = [];
+  for (const row of rows) {
+    const id = row?.package_id;
+    if (typeof id === "string" && id && !ids.includes(id)) ids.push(id);
+  }
+  return ids;
+}
+
 /**
- * Issues the voucher for a purchase once the required payment is confirmed.
- * Idempotent: repeated calls (payment replays, Admin retries) return the same
- * voucher with the same number.
+ * Issues one voucher per purchased Package once the required payment is
+ * confirmed. Idempotent: repeated calls (payment replays, Admin retries)
+ * return the same vouchers with the same numbers, and the database enforces
+ * one voucher per package.
  */
-export async function issueVoucherForPurchase(
+export async function issueVouchersForPurchase(
   purchaseId: string,
-): Promise<{ voucher: any | null; reason?: string; created: boolean }> {
+): Promise<{ vouchers: any[]; reason?: string; created: number }> {
   const db = await admin();
 
-  const { data: existing } = await db
+  const { purchase, snapshot } = await purchaseWithSnapshot(db, purchaseId);
+  if (!purchase) return { vouchers: [], reason: "purchase_not_found", created: 0 };
+  if (purchase.status === "cancelled")
+    return { vouchers: [], reason: "purchase_cancelled", created: 0 };
+  if (Number(purchase.paid_idr) <= 0)
+    return { vouchers: [], reason: "payment_not_confirmed", created: 0 };
+
+  const packageIds = snapshotPackageIds(snapshot);
+  if (packageIds.length === 0) return { vouchers: [], reason: "no_packages", created: 0 };
+
+  const months = await validityMonths(db);
+  let created = 0;
+
+  for (const packageId of packageIds) {
+    const { data: existing } = await db
+      .from("vouchers")
+      .select("id")
+      .eq("package_id", packageId)
+      .maybeSingle();
+    if (existing) continue;
+
+    const { data: voucherId, error } = await db.rpc("issue_voucher", {
+      _purchase_id: purchaseId,
+      _package_id: packageId,
+      _validity_months: months,
+      _entitlement: entitlementFor(purchase, snapshot, packageId) as never,
+    });
+    if (error || !voucherId) return { vouchers: [], reason: "issue_failed", created };
+    created += 1;
+  }
+
+  const { data: vouchers } = await db
     .from("vouchers")
     .select("*")
     .eq("purchase_id", purchaseId)
-    .maybeSingle();
-  if (existing) return { voucher: existing, created: false };
+    .order("code");
 
-  const { purchase, snapshot } = await purchaseWithSnapshot(db, purchaseId);
-  if (!purchase) return { voucher: null, reason: "purchase_not_found", created: false };
-  if (purchase.status === "cancelled")
-    return { voucher: null, reason: "purchase_cancelled", created: false };
-  if (Number(purchase.paid_idr) <= 0)
-    return { voucher: null, reason: "payment_not_confirmed", created: false };
-
-  const months = await validityMonths(db);
-
-  const { data: voucherId, error } = await db.rpc("issue_voucher", {
-    _purchase_id: purchaseId,
-    _validity_months: months,
-    _entitlement: entitlementFor(purchase, snapshot) as never,
-  });
-  if (error || !voucherId) return { voucher: null, reason: "issue_failed", created: false };
-
-  const { data: voucher } = await db.from("vouchers").select("*").eq("id", voucherId).maybeSingle();
-  return { voucher, created: true };
+  return { vouchers: vouchers ?? [], created };
 }
 
 /**
  * Rebuilds the customer-facing representation from the snapshot. The voucher
- * number, purchase link, validity and status never change.
+ * number, purchase link, package link, validity and status never change.
  */
 export async function regenerateRepresentation(voucherId: string) {
   const db = await admin();
   const { data: voucher } = await db
     .from("vouchers")
-    .select("id, purchase_id, representation_version")
+    .select("id, purchase_id, package_id, representation_version")
     .eq("id", voucherId)
     .maybeSingle();
   if (!voucher) fail("This voucher could not be found.");
@@ -116,13 +142,14 @@ export async function regenerateRepresentation(voucherId: string) {
   const { error } = await db
     .from("vouchers")
     .update({
-      entitlement: entitlementFor(purchase, snapshot) as never,
+      entitlement: entitlementFor(purchase, snapshot, voucher.package_id) as never,
       representation_version: Number(voucher.representation_version) + 1,
     })
     .eq("id", voucherId);
   if (error) fail(SAFE_ERROR);
   return { ok: true };
 }
+
 
 /** Admin redemption. Single-use: a used voucher can never be used again. */
 export async function markVoucherUsed(voucherId: string, actorId: string, note?: string | null) {

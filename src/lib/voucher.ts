@@ -124,6 +124,9 @@ export type VoucherEntitlement = {
   voucher_type: VoucherType;
   purchase_reference: string | null;
   purchase_date: string | null;
+  /** The specific purchased Package this voucher entitles. */
+  package_id: string | null;
+  package_title: string | null;
   /** Present for standard vouchers only; a gift never shows the price. */
   total_idr: number | null;
   payment_state: "partially_paid" | "fully_paid" | "awaiting_payment";
@@ -134,6 +137,7 @@ export type VoucherEntitlement = {
   usage_instructions: string[];
   contact: { business: string; email: string; whatsapp: string; location: string };
 };
+
 
 export const CIMAJA_CONTACT = {
   business: "Cimaja Boardriders",
@@ -171,6 +175,8 @@ function numberFrom(inputs: any, keys: string[]): number | null {
 
 /**
  * Builds the customer-safe entitlement from the immutable Purchase Snapshot.
+ * One voucher entitles one purchased Package: when `packageId` is given, only
+ * that package from the snapshot is represented.
  * Supplier costs, margins, internal notes and formulas are never included:
  * only the fields the snapshot exposes as customer-facing data are read.
  */
@@ -179,6 +185,7 @@ export function buildEntitlement(args: {
   voucherType: VoucherType;
   purchaseReference: string | null;
   purchaseCreatedAt: string | null;
+  packageId?: string | null;
   totalIdr: number;
   paidIdr: number;
   recipientName: string | null;
@@ -186,8 +193,18 @@ export function buildEntitlement(args: {
   now?: Date;
 }): VoucherEntitlement {
   const snapshot = args.snapshot ?? {};
-  const packages: any[] = Array.isArray(snapshot.packages) ? snapshot.packages : [];
+  const all: any[] = Array.isArray(snapshot.packages) ? snapshot.packages : [];
   const isGift = args.voucherType === "GIFT";
+
+  const packages = args.packageId
+    ? all.filter((p) => String(p?.package_id) === String(args.packageId))
+    : all;
+  const own = packages[0] ?? null;
+
+  const packageTotal = Number(own?.total_idr);
+  const priceIdr = Number.isFinite(packageTotal) && packageTotal > 0
+    ? packageTotal
+    : Number(args.totalIdr);
 
   const payment_state =
     args.paidIdr <= 0
@@ -202,7 +219,9 @@ export function buildEntitlement(args: {
     voucher_type: args.voucherType,
     purchase_reference: args.purchaseReference,
     purchase_date: args.purchaseCreatedAt,
-    total_idr: isGift ? null : Number(args.totalIdr),
+    package_id: args.packageId ?? own?.package_id ?? null,
+    package_title: own?.product_title ?? null,
+    total_idr: isGift ? null : priceIdr,
     payment_state,
     customer_name: snapshot.customer?.full_name ?? null,
     recipient_name: isGift ? args.recipientName : null,
@@ -217,6 +236,7 @@ export function buildEntitlement(args: {
     contact: CIMAJA_CONTACT,
   };
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Redemption                                                          */

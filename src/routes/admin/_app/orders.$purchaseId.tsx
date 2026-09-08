@@ -259,6 +259,44 @@ function PurchaseDetailPage() {
 
           <Card>
             <CardHeader className="pb-2">
+              <CardTitle className="text-base">Vouchers</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              {(data?.vouchers?.length ?? 0) === 0 && (
+                <p className="text-muted-foreground">
+                  No vouchers yet. One voucher per package is issued once the payment is confirmed.
+                </p>
+              )}
+              {(data?.vouchers ?? []).map((v: any) => (
+                <div
+                  key={v.id}
+                  className="flex flex-wrap items-baseline justify-between gap-2 rounded-md border border-border p-3"
+                >
+                  <div>
+                    <Link
+                      to="/admin/vouchers/$voucherId"
+                      params={{ voucherId: v.id }}
+                      className="font-mono font-medium underline underline-offset-2"
+                    >
+                      {v.code}
+                    </Link>
+                    <p className="text-muted-foreground">
+                      {v.entitlement?.package_title ?? "Purchased package"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{v.voucher_type === "GIFT" ? "Gift" : "Standard"}</Badge>
+                    <Badge variant={v.status === "ACTIVE" ? "default" : "secondary"}>{v.status}</Badge>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+
+
+          <Card>
+            <CardHeader className="pb-2">
               <CardTitle className="text-base">Payment history</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">

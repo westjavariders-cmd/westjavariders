@@ -30,7 +30,7 @@ export const listVouchers = createServerFn({ method: "POST" })
     let query = (context as any).supabase
       .from("vouchers")
       .select(
-        "id, code, voucher_type, status, issued_at, valid_until, validity_months, redeemed_at, purchase_id, gift_recipient_name, purchases(reference, status, total_idr, paid_idr, outstanding_idr), customers(id, full_name, email, phone)",
+        "id, code, voucher_type, status, issued_at, valid_until, validity_months, redeemed_at, purchase_id, package_id, entitlement, gift_recipient_name, purchases(reference, status, total_idr, paid_idr, outstanding_idr), customers(id, full_name, email, phone)",
       )
       .order("issued_at", { ascending: false })
       .limit(200);
@@ -44,7 +44,7 @@ export const listVouchers = createServerFn({ method: "POST" })
     const term = (data?.search ?? "").trim().toLowerCase();
     const vouchers = (rows ?? []).filter((v: any) => {
       if (!term) return true;
-      return [v.code, v.purchases?.reference, v.customers?.full_name, v.customers?.email, v.gift_recipient_name]
+      return [v.code, v.purchases?.reference, v.customers?.full_name, v.customers?.email, v.gift_recipient_name, v.entitlement?.package_title]
         .filter(Boolean)
         .join(" ")
         .toLowerCase()
@@ -62,7 +62,7 @@ export const getVoucherDetail = createServerFn({ method: "POST" })
     const { data: voucher, error } = await db
       .from("vouchers")
       .select(
-        "id, code, voucher_type, status, issued_at, valid_until, validity_months, entitlement, gift_recipient_name, gift_message, redeemed_at, redeemed_by, redemption_note, cancelled_at, representation_version, purchase_id, customers(id, full_name, email, phone, country), purchases(id, reference, status, fulfillment_status, total_idr, paid_idr, outstanding_idr, first_payment_idr, created_at, is_gift)",
+        "id, code, voucher_type, status, issued_at, valid_until, validity_months, package_id, entitlement, gift_recipient_name, gift_message, redeemed_at, redeemed_by, redemption_note, cancelled_at, representation_version, purchase_id, customers(id, full_name, email, phone, country), purchases(id, reference, status, fulfillment_status, total_idr, paid_idr, outstanding_idr, first_payment_idr, created_at, is_gift)",
       )
       .eq("id", data.voucherId)
       .maybeSingle();
@@ -86,25 +86,26 @@ export const getVoucherDetail = createServerFn({ method: "POST" })
     };
   });
 
-/** Issues the voucher for a purchase whose required payment is confirmed. */
+/** Issues one voucher per purchased package once payment is confirmed. */
 export const issueVoucher = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ purchaseId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     await requireAdmin(context);
-    const { issueVoucherForPurchase } = await import("@/lib/voucher.server");
-    const result = await issueVoucherForPurchase(data.purchaseId);
-    if (!result.voucher) {
+    const { issueVouchersForPurchase } = await import("@/lib/voucher.server");
+    const result = await issueVouchersForPurchase(data.purchaseId);
+    if (result.vouchers.length === 0) {
       throw new Error(
         result.reason === "payment_not_confirmed"
           ? "The first payment has not been confirmed for this booking yet."
           : result.reason === "purchase_cancelled"
             ? "This booking has been cancelled."
-            : "This voucher could not be issued.",
+            : "These vouchers could not be issued.",
       );
     }
-    return { voucher: result.voucher, created: result.created };
+    return { vouchers: result.vouchers, created: result.created };
   });
+
 
 export const markVoucherUsedFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

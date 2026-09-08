@@ -78,7 +78,7 @@ function VoucherDetailPage() {
     <div className="space-y-6">
       <PageHeader
         title={voucher.code}
-        description="A voucher issued from a paid booking. The number and validity never change."
+        description="A voucher for one purchased package. The number and validity never change."
       />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -98,6 +98,21 @@ function VoucherDetailPage() {
           </Link>
         )}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Purchased package</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-1 text-sm">
+          <p className="font-medium">{entitlement.package_title ?? "Purchased package"}</p>
+          <p className="font-mono text-xs text-muted-foreground">
+            {voucher.package_id ?? entitlement.package_id ?? "—"}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Each purchased package of a booking has exactly one voucher.
+          </p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

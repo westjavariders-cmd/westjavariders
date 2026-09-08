@@ -123,3 +123,121 @@ describe("redemption", () => {
     expect(effectiveStatus("USED", "2020-01-01T00:00:00Z")).toBe("USED");
   });
 });
+
+/* ------------------------------------------------------------------ */
+/* One voucher per purchased Package                                   */
+/* ------------------------------------------------------------------ */
+
+describe("one voucher per package", () => {
+  const snapshotOf = (n: number) => ({
+    customer: { full_name: "Ana Rivera" },
+    packages: Array.from({ length: n }, (_, i) => ({
+      package_id: `pkg-${i + 1}`,
+      product_title: `Experience ${i + 1}`,
+      answers: { level: "Beginner" },
+      resolved_inputs: { people: 2 },
+      total_idr: (i + 1) * 1_000_000,
+    })),
+  });
+
+  /** The issuance loop under test: one voucher per snapshot package, keyed by package. */
+  function issue(snapshot: any, store: Map<string, any> = new Map()) {
+    for (const pkg of snapshot.packages) {
+      if (store.has(pkg.package_id)) continue; // database uniqueness on package_id
+      store.set(pkg.package_id, {
+        purchase_id: "purchase-1",
+        package_id: pkg.package_id,
+        entitlement: buildEntitlement({
+          snapshot,
+          voucherType: "STANDARD",
+          purchaseReference: "CBR-000123",
+          purchaseCreatedAt: "2026-01-15T00:00:00Z",
+          packageId: pkg.package_id,
+          totalIdr: 6_000_000,
+          paidIdr: 2_400_000,
+          recipientName: null,
+          giftMessage: null,
+        }),
+      });
+    }
+    return store;
+  }
+
+  it("issues exactly one voucher for one package", () => {
+    expect(issue(snapshotOf(1)).size).toBe(1);
+  });
+
+  it("issues two vouchers for two packages", () => {
+    expect(issue(snapshotOf(2)).size).toBe(2);
+  });
+
+  it("issues three vouchers for three packages", () => {
+    expect(issue(snapshotOf(3)).size).toBe(3);
+  });
+
+  it("never duplicates a voucher when payment confirmation is replayed", () => {
+    const snapshot = snapshotOf(3);
+    const store = issue(snapshot);
+    issue(snapshot, store);
+    issue(snapshot, store);
+    expect(store.size).toBe(3);
+  });
+
+  it("references the correct package and the same purchase", () => {
+    const store = issue(snapshotOf(3));
+    for (const [id, v] of store) {
+      expect(v.package_id).toBe(id);
+      expect(v.entitlement.package_id).toBe(id);
+      expect(v.entitlement.items).toHaveLength(1);
+      expect(v.entitlement.items[0].product_title).toBe(
+        `Experience ${id.replace("pkg-", "")}`,
+      );
+      expect(v.purchase_id).toBe("purchase-1");
+    }
+  });
+
+  it("prices the package on a standard voucher and hides it on a gift", () => {
+    const snapshot = snapshotOf(2);
+    const std = buildEntitlement({
+      snapshot,
+      voucherType: "STANDARD",
+      purchaseReference: "CBR-000123",
+      purchaseCreatedAt: "2026-01-15T00:00:00Z",
+      packageId: "pkg-2",
+      totalIdr: 3_000_000,
+      paidIdr: 3_000_000,
+      recipientName: null,
+      giftMessage: null,
+    });
+    expect(std.total_idr).toBe(2_000_000);
+    expect(std.package_title).toBe("Experience 2");
+
+    const gift = buildEntitlement({
+      snapshot,
+      voucherType: "GIFT",
+      purchaseReference: "CBR-000123",
+      purchaseCreatedAt: "2026-01-15T00:00:00Z",
+      packageId: "pkg-2",
+      totalIdr: 3_000_000,
+      paidIdr: 3_000_000,
+      recipientName: "Marco",
+      giftMessage: "Enjoy!",
+    });
+    expect(gift.total_idr).toBeNull();
+    expect(gift.recipient_name).toBe("Marco");
+    expect(gift.package_id).toBe("pkg-2");
+  });
+
+  it("keeps used and cancelled behaviour per voucher", () => {
+    const base = {
+      id: "v1",
+      code: "CBR-2026-002",
+      purchase_id: "purchase-1",
+      status: "ACTIVE" as const,
+      valid_until: "2030-01-01T00:00:00Z",
+    };
+    expect(redemptionCheck(base).ok).toBe(true);
+    expect(redemptionCheck({ ...base, status: "USED" }).ok).toBe(false);
+    expect(redemptionCheck({ ...base, status: "CANCELLED" }).ok).toBe(false);
+  });
+});
