@@ -25,6 +25,7 @@ import {
   type PurchaseFulfillmentStatus,
 } from "@/lib/customer";
 import { activePaymentProvider, providerByName } from "@/lib/payments/provider.server";
+import { validateGift, type GiftData, type GiftInput } from "@/lib/voucher";
 
 export { CartError };
 
@@ -226,7 +227,11 @@ async function syncPackageQuotes(revalidation: CheckoutRevalidation) {
 /* Purchase creation                                                   */
 /* ------------------------------------------------------------------ */
 
-function buildSnapshot(revalidation: CheckoutRevalidation, customer: CustomerContact) {
+function buildSnapshot(
+  revalidation: CheckoutRevalidation,
+  customer: CustomerContact,
+  gift: GiftData,
+) {
   return {
     snapshot_version: 1,
     taken_at: new Date().toISOString(),
@@ -259,6 +264,12 @@ function buildSnapshot(revalidation: CheckoutRevalidation, customer: CustomerCon
       phone: customer.phone,
       country: customer.country,
       preferred_language_code: customer.preferred_language_code,
+    },
+    // Gift intent as agreed at purchase time. The voucher engine reads this.
+    gift: {
+      is_gift: gift.is_gift,
+      recipient_name: gift.gift_recipient_name,
+      message: gift.gift_message,
     },
   };
 }
@@ -392,6 +403,7 @@ export async function findOrCreateCustomer(contact: CustomerContact): Promise<st
  */
 export async function createPurchaseFromCart(
   contactInput: CustomerContactInput,
+  giftInput?: GiftInput,
   token?: string,
 ) {
   const db = await admin();
@@ -410,9 +422,10 @@ export async function createPurchaseFromCart(
   if (hard.length > 0) fail(hard[0]!);
   if (revalidation.total_idr <= 0) fail("This booking has no amount to pay.");
 
-  // Contact details are validated on the server; nothing the browser sends
-  // about identity or money is trusted.
+  // Contact and gift details are validated on the server; nothing the browser
+  // sends about identity or money is trusted.
   const contact = validateCustomerContact(contactInput);
+  const gift = validateGift(giftInput);
   const customerId = await findOrCreateCustomer(contact);
 
   const { data: purchaseId, error } = await db.rpc("create_purchase", {
@@ -422,7 +435,10 @@ export async function createPurchaseFromCart(
     _percentage: revalidation.first_payment_percentage,
     _first_payment_idr: revalidation.first_payment_idr,
     _outstanding_idr: revalidation.outstanding_idr,
-    _snapshot: buildSnapshot(revalidation, contact) as never,
+    _snapshot: buildSnapshot(revalidation, contact, gift) as never,
+    _is_gift: gift.is_gift,
+    _gift_recipient_name: gift.gift_recipient_name,
+    _gift_message: gift.gift_message,
   });
   if (error || !purchaseId) fail(SAFE_ERROR);
 
@@ -617,5 +633,13 @@ export async function applyProviderNotification(
     .eq("id", request.id);
 
   await recomputePurchaseMoney(request.purchase_id);
+
+  // A confirmed payment is what entitles the customer: issue the voucher once,
+  // idempotently. A provider replay never produces a second voucher.
+  if (next === "paid") {
+    const { issueVoucherForPurchase } = await import("@/lib/voucher.server");
+    await issueVoucherForPurchase(request.purchase_id).catch(() => undefined);
+  }
+
   return { ok: true, duplicate: false };
 }

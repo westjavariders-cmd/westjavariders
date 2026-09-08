@@ -45,6 +45,8 @@ function CheckoutPage() {
     phone: "",
     country: "",
   });
+  const [isGift, setIsGift] = useState(false);
+  const [gift, setGift] = useState({ recipient: "", message: "" });
 
   const summary = useQuery({
     queryKey: ["checkout-summary"],
@@ -59,7 +61,14 @@ function CheckoutPage() {
   async function book() {
     setBusy(true);
     try {
-      const result = await confirm({ data: contact });
+      const result = await confirm({
+        data: {
+          ...contact,
+          is_gift: isGift,
+          gift_recipient_name: isGift ? gift.recipient : undefined,
+          gift_message: isGift ? gift.message : undefined,
+        },
+      });
       await queryClient.invalidateQueries({ queryKey: PUBLIC_CART_KEY });
       await cart.refetch();
       const id = result.purchase?.id;
@@ -195,6 +204,48 @@ function CheckoutPage() {
             <p className="text-xs text-muted-foreground">
               We use these details only to organise and confirm your trip.
             </p>
+          </div>
+
+          <div className="mt-8 space-y-3 border-t border-border pt-4">
+            <label className="flex items-start gap-3 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 accent-primary"
+                checked={isGift}
+                onChange={(e) => setIsGift(e.target.checked)}
+              />
+              <span>
+                <span className="font-medium">This is a gift</span>
+                <span className="block text-xs text-muted-foreground">
+                  We send everything to you, so you can give it yourself. The price is never
+                  shown on a gift.
+                </span>
+              </span>
+            </label>
+
+            {isGift && (
+              <div className="space-y-3">
+                <label className="block space-y-1 text-sm">
+                  <span>Who is it for? (optional)</span>
+                  <Input
+                    value={gift.recipient}
+                    onChange={(e) => setGift({ ...gift, recipient: e.target.value })}
+                  />
+                </label>
+                <label className="block space-y-1 text-sm">
+                  <span>Your message (optional)</span>
+                  <textarea
+                    className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    maxLength={200}
+                    value={gift.message}
+                    onChange={(e) => setGift({ ...gift, message: e.target.value })}
+                  />
+                  <span className="block text-xs text-muted-foreground">
+                    {gift.message.length}/200 characters
+                  </span>
+                </label>
+              </div>
+            )}
           </div>
 
           <div className="mt-6 space-y-3">

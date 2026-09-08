@@ -1756,7 +1756,10 @@ export type Database = {
           first_payment_idr: number
           first_payment_percentage: number
           fulfillment_status: Database["public"]["Enums"]["purchase_fulfillment_status"]
+          gift_message: string | null
+          gift_recipient_name: string | null
           id: string
+          is_gift: boolean
           outstanding_idr: number
           paid_idr: number
           reference: string | null
@@ -1772,7 +1775,10 @@ export type Database = {
           first_payment_idr: number
           first_payment_percentage: number
           fulfillment_status?: Database["public"]["Enums"]["purchase_fulfillment_status"]
+          gift_message?: string | null
+          gift_recipient_name?: string | null
           id?: string
+          is_gift?: boolean
           outstanding_idr: number
           paid_idr?: number
           reference?: string | null
@@ -1788,7 +1794,10 @@ export type Database = {
           first_payment_idr?: number
           first_payment_percentage?: number
           fulfillment_status?: Database["public"]["Enums"]["purchase_fulfillment_status"]
+          gift_message?: string | null
+          gift_recipient_name?: string | null
           id?: string
+          is_gift?: boolean
           outstanding_idr?: number
           paid_idr?: number
           reference?: string | null
@@ -2042,23 +2051,141 @@ export type Database = {
         }
         Relationships: []
       }
+      voucher_sequences: {
+        Row: {
+          created_at: string
+          last_value: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          last_value?: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          last_value?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      vouchers: {
+        Row: {
+          cancelled_at: string | null
+          code: string
+          created_at: string
+          customer_id: string | null
+          entitlement: Json
+          gift_message: string | null
+          gift_recipient_name: string | null
+          id: string
+          issued_at: string
+          purchase_id: string
+          redeemed_at: string | null
+          redeemed_by: string | null
+          redemption_note: string | null
+          representation_version: number
+          status: Database["public"]["Enums"]["voucher_status"]
+          updated_at: string
+          valid_until: string
+          validity_months: number
+          voucher_type: Database["public"]["Enums"]["voucher_type"]
+        }
+        Insert: {
+          cancelled_at?: string | null
+          code: string
+          created_at?: string
+          customer_id?: string | null
+          entitlement?: Json
+          gift_message?: string | null
+          gift_recipient_name?: string | null
+          id?: string
+          issued_at?: string
+          purchase_id: string
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          redemption_note?: string | null
+          representation_version?: number
+          status?: Database["public"]["Enums"]["voucher_status"]
+          updated_at?: string
+          valid_until: string
+          validity_months: number
+          voucher_type?: Database["public"]["Enums"]["voucher_type"]
+        }
+        Update: {
+          cancelled_at?: string | null
+          code?: string
+          created_at?: string
+          customer_id?: string | null
+          entitlement?: Json
+          gift_message?: string | null
+          gift_recipient_name?: string | null
+          id?: string
+          issued_at?: string
+          purchase_id?: string
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          redemption_note?: string | null
+          representation_version?: number
+          status?: Database["public"]["Enums"]["voucher_status"]
+          updated_at?: string
+          valid_until?: string
+          validity_months?: number
+          voucher_type?: Database["public"]["Enums"]["voucher_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vouchers_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: true
+            referencedRelation: "purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      create_purchase: {
-        Args: {
-          _cart_id: string
-          _customer_id: string
-          _first_payment_idr: number
-          _outstanding_idr: number
-          _percentage: number
-          _snapshot: Json
-          _total_idr: number
-        }
-        Returns: string
-      }
+      create_purchase:
+        | {
+            Args: {
+              _cart_id: string
+              _customer_id: string
+              _first_payment_idr: number
+              _outstanding_idr: number
+              _percentage: number
+              _snapshot: Json
+              _total_idr: number
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              _cart_id: string
+              _customer_id: string
+              _first_payment_idr: number
+              _gift_message?: string
+              _gift_recipient_name?: string
+              _is_gift?: boolean
+              _outstanding_idr: number
+              _percentage: number
+              _snapshot: Json
+              _total_idr: number
+            }
+            Returns: string
+          }
       duplicate_accommodation_room: {
         Args: { _source: string }
         Returns: string
@@ -2074,6 +2201,15 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_staff_or_admin: { Args: never; Returns: boolean }
+      issue_voucher: {
+        Args: {
+          _entitlement: Json
+          _purchase_id: string
+          _validity_months: number
+        }
+        Returns: string
+      }
+      next_voucher_code: { Args: never; Returns: string }
     }
     Enums: {
       accommodation_type: "hotel" | "beach_camping"
@@ -2137,6 +2273,7 @@ export type Database = {
         | "per_session"
       user_role: "ADMIN" | "STAFF"
       voucher_status: "ACTIVE" | "USED" | "EXPIRED" | "CANCELLED"
+      voucher_type: "STANDARD" | "GIFT"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2332,6 +2469,7 @@ export const Constants = {
       ],
       user_role: ["ADMIN", "STAFF"],
       voucher_status: ["ACTIVE", "USED", "EXPIRED", "CANCELLED"],
+      voucher_type: ["STANDARD", "GIFT"],
     },
   },
 } as const
