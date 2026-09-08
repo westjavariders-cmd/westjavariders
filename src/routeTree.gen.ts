@@ -46,6 +46,7 @@ import { Route as AdminAppSettingsUsersRouteImport } from './routes/admin/_app/s
 import { Route as AdminAppTransportIndexRouteImport } from './routes/admin/_app/transport.index'
 import { Route as AdminAppTransportTransportIdRouteImport } from './routes/admin/_app/transport.$transportId'
 import { Route as AdminAppVouchersIndexRouteImport } from './routes/admin/_app/vouchers.index'
+import { Route as AdminAppVouchersVoucherIdRouteImport } from './routes/admin/_app/vouchers.$voucherId'
 import { Route as ApiPublicPaymentsXenditRouteImport } from './routes/api/public/payments/xendit'
 
 const IndexRoute = IndexRouteImport.update({
@@ -239,6 +240,12 @@ const AdminAppVouchersIndexRoute = AdminAppVouchersIndexRouteImport.update({
   path: '/vouchers/',
   getParentRoute: () => AdminAppRouteRoute,
 } as any)
+const AdminAppVouchersVoucherIdRoute =
+  AdminAppVouchersVoucherIdRouteImport.update({
+    id: '/vouchers/$voucherId',
+    path: '/vouchers/$voucherId',
+    getParentRoute: () => AdminAppRouteRoute,
+  } as any)
 const ApiPublicPaymentsXenditRoute = ApiPublicPaymentsXenditRouteImport.update({
   id: '/api/public/payments/xendit',
   path: '/api/public/payments/xendit',
@@ -276,6 +283,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings/markets': typeof AdminAppSettingsMarketsRoute
   '/admin/settings/users': typeof AdminAppSettingsUsersRoute
   '/admin/transport/$transportId': typeof AdminAppTransportTransportIdRoute
+  '/admin/vouchers/$voucherId': typeof AdminAppVouchersVoucherIdRoute
   '/api/public/payments/xendit': typeof ApiPublicPaymentsXenditRoute
   '/admin/hotels/': typeof AdminAppHotelsIndexRoute
   '/admin/orders/': typeof AdminAppOrdersIndexRoute
@@ -314,6 +322,7 @@ export interface FileRoutesByTo {
   '/admin/settings/markets': typeof AdminAppSettingsMarketsRoute
   '/admin/settings/users': typeof AdminAppSettingsUsersRoute
   '/admin/transport/$transportId': typeof AdminAppTransportTransportIdRoute
+  '/admin/vouchers/$voucherId': typeof AdminAppVouchersVoucherIdRoute
   '/api/public/payments/xendit': typeof ApiPublicPaymentsXenditRoute
   '/admin/hotels': typeof AdminAppHotelsIndexRoute
   '/admin/orders': typeof AdminAppOrdersIndexRoute
@@ -355,6 +364,7 @@ export interface FileRoutesById {
   '/admin/_app/settings/markets': typeof AdminAppSettingsMarketsRoute
   '/admin/_app/settings/users': typeof AdminAppSettingsUsersRoute
   '/admin/_app/transport/$transportId': typeof AdminAppTransportTransportIdRoute
+  '/admin/_app/vouchers/$voucherId': typeof AdminAppVouchersVoucherIdRoute
   '/api/public/payments/xendit': typeof ApiPublicPaymentsXenditRoute
   '/admin/_app/hotels/': typeof AdminAppHotelsIndexRoute
   '/admin/_app/orders/': typeof AdminAppOrdersIndexRoute
@@ -396,6 +406,7 @@ export interface FileRouteTypes {
     | '/admin/settings/markets'
     | '/admin/settings/users'
     | '/admin/transport/$transportId'
+    | '/admin/vouchers/$voucherId'
     | '/api/public/payments/xendit'
     | '/admin/hotels/'
     | '/admin/orders/'
@@ -434,6 +445,7 @@ export interface FileRouteTypes {
     | '/admin/settings/markets'
     | '/admin/settings/users'
     | '/admin/transport/$transportId'
+    | '/admin/vouchers/$voucherId'
     | '/api/public/payments/xendit'
     | '/admin/hotels'
     | '/admin/orders'
@@ -474,6 +486,7 @@ export interface FileRouteTypes {
     | '/admin/_app/settings/markets'
     | '/admin/_app/settings/users'
     | '/admin/_app/transport/$transportId'
+    | '/admin/_app/vouchers/$voucherId'
     | '/api/public/payments/xendit'
     | '/admin/_app/hotels/'
     | '/admin/_app/orders/'
@@ -755,6 +768,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAppVouchersIndexRouteImport
       parentRoute: typeof AdminAppRouteRoute
     }
+    '/admin/_app/vouchers/$voucherId': {
+      id: '/admin/_app/vouchers/$voucherId'
+      path: '/vouchers/$voucherId'
+      fullPath: '/admin/vouchers/$voucherId'
+      preLoaderRoute: typeof AdminAppVouchersVoucherIdRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
     '/api/public/payments/xendit': {
       id: '/api/public/payments/xendit'
       path: '/api/public/payments/xendit'
@@ -786,6 +806,7 @@ interface AdminAppRouteRouteChildren {
   AdminAppSettingsMarketsRoute: typeof AdminAppSettingsMarketsRoute
   AdminAppSettingsUsersRoute: typeof AdminAppSettingsUsersRoute
   AdminAppTransportTransportIdRoute: typeof AdminAppTransportTransportIdRoute
+  AdminAppVouchersVoucherIdRoute: typeof AdminAppVouchersVoucherIdRoute
   AdminAppHotelsIndexRoute: typeof AdminAppHotelsIndexRoute
   AdminAppOrdersIndexRoute: typeof AdminAppOrdersIndexRoute
   AdminAppProductsIndexRoute: typeof AdminAppProductsIndexRoute
@@ -815,6 +836,7 @@ const AdminAppRouteRouteChildren: AdminAppRouteRouteChildren = {
   AdminAppSettingsMarketsRoute: AdminAppSettingsMarketsRoute,
   AdminAppSettingsUsersRoute: AdminAppSettingsUsersRoute,
   AdminAppTransportTransportIdRoute: AdminAppTransportTransportIdRoute,
+  AdminAppVouchersVoucherIdRoute: AdminAppVouchersVoucherIdRoute,
   AdminAppHotelsIndexRoute: AdminAppHotelsIndexRoute,
   AdminAppOrdersIndexRoute: AdminAppOrdersIndexRoute,
   AdminAppProductsIndexRoute: AdminAppProductsIndexRoute,
