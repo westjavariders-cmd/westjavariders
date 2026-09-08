@@ -785,6 +785,57 @@ export type Database = {
           },
         ]
       }
+      fx_rates: {
+        Row: {
+          base_currency_code: string
+          created_at: string
+          effective_at: string
+          id: string
+          is_current: boolean
+          quote_currency_code: string
+          rate: number
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          base_currency_code?: string
+          created_at?: string
+          effective_at?: string
+          id?: string
+          is_current?: boolean
+          quote_currency_code: string
+          rate: number
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          base_currency_code?: string
+          created_at?: string
+          effective_at?: string
+          id?: string
+          is_current?: boolean
+          quote_currency_code?: string
+          rate?: number
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fx_rates_base_currency_code_fkey"
+            columns: ["base_currency_code"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "fx_rates_quote_currency_code_fkey"
+            columns: ["quote_currency_code"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       languages: {
         Row: {
           code: string
@@ -1035,7 +1086,10 @@ export type Database = {
           amount_idr: number
           created_at: string
           currency_code: string
+          customer_amount: number | null
+          customer_currency_code: string | null
           expires_at: string | null
+          fx_rate: number | null
           id: string
           kind: Database["public"]["Enums"]["payment_request_kind"]
           paid_at: string | null
@@ -1050,7 +1104,10 @@ export type Database = {
           amount_idr: number
           created_at?: string
           currency_code?: string
+          customer_amount?: number | null
+          customer_currency_code?: string | null
           expires_at?: string | null
+          fx_rate?: number | null
           id?: string
           kind: Database["public"]["Enums"]["payment_request_kind"]
           paid_at?: string | null
@@ -1065,7 +1122,10 @@ export type Database = {
           amount_idr?: number
           created_at?: string
           currency_code?: string
+          customer_amount?: number | null
+          customer_currency_code?: string | null
           expires_at?: string | null
+          fx_rate?: number | null
           id?: string
           kind?: Database["public"]["Enums"]["payment_request_kind"]
           paid_at?: string | null
@@ -1080,6 +1140,13 @@ export type Database = {
           {
             foreignKeyName: "payment_requests_currency_code_fkey"
             columns: ["currency_code"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "payment_requests_customer_currency_code_fkey"
+            columns: ["customer_currency_code"]
             isOneToOne: false
             referencedRelation: "currencies"
             referencedColumns: ["code"]
@@ -1815,10 +1882,16 @@ export type Database = {
           cart_id: string
           created_at: string
           currency_code: string
+          customer_currency_code: string | null
+          customer_first_payment_amount: number | null
           customer_id: string | null
+          customer_outstanding_amount: number | null
+          customer_total_amount: number | null
           first_payment_idr: number
           first_payment_percentage: number
           fulfillment_status: Database["public"]["Enums"]["purchase_fulfillment_status"]
+          fx_effective_at: string | null
+          fx_rate: number | null
           gift_message: string | null
           gift_recipient_name: string | null
           id: string
@@ -1834,10 +1907,16 @@ export type Database = {
           cart_id: string
           created_at?: string
           currency_code?: string
+          customer_currency_code?: string | null
+          customer_first_payment_amount?: number | null
           customer_id?: string | null
+          customer_outstanding_amount?: number | null
+          customer_total_amount?: number | null
           first_payment_idr: number
           first_payment_percentage: number
           fulfillment_status?: Database["public"]["Enums"]["purchase_fulfillment_status"]
+          fx_effective_at?: string | null
+          fx_rate?: number | null
           gift_message?: string | null
           gift_recipient_name?: string | null
           id?: string
@@ -1853,10 +1932,16 @@ export type Database = {
           cart_id?: string
           created_at?: string
           currency_code?: string
+          customer_currency_code?: string | null
+          customer_first_payment_amount?: number | null
           customer_id?: string | null
+          customer_outstanding_amount?: number | null
+          customer_total_amount?: number | null
           first_payment_idr?: number
           first_payment_percentage?: number
           fulfillment_status?: Database["public"]["Enums"]["purchase_fulfillment_status"]
+          fx_effective_at?: string | null
+          fx_rate?: number | null
           gift_message?: string | null
           gift_recipient_name?: string | null
           id?: string
@@ -1879,6 +1964,13 @@ export type Database = {
           {
             foreignKeyName: "purchases_currency_code_fkey"
             columns: ["currency_code"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "purchases_customer_currency_code_fkey"
+            columns: ["customer_currency_code"]
             isOneToOne: false
             referencedRelation: "currencies"
             referencedColumns: ["code"]
