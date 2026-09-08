@@ -372,7 +372,7 @@ export async function quotePackage(args: {
 /* ------------------------------------------------------------------ */
 
 const PACKAGE_FIELDS =
-  "id, product_id, status, answers, resolved_inputs, quote_lines, subtotal_idr, season_discount_idr, promo_discount_idr, total_idr, season_month, season_period, promo_code, quoted_at, created_at, updated_at";
+  "id, product_id, status, answers, resolved_inputs, quote_lines, subtotal_idr, season_discount_idr, promo_discount_idr, total_idr, season_month, season_period, promo_code, catalogue_selections, quoted_at, created_at, updated_at";
 
 async function getDraft(cartId: string) {
   const db = await admin();
@@ -461,8 +461,9 @@ export async function savePackage(args: {
   const { data: updated, error } = await db
     .from("packages")
     .update({
-      answers: args.answers as never,
+      answers: quote.answers as never,
       resolved_inputs: quote.resolved_inputs as never,
+      catalogue_selections: quote.catalogue_selections as never,
       quote_lines: quote.lines as never,
       subtotal_idr: quote.subtotal_idr,
       season_discount_idr: quote.season_discount_idr,
@@ -512,7 +513,9 @@ export async function completePackage(packageId: string, token?: string) {
     .from("packages")
     .update({
       status: "complete",
+      answers: quote.answers as never,
       resolved_inputs: quote.resolved_inputs as never,
+      catalogue_selections: quote.catalogue_selections as never,
       quote_lines: quote.lines as never,
       subtotal_idr: quote.subtotal_idr,
       season_discount_idr: quote.season_discount_idr,
