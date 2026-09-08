@@ -238,11 +238,17 @@ function FieldEditor({
     min_value: field.min_value == null ? "" : String(field.min_value),
     max_value: field.max_value == null ? "" : String(field.max_value),
     display_order: String(field.display_order),
+    option_source: ((field as any).option_source as string) || "manual",
+    catalogue_type: ((field as any).catalogue_type as string) || "",
   });
   const options = bundle.options.filter((o) => o.field_id === field.id);
   const isSelect = SELECT_FIELD_TYPES.includes(draft.field_type);
+  const usesCatalogue = isSelect && draft.option_source === "catalogue";
 
   async function save() {
+    if (usesCatalogue && !CATALOGUE_TYPES.includes(draft.catalogue_type as never)) {
+      { toast.error("Choose which catalogue this question reads."); return; }
+    }
     if (!/^[a-z][a-z0-9_]*$/.test(draft.variable_name)) {
       { toast.error("Variable name must be lowercase letters, numbers and underscores."); return; }
     }
@@ -266,6 +272,8 @@ function FieldEditor({
         min_value: numeric(draft.min_value),
         max_value: numeric(draft.max_value),
         display_order: Number(draft.display_order || 0),
+        option_source: usesCatalogue ? "catalogue" : "manual",
+        catalogue_type: usesCatalogue ? (draft.catalogue_type as never) : null,
       })
       .eq("id", field.id);
     if (error) { toast.error(error.message); return; }
@@ -341,6 +349,45 @@ function FieldEditor({
             ))}
           </select>
         </div>
+        {isSelect && (
+          <>
+            <div>
+              <Label className="text-xs">Where the choices come from</Label>
+              <select
+                className={selectClass}
+                value={draft.option_source}
+                disabled={!canEdit}
+                onChange={(e) => setDraft({ ...draft, option_source: e.target.value })}
+              >
+                <option value="manual">Options I enter here</option>
+                <option value="catalogue">A catalogue</option>
+              </select>
+            </div>
+            {draft.option_source === "catalogue" && (
+              <div>
+                <Label className="text-xs">Catalogue</Label>
+                <select
+                  className={selectClass}
+                  value={draft.catalogue_type}
+                  disabled={!canEdit}
+                  onChange={(e) => setDraft({ ...draft, catalogue_type: e.target.value })}
+                >
+                  <option value="">Choose a catalogue…</option>
+                  {CATALOGUE_TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {CATALOGUE_TYPE_LABELS[t]}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Customers see the active items of this catalogue. The price of the chosen item is
+                  available to pricing as{" "}
+                  <span className="font-mono">{draft.variable_name}_price</span>.
+                </p>
+              </div>
+            )}
+          </>
+        )}
         <div className="sm:col-span-2">
           <Label className="text-xs">Help text</Label>
           <Textarea
@@ -409,7 +456,7 @@ function FieldEditor({
           <Button size="sm" onClick={save}>
             Save field
           </Button>
-          {isSelect && (
+          {isSelect && !usesCatalogue && (
             <Button size="sm" variant="outline" onClick={addOption}>
               <Plus className="mr-1.5 h-3.5 w-3.5" />
               Add option
