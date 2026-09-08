@@ -11,6 +11,11 @@ import {
   type ProductBundle,
 } from "@/lib/catalog";
 import { formatIdr } from "@/lib/public-catalog";
+import {
+  fieldCatalogueType,
+  type CatalogueItem,
+  type CatalogueType,
+} from "@/lib/catalogue-bridge";
 import { completePackage, savePackageConfiguration } from "@/lib/cart.functions";
 import { PUBLIC_CART_KEY } from "@/components/public/SiteHeader";
 import { Button } from "@/components/ui/button";
@@ -62,11 +67,14 @@ export function ConfiguratorForm({
   packageId,
   savedAnswers,
   savedPromo,
+  catalogue = {},
 }: {
   bundle: ProductBundle;
   packageId: string;
   savedAnswers: PreviewValues | null;
   savedPromo: string | null;
+  /** Active catalogue items per type, resolved server-side. */
+  catalogue?: Partial<Record<CatalogueType, CatalogueItem[]>>;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -165,9 +173,20 @@ export function ConfiguratorForm({
           {stepFields.map((f) => {
             const e = evaluated.fields[f.id]!;
             const value = e.forcedValue ?? values[f.variable_name] ?? "";
-            const options = bundle.options
-              .filter((o) => o.field_id === f.id && o.is_active)
-              .filter((o) => !evaluated.hiddenOptionIds.has(o.id));
+            const catalogueType = fieldCatalogueType(f as never);
+            const catalogueItems = catalogueType ? (catalogue[catalogueType] ?? []) : [];
+            const options = catalogueType
+              ? catalogueItems.map((item) => ({
+                  id: item.id,
+                  internal_value: item.id,
+                  customer_label:
+                    item.customer_price_idr == null
+                      ? item.name
+                      : `${item.name} · ${formatIdr(item.customer_price_idr)}`,
+                }))
+              : bundle.options
+                  .filter((o) => o.field_id === f.id && o.is_active)
+                  .filter((o) => !evaluated.hiddenOptionIds.has(o.id));
 
             if (f.field_type === "info_block") {
               return (
