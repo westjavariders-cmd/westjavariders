@@ -485,6 +485,47 @@ export type Database = {
         }
         Relationships: []
       }
+      customers: {
+        Row: {
+          country: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          phone: string
+          preferred_language_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          phone: string
+          preferred_language_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string
+          preferred_language_code?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_preferred_language_code_fkey"
+            columns: ["preferred_language_code"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       dependencies: {
         Row: {
           action: Database["public"]["Enums"]["dependency_action"]
@@ -1711,11 +1752,14 @@ export type Database = {
           cart_id: string
           created_at: string
           currency_code: string
+          customer_id: string | null
           first_payment_idr: number
           first_payment_percentage: number
+          fulfillment_status: Database["public"]["Enums"]["purchase_fulfillment_status"]
           id: string
           outstanding_idr: number
           paid_idr: number
+          reference: string | null
           status: Database["public"]["Enums"]["purchase_status"]
           total_idr: number
           updated_at: string
@@ -1724,11 +1768,14 @@ export type Database = {
           cart_id: string
           created_at?: string
           currency_code?: string
+          customer_id?: string | null
           first_payment_idr: number
           first_payment_percentage: number
+          fulfillment_status?: Database["public"]["Enums"]["purchase_fulfillment_status"]
           id?: string
           outstanding_idr: number
           paid_idr?: number
+          reference?: string | null
           status?: Database["public"]["Enums"]["purchase_status"]
           total_idr: number
           updated_at?: string
@@ -1737,11 +1784,14 @@ export type Database = {
           cart_id?: string
           created_at?: string
           currency_code?: string
+          customer_id?: string | null
           first_payment_idr?: number
           first_payment_percentage?: number
+          fulfillment_status?: Database["public"]["Enums"]["purchase_fulfillment_status"]
           id?: string
           outstanding_idr?: number
           paid_idr?: number
+          reference?: string | null
           status?: Database["public"]["Enums"]["purchase_status"]
           total_idr?: number
           updated_at?: string
@@ -1760,6 +1810,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "currencies"
             referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "purchases_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1993,6 +2050,7 @@ export type Database = {
       create_purchase: {
         Args: {
           _cart_id: string
+          _customer_id: string
           _first_payment_idr: number
           _outstanding_idr: number
           _percentage: number
@@ -2063,6 +2121,7 @@ export type Database = {
         | "tier"
       pricing_sign: "add" | "subtract"
       product_kind: "package" | "insurance"
+      purchase_fulfillment_status: "not_started" | "in_progress" | "completed"
       purchase_status:
         | "pending_payment"
         | "partially_paid"
@@ -2255,6 +2314,7 @@ export const Constants = {
       ],
       pricing_sign: ["add", "subtract"],
       product_kind: ["package", "insurance"],
+      purchase_fulfillment_status: ["not_started", "in_progress", "completed"],
       purchase_status: [
         "pending_payment",
         "partially_paid",

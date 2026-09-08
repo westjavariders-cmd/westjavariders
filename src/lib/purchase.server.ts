@@ -18,6 +18,12 @@ import {
   purchaseStatusFor,
   type PaymentRequestKind,
 } from "@/lib/purchase";
+import {
+  validateCustomerContact,
+  type CustomerContact,
+  type CustomerContactInput,
+  type PurchaseFulfillmentStatus,
+} from "@/lib/customer";
 import { activePaymentProvider, providerByName } from "@/lib/payments/provider.server";
 
 export { CartError };
@@ -220,7 +226,7 @@ async function syncPackageQuotes(revalidation: CheckoutRevalidation) {
 /* Purchase creation                                                   */
 /* ------------------------------------------------------------------ */
 
-function buildSnapshot(revalidation: CheckoutRevalidation) {
+function buildSnapshot(revalidation: CheckoutRevalidation, customer: CustomerContact) {
   return {
     snapshot_version: 1,
     taken_at: new Date().toISOString(),
@@ -245,12 +251,23 @@ function buildSnapshot(revalidation: CheckoutRevalidation) {
       promo_discount_idr: p.promo_discount_idr,
       total_idr: p.total_idr,
     })),
+    // The contact as agreed at purchase time; later profile edits never
+    // rewrite this historical record.
+    customer: {
+      full_name: customer.full_name,
+      email: customer.email,
+      phone: customer.phone,
+      country: customer.country,
+      preferred_language_code: customer.preferred_language_code,
+    },
   };
 }
 
 export type PurchaseView = {
   id: string;
+  reference: string | null;
   status: string;
+  fulfillment_status: PurchaseFulfillmentStatus;
   currency_code: string;
   total_idr: number;
   first_payment_percentage: number;
@@ -274,7 +291,7 @@ async function loadPurchase(purchaseId: string): Promise<PurchaseView | null> {
   const { data: purchase } = await db
     .from("purchases")
     .select(
-      "id, status, currency_code, total_idr, first_payment_percentage, first_payment_idr, outstanding_idr, paid_idr, created_at",
+      "id, reference, status, fulfillment_status, currency_code, total_idr, first_payment_percentage, first_payment_idr, outstanding_idr, paid_idr, created_at",
     )
     .eq("id", purchaseId)
     .maybeSingle();
@@ -319,12 +336,64 @@ export async function getPurchase(purchaseId: string) {
   return loadPurchase(purchaseId);
 }
 
+/* ------------------------------------------------------------------ */
+/* Customers                                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Finds the existing contact for this email or creates one. Email is the
+ * conservative identity key: the same person booking twice keeps one record.
+ * Freshly supplied name/phone/country/language refresh the contact, while
+ * every past purchase keeps its own historical snapshot of the contact.
+ */
+export async function findOrCreateCustomer(contact: CustomerContact): Promise<string> {
+  const db = await admin();
+  const { data: existing } = await db
+    .from("customers")
+    .select("id")
+    .eq("email", contact.email)
+    .maybeSingle();
+
+  if (existing?.id) {
+    await db
+      .from("customers")
+      .update({
+        full_name: contact.full_name,
+        phone: contact.phone,
+        country: contact.country,
+        preferred_language_code: contact.preferred_language_code,
+      })
+      .eq("id", existing.id);
+    return existing.id as string;
+  }
+
+  const { data: created, error } = await db
+    .from("customers")
+    .insert(contact as never)
+    .select("id")
+    .single();
+  if (error || !created) {
+    // A concurrent checkout may have inserted the same email first.
+    const { data: retry } = await db
+      .from("customers")
+      .select("id")
+      .eq("email", contact.email)
+      .maybeSingle();
+    if (retry?.id) return retry.id as string;
+    fail(SAFE_ERROR);
+  }
+  return created.id as string;
+}
+
 /**
  * Converts the cart into one Purchase, one immutable snapshot and the first
  * payment request, in a single database transaction. Repeating the call for
  * the same cart returns the same purchase — never a second one.
  */
-export async function createPurchaseFromCart(token?: string) {
+export async function createPurchaseFromCart(
+  contactInput: CustomerContactInput,
+  token?: string,
+) {
   const db = await admin();
   const revalidation = await revalidateCart(token);
   if (!revalidation.cart_id) fail("Your cart could not be found.");
@@ -341,13 +410,19 @@ export async function createPurchaseFromCart(token?: string) {
   if (hard.length > 0) fail(hard[0]!);
   if (revalidation.total_idr <= 0) fail("This booking has no amount to pay.");
 
+  // Contact details are validated on the server; nothing the browser sends
+  // about identity or money is trusted.
+  const contact = validateCustomerContact(contactInput);
+  const customerId = await findOrCreateCustomer(contact);
+
   const { data: purchaseId, error } = await db.rpc("create_purchase", {
     _cart_id: revalidation.cart_id,
+    _customer_id: customerId,
     _total_idr: revalidation.total_idr,
     _percentage: revalidation.first_payment_percentage,
     _first_payment_idr: revalidation.first_payment_idr,
     _outstanding_idr: revalidation.outstanding_idr,
-    _snapshot: buildSnapshot(revalidation) as never,
+    _snapshot: buildSnapshot(revalidation, contact) as never,
   });
   if (error || !purchaseId) fail(SAFE_ERROR);
 
@@ -357,6 +432,24 @@ export async function createPurchaseFromCart(token?: string) {
   await ensurePaymentLink(purchaseId as string, "first_payment").catch(() => undefined);
 
   return { purchase: await loadPurchase(purchaseId as string), revalidation, reused: false };
+}
+
+/* ------------------------------------------------------------------ */
+/* Admin purchase management                                           */
+/* ------------------------------------------------------------------ */
+
+/** Sets the operational state only; commercial/payment state is untouched. */
+export async function setFulfillmentStatus(
+  purchaseId: string,
+  status: PurchaseFulfillmentStatus,
+) {
+  const db = await admin();
+  const { error } = await db
+    .from("purchases")
+    .update({ fulfillment_status: status })
+    .eq("id", purchaseId);
+  if (error) fail(SAFE_ERROR);
+  return { ok: true };
 }
 
 /* ------------------------------------------------------------------ */
