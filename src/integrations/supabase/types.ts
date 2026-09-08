@@ -888,6 +888,107 @@ export type Database = {
           },
         ]
       }
+      payment_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+          payment_request_id: string | null
+          provider: string
+          provider_event_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json
+          payment_request_id?: string | null
+          provider: string
+          provider_event_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          payment_request_id?: string | null
+          provider?: string
+          provider_event_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_events_payment_request_id_fkey"
+            columns: ["payment_request_id"]
+            isOneToOne: false
+            referencedRelation: "payment_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_requests: {
+        Row: {
+          amount_idr: number
+          created_at: string
+          currency_code: string
+          expires_at: string | null
+          id: string
+          kind: Database["public"]["Enums"]["payment_request_kind"]
+          paid_at: string | null
+          provider: string | null
+          provider_payment_url: string | null
+          provider_reference: string | null
+          purchase_id: string
+          status: Database["public"]["Enums"]["payment_request_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount_idr: number
+          created_at?: string
+          currency_code?: string
+          expires_at?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["payment_request_kind"]
+          paid_at?: string | null
+          provider?: string | null
+          provider_payment_url?: string | null
+          provider_reference?: string | null
+          purchase_id: string
+          status?: Database["public"]["Enums"]["payment_request_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount_idr?: number
+          created_at?: string
+          currency_code?: string
+          expires_at?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["payment_request_kind"]
+          paid_at?: string | null
+          provider?: string | null
+          provider_payment_url?: string | null
+          provider_reference?: string | null
+          purchase_id?: string
+          status?: Database["public"]["Enums"]["payment_request_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_requests_currency_code_fkey"
+            columns: ["currency_code"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "payment_requests_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       placements: {
         Row: {
           created_at: string
@@ -1576,6 +1677,92 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_snapshots: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          purchase_id: string
+        }
+        Insert: {
+          created_at?: string
+          data: Json
+          id?: string
+          purchase_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          purchase_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_snapshots_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: true
+            referencedRelation: "purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchases: {
+        Row: {
+          cart_id: string
+          created_at: string
+          currency_code: string
+          first_payment_idr: number
+          first_payment_percentage: number
+          id: string
+          outstanding_idr: number
+          paid_idr: number
+          status: Database["public"]["Enums"]["purchase_status"]
+          total_idr: number
+          updated_at: string
+        }
+        Insert: {
+          cart_id: string
+          created_at?: string
+          currency_code?: string
+          first_payment_idr: number
+          first_payment_percentage: number
+          id?: string
+          outstanding_idr: number
+          paid_idr?: number
+          status?: Database["public"]["Enums"]["purchase_status"]
+          total_idr: number
+          updated_at?: string
+        }
+        Update: {
+          cart_id?: string
+          created_at?: string
+          currency_code?: string
+          first_payment_idr?: number
+          first_payment_percentage?: number
+          id?: string
+          outstanding_idr?: number
+          paid_idr?: number
+          status?: Database["public"]["Enums"]["purchase_status"]
+          total_idr?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchases_cart_id_fkey"
+            columns: ["cart_id"]
+            isOneToOne: true
+            referencedRelation: "carts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchases_currency_code_fkey"
+            columns: ["currency_code"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       settings: {
         Row: {
           created_at: string
@@ -1803,6 +1990,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_purchase: {
+        Args: {
+          _cart_id: string
+          _first_payment_idr: number
+          _outstanding_idr: number
+          _percentage: number
+          _snapshot: Json
+          _total_idr: number
+        }
+        Returns: string
+      }
       duplicate_accommodation_room: {
         Args: { _source: string }
         Returns: string
@@ -1842,6 +2040,14 @@ export type Database = {
         | "boolean"
         | "info_block"
       order_line_kind: "package" | "insurance"
+      payment_request_kind: "first_payment" | "balance"
+      payment_request_status:
+        | "created"
+        | "pending"
+        | "paid"
+        | "failed"
+        | "expired"
+        | "cancelled"
       payment_status:
         | "PAYMENT_PENDING"
         | "PARTIALLY_PAID"
@@ -1857,6 +2063,11 @@ export type Database = {
         | "tier"
       pricing_sign: "add" | "subtract"
       product_kind: "package" | "insurance"
+      purchase_status:
+        | "pending_payment"
+        | "partially_paid"
+        | "paid"
+        | "cancelled"
       season_period: "HIGH" | "MID" | "LOW"
       transport_type: "predefined_route" | "other_location"
       unit_basis:
@@ -2018,6 +2229,15 @@ export const Constants = {
         "info_block",
       ],
       order_line_kind: ["package", "insurance"],
+      payment_request_kind: ["first_payment", "balance"],
+      payment_request_status: [
+        "created",
+        "pending",
+        "paid",
+        "failed",
+        "expired",
+        "cancelled",
+      ],
       payment_status: [
         "PAYMENT_PENDING",
         "PARTIALLY_PAID",
@@ -2035,6 +2255,12 @@ export const Constants = {
       ],
       pricing_sign: ["add", "subtract"],
       product_kind: ["package", "insurance"],
+      purchase_status: [
+        "pending_payment",
+        "partially_paid",
+        "paid",
+        "cancelled",
+      ],
       season_period: ["HIGH", "MID", "LOW"],
       transport_type: ["predefined_route", "other_location"],
       unit_basis: [
