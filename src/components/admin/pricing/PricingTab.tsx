@@ -14,6 +14,7 @@ import {
 import { NUMERIC_FIELD_TYPES, PRICING_MODES, type ProductPricing } from "@/lib/pricing";
 import type { ProductBundle } from "@/lib/catalog";
 import { RuleEditor } from "@/components/admin/pricing/RuleEditor";
+import { ComponentPricingEditor } from "@/components/admin/pricing/ComponentPricingEditor";
 import { FormulaEditor } from "@/components/admin/pricing/FormulaEditor";
 import { TestLab } from "@/components/admin/pricing/TestLab";
 import { SeasonSettings } from "@/components/admin/pricing/SeasonSettings";
