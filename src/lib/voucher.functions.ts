@@ -86,25 +86,26 @@ export const getVoucherDetail = createServerFn({ method: "POST" })
     };
   });
 
-/** Issues the voucher for a purchase whose required payment is confirmed. */
+/** Issues one voucher per purchased package once payment is confirmed. */
 export const issueVoucher = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ purchaseId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     await requireAdmin(context);
-    const { issueVoucherForPurchase } = await import("@/lib/voucher.server");
-    const result = await issueVoucherForPurchase(data.purchaseId);
-    if (!result.voucher) {
+    const { issueVouchersForPurchase } = await import("@/lib/voucher.server");
+    const result = await issueVouchersForPurchase(data.purchaseId);
+    if (result.vouchers.length === 0) {
       throw new Error(
         result.reason === "payment_not_confirmed"
           ? "The first payment has not been confirmed for this booking yet."
           : result.reason === "purchase_cancelled"
             ? "This booking has been cancelled."
-            : "This voucher could not be issued.",
+            : "These vouchers could not be issued.",
       );
     }
-    return { voucher: result.voucher, created: result.created };
+    return { vouchers: result.vouchers, created: result.created };
   });
+
 
 export const markVoucherUsedFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

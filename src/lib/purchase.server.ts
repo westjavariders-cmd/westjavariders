@@ -634,12 +634,14 @@ export async function applyProviderNotification(
 
   await recomputePurchaseMoney(request.purchase_id);
 
-  // A confirmed payment is what entitles the customer: issue the voucher once,
-  // idempotently. A provider replay never produces a second voucher.
+  // A confirmed payment is what entitles the customer: issue one voucher per
+  // purchased package, idempotently. A provider replay never produces a
+  // second voucher for the same package.
   if (next === "paid") {
-    const { issueVoucherForPurchase } = await import("@/lib/voucher.server");
-    await issueVoucherForPurchase(request.purchase_id).catch(() => undefined);
+    const { issueVouchersForPurchase } = await import("@/lib/voucher.server");
+    await issueVouchersForPurchase(request.purchase_id).catch(() => undefined);
   }
+
 
   return { ok: true, duplicate: false };
 }
