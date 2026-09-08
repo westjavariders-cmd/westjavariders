@@ -129,7 +129,7 @@ export async function fxContext(explicit?: string | null): Promise<FxContext> {
     FALLBACK_CURRENCY,
     BASE_CURRENCY,
   ];
-  let code = BASE_CURRENCY;
+  let code: string = BASE_CURRENCY;
   for (const candidate of candidates) {
     if (candidate && supported.has(candidate)) {
       code = candidate;

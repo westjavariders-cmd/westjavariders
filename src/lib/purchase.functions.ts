@@ -28,6 +28,10 @@ export const getCheckoutSummary = createServerFn({ method: "POST" }).handler(asy
     outstanding_idr: revalidation.outstanding_idr,
     blockers: revalidation.blockers,
     existing_purchase_id: revalidation.existing_purchase_id,
+    fx: revalidation.fx,
+    customer_total: revalidation.customer_total,
+    customer_first_payment: revalidation.customer_first_payment,
+    customer_outstanding: revalidation.customer_outstanding,
   };
 });
 
