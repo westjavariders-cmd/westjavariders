@@ -11,7 +11,15 @@ import {
   getVoucherDetail,
   markVoucherUsedFn,
   regenerateVoucher,
+  regenerateVoucherDocument,
+  resendVoucherEmail,
 } from "@/lib/voucher.functions";
+import {
+  DOCUMENT_STATUS_LABELS,
+  EMAIL_STATUS_LABELS,
+  type DocumentStatus,
+  type EmailStatus,
+} from "@/lib/voucher-delivery";
 import {
   VOUCHER_STATUS_LABELS,
   VOUCHER_TYPE_LABELS,
@@ -44,6 +52,8 @@ function VoucherDetailPage() {
   const markUsed = useServerFn(markVoucherUsedFn);
   const cancel = useServerFn(cancelVoucherFn);
   const regenerate = useServerFn(regenerateVoucher);
+  const regenerateDocument = useServerFn(regenerateVoucherDocument);
+  const resendEmail = useServerFn(resendVoucherEmail);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
 
@@ -238,6 +248,92 @@ function VoucherDetailPage() {
               {new Date(detail.data.snapshot_taken_at).toLocaleString()}.
             </p>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Delivery</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm">
+          {detail.data?.contact_ready === false && (
+            <p className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-destructive">
+              Customer-facing contact details are missing. Add a contact email and a contact
+              WhatsApp number in Settings before this voucher can be sent.
+            </p>
+          )}
+
+          <div className="space-y-1">
+            <p className="font-medium">Document</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={voucher.document_status === "GENERATED" ? "default" : "secondary"}>
+                {DOCUMENT_STATUS_LABELS[voucher.document_status as DocumentStatus] ??
+                  voucher.document_status}
+              </Badge>
+              <span className="text-muted-foreground">
+                {voucher.document_generated_at
+                  ? new Date(voucher.document_generated_at).toLocaleString()
+                  : "Not generated yet"}
+              </span>
+            </div>
+            {voucher.document_error && (
+              <p className="text-xs text-destructive">{voucher.document_error}</p>
+            )}
+            {canEdit && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={busy}
+                onClick={() =>
+                  run(
+                    () => regenerateDocument({ data: { voucherId } }),
+                    "voucher.document.regenerated",
+                    "The voucher PDF was generated again.",
+                  )
+                }
+              >
+                Regenerate document
+              </Button>
+            )}
+          </div>
+
+          <div className="space-y-1 border-t border-border pt-4">
+            <p className="font-medium">Email</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={voucher.email_status === "SENT" ? "default" : "secondary"}>
+                {EMAIL_STATUS_LABELS[voucher.email_status as EmailStatus] ?? voucher.email_status}
+              </Badge>
+              <span className="text-muted-foreground">
+                {voucher.email_recipient ?? "No recipient recorded"}
+              </span>
+              <span className="text-muted-foreground">
+                {voucher.email_sent_at ? new Date(voucher.email_sent_at).toLocaleString() : ""}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {voucher.voucher_type === "GIFT"
+                ? "A gift voucher email goes to the buyer, who forwards it."
+                : "A standard voucher email goes to the voucher holder."}{" "}
+              Attempts: {voucher.email_attempts ?? 0}
+            </p>
+            {voucher.email_error && <p className="text-xs text-destructive">{voucher.email_error}</p>}
+            {canEdit && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={busy}
+                onClick={() =>
+                  run(
+                    () => resendEmail({ data: { voucherId } }),
+                    "voucher.email.resent",
+                    "The voucher email was sent again.",
+                  )
+                }
+              >
+                Resend email
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
