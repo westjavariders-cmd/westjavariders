@@ -226,7 +226,11 @@ async function syncPackageQuotes(revalidation: CheckoutRevalidation) {
 /* Purchase creation                                                   */
 /* ------------------------------------------------------------------ */
 
-function buildSnapshot(revalidation: CheckoutRevalidation, customer: CustomerContact) {
+function buildSnapshot(
+  revalidation: CheckoutRevalidation,
+  customer: CustomerContact,
+  gift: GiftData,
+) {
   return {
     snapshot_version: 1,
     taken_at: new Date().toISOString(),
