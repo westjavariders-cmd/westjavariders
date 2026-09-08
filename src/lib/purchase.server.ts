@@ -26,6 +26,8 @@ import {
 } from "@/lib/customer";
 import { activePaymentProvider, providerByName } from "@/lib/payments/provider.server";
 import { validateGift, type GiftData, type GiftInput } from "@/lib/voucher";
+import { fxContext, freezeFx, displayAmount, type FxContext } from "@/lib/fx.server";
+import { toPublicFx, type PublicFxContext } from "@/lib/fx.functions";
 
 export { CartError };
 
@@ -91,6 +93,12 @@ export type CheckoutRevalidation = {
   blockers: string[];
   /** An already-created purchase for this cart, when checkout was completed. */
   existing_purchase_id: string | null;
+  /** Customer currency context, resolved on the server for this request. */
+  fx: PublicFxContext;
+  /** Final amounts converted once into the customer currency. */
+  customer_total: number;
+  customer_first_payment: number;
+  customer_outstanding: number;
 };
 
 /**
@@ -101,6 +109,7 @@ export async function revalidateCart(token?: string): Promise<CheckoutRevalidati
   const db = await admin();
   const cart = await currentCart(false, token);
   const percentage = await firstPaymentPercentage(db);
+  const fx = await fxContext();
 
   if (!cart) {
     return {
@@ -112,6 +121,10 @@ export async function revalidateCart(token?: string): Promise<CheckoutRevalidati
       outstanding_idr: 0,
       blockers: ["Your cart is empty."],
       existing_purchase_id: null,
+      fx: toPublicFx(fx),
+      customer_total: 0,
+      customer_first_payment: 0,
+      customer_outstanding: 0,
     };
   }
 
@@ -201,6 +214,11 @@ export async function revalidateCart(token?: string): Promise<CheckoutRevalidati
     outstanding_idr: balanceFor(total, deposit),
     blockers,
     existing_purchase_id: purchase?.id ?? null,
+    fx: toPublicFx(fx),
+    // Conversion happens once, on the final amounts only.
+    customer_total: displayAmount(total, fx),
+    customer_first_payment: displayAmount(deposit, fx),
+    customer_outstanding: displayAmount(balanceFor(total, deposit), fx),
   };
 }
 
@@ -234,6 +252,7 @@ function buildSnapshot(
   revalidation: CheckoutRevalidation,
   customer: CustomerContact,
   gift: GiftData,
+  frozen: ReturnType<typeof freezeFx>,
 ) {
   return {
     snapshot_version: 1,
@@ -243,6 +262,18 @@ function buildSnapshot(
     first_payment_idr: revalidation.first_payment_idr,
     outstanding_idr: revalidation.outstanding_idr,
     total_idr: revalidation.total_idr,
+    // Exchange information frozen at purchase time. IDR stays authoritative;
+    // these values are never recalculated from a later rate.
+    fx: frozen
+      ? {
+          customer_currency_code: frozen.customer_currency_code,
+          rate: frozen.fx_rate,
+          rate_effective_at: frozen.fx_effective_at,
+          customer_total_amount: frozen.customer_total_amount,
+          customer_first_payment_amount: frozen.customer_first_payment_amount,
+          customer_outstanding_amount: frozen.customer_outstanding_amount,
+        }
+      : null,
     packages: revalidation.packages.map((p) => ({
       package_id: p.package_id,
       product_id: p.product_id,
