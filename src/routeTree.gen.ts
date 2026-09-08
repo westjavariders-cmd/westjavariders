@@ -43,6 +43,7 @@ import { Route as AdminAppSettingsMarketsRouteImport } from './routes/admin/_app
 import { Route as AdminAppSettingsUsersRouteImport } from './routes/admin/_app/settings.users'
 import { Route as AdminAppTransportIndexRouteImport } from './routes/admin/_app/transport.index'
 import { Route as AdminAppTransportTransportIdRouteImport } from './routes/admin/_app/transport.$transportId'
+import { Route as ApiPublicPaymentsXenditRouteImport } from './routes/api/public/payments/xendit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -219,6 +220,11 @@ const AdminAppTransportTransportIdRoute =
     path: '/transport/$transportId',
     getParentRoute: () => AdminAppRouteRoute,
   } as any)
+const ApiPublicPaymentsXenditRoute = ApiPublicPaymentsXenditRouteImport.update({
+  id: '/api/public/payments/xendit',
+  path: '/api/public/payments/xendit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -250,6 +256,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings/markets': typeof AdminAppSettingsMarketsRoute
   '/admin/settings/users': typeof AdminAppSettingsUsersRoute
   '/admin/transport/$transportId': typeof AdminAppTransportTransportIdRoute
+  '/api/public/payments/xendit': typeof ApiPublicPaymentsXenditRoute
   '/admin/hotels/': typeof AdminAppHotelsIndexRoute
   '/admin/products/': typeof AdminAppProductsIndexRoute
   '/admin/settings/': typeof AdminAppSettingsIndexRoute
@@ -284,6 +291,7 @@ export interface FileRoutesByTo {
   '/admin/settings/markets': typeof AdminAppSettingsMarketsRoute
   '/admin/settings/users': typeof AdminAppSettingsUsersRoute
   '/admin/transport/$transportId': typeof AdminAppTransportTransportIdRoute
+  '/api/public/payments/xendit': typeof ApiPublicPaymentsXenditRoute
   '/admin/hotels': typeof AdminAppHotelsIndexRoute
   '/admin/products': typeof AdminAppProductsIndexRoute
   '/admin/settings': typeof AdminAppSettingsIndexRoute
@@ -321,6 +329,7 @@ export interface FileRoutesById {
   '/admin/_app/settings/markets': typeof AdminAppSettingsMarketsRoute
   '/admin/_app/settings/users': typeof AdminAppSettingsUsersRoute
   '/admin/_app/transport/$transportId': typeof AdminAppTransportTransportIdRoute
+  '/api/public/payments/xendit': typeof ApiPublicPaymentsXenditRoute
   '/admin/_app/hotels/': typeof AdminAppHotelsIndexRoute
   '/admin/_app/products/': typeof AdminAppProductsIndexRoute
   '/admin/_app/settings/': typeof AdminAppSettingsIndexRoute
@@ -358,6 +367,7 @@ export interface FileRouteTypes {
     | '/admin/settings/markets'
     | '/admin/settings/users'
     | '/admin/transport/$transportId'
+    | '/api/public/payments/xendit'
     | '/admin/hotels/'
     | '/admin/products/'
     | '/admin/settings/'
@@ -392,6 +402,7 @@ export interface FileRouteTypes {
     | '/admin/settings/markets'
     | '/admin/settings/users'
     | '/admin/transport/$transportId'
+    | '/api/public/payments/xendit'
     | '/admin/hotels'
     | '/admin/products'
     | '/admin/settings'
@@ -428,6 +439,7 @@ export interface FileRouteTypes {
     | '/admin/_app/settings/markets'
     | '/admin/_app/settings/users'
     | '/admin/_app/transport/$transportId'
+    | '/api/public/payments/xendit'
     | '/admin/_app/hotels/'
     | '/admin/_app/products/'
     | '/admin/_app/settings/'
@@ -440,6 +452,7 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   BuildYourTripProductIdRoute: typeof BuildYourTripProductIdRoute
   BuildYourTripIndexRoute: typeof BuildYourTripIndexRoute
+  ApiPublicPaymentsXenditRoute: typeof ApiPublicPaymentsXenditRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -682,6 +695,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAppTransportTransportIdRouteImport
       parentRoute: typeof AdminAppRouteRoute
     }
+    '/api/public/payments/xendit': {
+      id: '/api/public/payments/xendit'
+      path: '/api/public/payments/xendit'
+      fullPath: '/api/public/payments/xendit'
+      preLoaderRoute: typeof ApiPublicPaymentsXenditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -769,6 +789,7 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   BuildYourTripProductIdRoute: BuildYourTripProductIdRoute,
   BuildYourTripIndexRoute: BuildYourTripIndexRoute,
+  ApiPublicPaymentsXenditRoute: ApiPublicPaymentsXenditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
