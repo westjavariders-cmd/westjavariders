@@ -640,6 +640,11 @@ export async function applyProviderNotification(
   if (next === "paid") {
     const { issueVouchersForPurchase } = await import("@/lib/voucher.server");
     await issueVouchersForPurchase(request.purchase_id).catch(() => undefined);
+
+    // Document + email are separate stages: a delivery failure never rolls back
+    // the payment, the purchase or the vouchers.
+    const { deliverVouchersForPurchase } = await import("@/lib/voucher-delivery.server");
+    await deliverVouchersForPurchase(request.purchase_id).catch(() => undefined);
   }
 
 

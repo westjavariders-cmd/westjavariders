@@ -62,7 +62,7 @@ export const getVoucherDetail = createServerFn({ method: "POST" })
     const { data: voucher, error } = await db
       .from("vouchers")
       .select(
-        "id, code, voucher_type, status, issued_at, valid_until, validity_months, package_id, entitlement, gift_recipient_name, gift_message, redeemed_at, redeemed_by, redemption_note, cancelled_at, representation_version, purchase_id, customers(id, full_name, email, phone, country), purchases(id, reference, status, fulfillment_status, total_idr, paid_idr, outstanding_idr, first_payment_idr, created_at, is_gift)",
+        "id, code, voucher_type, status, issued_at, valid_until, validity_months, package_id, entitlement, gift_recipient_name, gift_message, redeemed_at, redeemed_by, redemption_note, cancelled_at, representation_version, purchase_id, document_status, document_generated_at, document_error, email_status, email_recipient, email_sent_at, email_error, email_attempts, auto_delivery_at, customers(id, full_name, email, phone, country), purchases(id, reference, status, fulfillment_status, total_idr, paid_idr, outstanding_idr, first_payment_idr, created_at, is_gift)",
       )
       .eq("id", data.voucherId)
       .maybeSingle();
@@ -78,8 +78,17 @@ export const getVoucherDetail = createServerFn({ method: "POST" })
         .order("created_at", { ascending: true }),
     ]);
 
+    const { data: contactRows } = await db
+      .from("settings")
+      .select("key, value")
+      .in("key", ["business_name", "contact_email", "contact_whatsapp", "contact_location"]);
+    const { readContactSettings } = await import("@/lib/voucher-delivery");
+    const contactCheck = readContactSettings(contactRows ?? []);
+
     return {
       voucher,
+      contact_ready: contactCheck.ok,
+      contact_missing: contactCheck.ok ? [] : (contactCheck as any).missing,
       snapshot_reference: snapshot?.id ?? null,
       snapshot_taken_at: snapshot?.created_at ?? null,
       payments: payments ?? [],
@@ -137,4 +146,31 @@ export const regenerateVoucher = createServerFn({ method: "POST" })
     await requireAdmin(context);
     const { regenerateRepresentation } = await import("@/lib/voucher.server");
     return regenerateRepresentation(data.voucherId);
+  });
+
+/**
+ * Regenerates the voucher PDF from the same historical data. Same voucher
+ * number, same package, same purchase; nothing commercial is recalculated.
+ */
+export const regenerateVoucherDocument = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ voucherId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context);
+    const { generateVoucherDocument } = await import("@/lib/voucher-delivery.server");
+    const result = await generateVoucherDocument(data.voucherId);
+    if (!result.ok) throw new Error(result.reason);
+    return { ok: true };
+  });
+
+/** Resends the voucher email with the current valid document attached. */
+export const resendVoucherEmail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ voucherId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context);
+    const { sendVoucherEmail } = await import("@/lib/voucher-delivery.server");
+    const result = await sendVoucherEmail(data.voucherId, { automatic: false });
+    if (!result.sent) throw new Error(result.reason ?? "This email could not be sent.");
+    return { ok: true, recipient: result.recipient };
   });
