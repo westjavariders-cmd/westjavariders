@@ -14,8 +14,23 @@ import {
   type PreviewValues,
   type ProductBundle,
 } from "@/lib/catalog";
-import { exactToString, isPurchasable, resolveInputs, type PricingInputs } from "@/lib/pricing";
+import {
+  exactToString,
+  fromNumberLike,
+  isPurchasable,
+  resolveInputs,
+  type PricingInputs,
+} from "@/lib/pricing";
 import { priceCommercial, type CommercialResult, type SeasonConfig } from "@/lib/commercial";
+import {
+  cataloguePriceVariables,
+  fieldCatalogueType,
+  resolveCatalogueSelections,
+  stripInvalidCatalogueAnswers,
+  type CatalogueSelection,
+  type CatalogueType,
+} from "@/lib/catalogue-bridge";
+import { resolveCatalogues } from "@/lib/catalogue-bridge.server";
 
 export const CART_COOKIE = "cbr_cart";
 const SAFE_ERROR = "This action could not be completed. Please check your input and try again.";
