@@ -254,6 +254,10 @@ export type QuoteOutcome = {
   resolved_inputs: Record<string, { type: string; value: string | boolean | string[] }>;
   promo_code: string | null;
   promo_code_id: string | null;
+  /** Catalogue items the customer selected, as resolved for this quote. */
+  catalogue_selections: CatalogueSelection[];
+  /** Answers with invalidated catalogue choices removed (never replaced). */
+  answers: PreviewValues;
 };
 
 /** One provisional quote. Never an immutable purchase price. */
