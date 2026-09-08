@@ -6,6 +6,12 @@
  * (supplier costs, internal notes, margins are never returned).
  */
 import { MASTER_LANGUAGE, type ProductBundle } from "@/lib/catalog";
+import {
+  fieldCatalogueType,
+  type CatalogueItem,
+  type CatalogueType,
+} from "@/lib/catalogue-bridge";
+import { resolveCatalogues } from "@/lib/catalogue-bridge.server";
 import { isPurchasable } from "@/lib/pricing";
 import { fail, listCart } from "@/lib/cart.server";
 import { summarizeAnswers, type AnswerSummaryLine } from "@/lib/public-catalog";
