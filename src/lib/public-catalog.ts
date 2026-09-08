@@ -27,7 +27,7 @@ export function summarizeAnswers(
     const label = f.customer_label || f.internal_name;
     const optionLabel = (value: string) => {
       const o = options.find((x) => x.field_id === f.id && x.internal_value === value);
-      return o?.customer_label ?? value;
+      return o?.customer_label ?? catalogueNames[value] ?? value;
     };
 
     let value: string;
