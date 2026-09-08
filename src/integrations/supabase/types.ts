@@ -2074,10 +2074,20 @@ export type Database = {
       }
       vouchers: {
         Row: {
+          auto_delivery_at: string | null
           cancelled_at: string | null
           code: string
           created_at: string
           customer_id: string | null
+          document_error: string | null
+          document_generated_at: string | null
+          document_path: string | null
+          document_status: string
+          email_attempts: number
+          email_error: string | null
+          email_recipient: string | null
+          email_sent_at: string | null
+          email_status: string
           entitlement: Json
           gift_message: string | null
           gift_recipient_name: string | null
@@ -2096,10 +2106,20 @@ export type Database = {
           voucher_type: Database["public"]["Enums"]["voucher_type"]
         }
         Insert: {
+          auto_delivery_at?: string | null
           cancelled_at?: string | null
           code: string
           created_at?: string
           customer_id?: string | null
+          document_error?: string | null
+          document_generated_at?: string | null
+          document_path?: string | null
+          document_status?: string
+          email_attempts?: number
+          email_error?: string | null
+          email_recipient?: string | null
+          email_sent_at?: string | null
+          email_status?: string
           entitlement?: Json
           gift_message?: string | null
           gift_recipient_name?: string | null
@@ -2118,10 +2138,20 @@ export type Database = {
           voucher_type?: Database["public"]["Enums"]["voucher_type"]
         }
         Update: {
+          auto_delivery_at?: string | null
           cancelled_at?: string | null
           code?: string
           created_at?: string
           customer_id?: string | null
+          document_error?: string | null
+          document_generated_at?: string | null
+          document_path?: string | null
+          document_status?: string
+          email_attempts?: number
+          email_error?: string | null
+          email_recipient?: string | null
+          email_sent_at?: string | null
+          email_status?: string
           entitlement?: Json
           gift_message?: string | null
           gift_recipient_name?: string | null
