@@ -854,6 +854,54 @@ export type Database = {
           },
         ]
       }
+      motorbikes: {
+        Row: {
+          active: boolean
+          created_at: string
+          customer_price_idr: number
+          description: string | null
+          id: string
+          internal_name: string
+          internal_notes: string | null
+          internal_reference: string | null
+          photo_path: string | null
+          public_name: string | null
+          sort_order: number
+          supplier_cost_idr: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          customer_price_idr?: number
+          description?: string | null
+          id?: string
+          internal_name: string
+          internal_notes?: string | null
+          internal_reference?: string | null
+          photo_path?: string | null
+          public_name?: string | null
+          sort_order?: number
+          supplier_cost_idr?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          customer_price_idr?: number
+          description?: string | null
+          id?: string
+          internal_name?: string
+          internal_notes?: string | null
+          internal_reference?: string | null
+          photo_path?: string | null
+          public_name?: string | null
+          sort_order?: number
+          supplier_cost_idr?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       packages: {
         Row: {
           answers: Json
@@ -2230,6 +2278,7 @@ export type Database = {
         Args: { _source: string }
         Returns: string
       }
+      duplicate_motorbike: { Args: { _source: string }; Returns: string }
       duplicate_product: { Args: { _source: string }; Returns: string }
       duplicate_transport: { Args: { _source: string }; Returns: string }
       has_role: {
