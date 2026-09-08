@@ -194,12 +194,22 @@ function conditionHolds(rule: PricingRule, inputs: PricingInputs): boolean {
   }
 }
 
-/** The multiplier for a component, taken from the pricing row's explicit mappings. */
+/**
+ * The multiplier for a component. A component pricing entry may name its own
+ * quantity question (`override`); otherwise the pricing row's mapping for the
+ * component's basis is used. `fixed` is always one unit.
+ */
 export function componentMultiplier(
   basis: string,
   pricing: ProductPricing,
   inputs: PricingInputs,
+  override?: string | null,
 ): { value: Exact; variable: string | null; missing: boolean } {
+  if (override) {
+    const value = numberInput(inputs, override);
+    if (value == null) return { value: 0n, variable: override, missing: true };
+    return { value, variable: override, missing: false };
+  }
   if (basis === "fixed") return { value: SCALE, variable: null, missing: false };
   const variable =
     basis === "per_person"
