@@ -37,6 +37,10 @@ const contactSchema = z.object({
   phone: z.string(),
   country: z.string().optional(),
   preferred_language_code: z.string().optional(),
+  // Gift intent; validated again server-side.
+  is_gift: z.boolean().optional(),
+  gift_recipient_name: z.string().max(200).optional(),
+  gift_message: z.string().max(400).optional(),
 });
 
 /**
@@ -48,7 +52,11 @@ export const confirmCheckout = createServerFn({ method: "POST" })
   .inputValidator((data) => contactSchema.parse(data))
   .handler(async ({ data }) => {
     const { createPurchaseFromCart } = await import("@/lib/purchase.server");
-    const { purchase, reused } = await createPurchaseFromCart(data);
+    const { purchase, reused } = await createPurchaseFromCart(data, {
+      is_gift: data.is_gift,
+      gift_recipient_name: data.gift_recipient_name,
+      gift_message: data.gift_message,
+    });
     return { purchase, reused };
   });
 
