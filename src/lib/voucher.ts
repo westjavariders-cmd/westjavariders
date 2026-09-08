@@ -124,6 +124,9 @@ export type VoucherEntitlement = {
   voucher_type: VoucherType;
   purchase_reference: string | null;
   purchase_date: string | null;
+  /** The specific purchased Package this voucher entitles. */
+  package_id: string | null;
+  package_title: string | null;
   /** Present for standard vouchers only; a gift never shows the price. */
   total_idr: number | null;
   payment_state: "partially_paid" | "fully_paid" | "awaiting_payment";
@@ -134,6 +137,7 @@ export type VoucherEntitlement = {
   usage_instructions: string[];
   contact: { business: string; email: string; whatsapp: string; location: string };
 };
+
 
 export const CIMAJA_CONTACT = {
   business: "Cimaja Boardriders",
