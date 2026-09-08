@@ -349,7 +349,7 @@ export async function quotePackage(args: {
 
   return {
     purchasable,
-    configuration_issues: configurationIssues(loaded.bundle, args.answers),
+    configuration_issues: [...invalid, ...configurationIssues(loaded.bundle, answers)],
     errors: result.errors,
     promo_rejection: promoRejection ?? result.promo_rejection,
     month,
