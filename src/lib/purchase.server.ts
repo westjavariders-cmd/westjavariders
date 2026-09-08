@@ -264,6 +264,12 @@ function buildSnapshot(
       country: customer.country,
       preferred_language_code: customer.preferred_language_code,
     },
+    // Gift intent as agreed at purchase time. The voucher engine reads this.
+    gift: {
+      is_gift: gift.is_gift,
+      recipient_name: gift.gift_recipient_name,
+      message: gift.gift_message,
+    },
   };
 }
 
