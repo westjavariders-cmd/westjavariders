@@ -21,6 +21,9 @@ async function admin() {
   return supabaseAdmin as any;
 }
 
+import { fxContext, displayAmount } from "@/lib/fx.server";
+import { toPublicFx, type PublicFxContext } from "@/lib/fx.functions";
+
 export type PublicProduct = {
   id: string;
   title: string;
@@ -156,14 +159,25 @@ export type PublicCartView = {
   packages: PublicCartPackage[];
   draft: PublicCartPackage | null;
   payable_total_idr: number;
+  /** Currency the visitor is browsing in, resolved on the server. */
+  fx: PublicFxContext;
+  /** The payable total converted once into that currency. */
+  payable_total_customer: number;
 };
 
 /** The customer's cart, server-authoritative, with readable configuration summaries. */
 export async function publicCart(token?: string): Promise<PublicCartView> {
   const cart = await listCart(token);
+  const fx = await fxContext();
   const rows = [...cart.packages, ...(cart.draft ? [cart.draft] : [])] as any[];
   if (rows.length === 0) {
-    return { packages: [], draft: null, payable_total_idr: 0 };
+    return {
+      packages: [],
+      draft: null,
+      payable_total_idr: 0,
+      fx: toPublicFx(fx),
+      payable_total_customer: 0,
+    };
   }
 
   const db = await admin();
@@ -210,5 +224,7 @@ export async function publicCart(token?: string): Promise<PublicCartView> {
     packages: (cart.packages as any[]).map(view),
     draft: cart.draft ? view(cart.draft) : null,
     payable_total_idr: cart.payable_total_idr,
+    fx: toPublicFx(fx),
+    payable_total_customer: displayAmount(cart.payable_total_idr, fx),
   };
 }
