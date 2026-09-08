@@ -41,7 +41,7 @@ function CurrencySelector() {
   if (!fx || fx.currencies.length < 2) return null;
 
   return (
-    <label className="sr-only-label">
+    <label>
       <span className="sr-only">Currency</span>
       <select
         aria-label="Currency"
