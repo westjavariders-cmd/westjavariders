@@ -2,10 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { PURCHASE_FULFILLMENT_STATUSES } from "@/lib/customer";
 
 /**
- * Public checkout + Admin payment operations. Every amount is recomputed
- * server-side; the browser only sends identifiers.
+ * Public checkout + Admin purchase management. Every amount is recomputed
+ * server-side; the browser only sends identifiers and contact details.
  */
 
 /** Recomputes the cart and shows what would be charged now. */
@@ -30,14 +31,28 @@ export const getCheckoutSummary = createServerFn({ method: "POST" }).handler(asy
   };
 });
 
-/** Converts the cart into one Purchase and starts the first payment. */
-export const confirmCheckout = createServerFn({ method: "POST" }).handler(async () => {
-  const { createPurchaseFromCart } = await import("@/lib/purchase.server");
-  const { purchase, reused } = await createPurchaseFromCart();
-  return { purchase, reused };
+const contactSchema = z.object({
+  full_name: z.string(),
+  email: z.string(),
+  phone: z.string(),
+  country: z.string().optional(),
+  preferred_language_code: z.string().optional(),
 });
 
-/** Customer-safe view of one purchase (no internal costs). */
+/**
+ * Converts the cart into one Purchase and starts the first payment.
+ * The customer record is created or reused server-side; no customer id is
+ * ever accepted from the browser.
+ */
+export const confirmCheckout = createServerFn({ method: "POST" })
+  .inputValidator((data) => contactSchema.parse(data))
+  .handler(async ({ data }) => {
+    const { createPurchaseFromCart } = await import("@/lib/purchase.server");
+    const { purchase, reused } = await createPurchaseFromCart(data);
+    return { purchase, reused };
+  });
+
+/** Customer-safe view of one purchase (no internal costs, no contact list). */
 export const getPurchaseView = createServerFn({ method: "POST" })
   .inputValidator((data) => z.object({ purchaseId: z.string().uuid() }).parse(data))
   .handler(async ({ data }) => {
@@ -52,16 +67,103 @@ export const getPurchaseView = createServerFn({ method: "POST" })
 
 export const listPurchases = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { data, error } = await (context as any).supabase
+  .inputValidator((data) =>
+    z
+      .object({ search: z.string().max(120).optional(), status: z.string().max(40).optional() })
+      .optional()
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    let query = (context as any).supabase
       .from("purchases")
       .select(
-        "id, status, currency_code, total_idr, first_payment_percentage, first_payment_idr, outstanding_idr, paid_idr, created_at",
+        "id, reference, status, fulfillment_status, currency_code, total_idr, first_payment_percentage, first_payment_idr, outstanding_idr, paid_idr, created_at, customers(id, full_name, email, phone)",
       )
       .order("created_at", { ascending: false })
       .limit(100);
+
+    if (data?.status) query = query.eq("status", data.status);
+
+    const { data: rows, error } = await query;
     if (error) throw new Error("These purchases could not be loaded.");
-    return { purchases: data ?? [] };
+
+    const term = (data?.search ?? "").trim().toLowerCase();
+    const purchases = (rows ?? []).filter((p: any) => {
+      if (!term) return true;
+      const haystack = [
+        p.reference,
+        p.id,
+        p.customers?.full_name,
+        p.customers?.email,
+        p.customers?.phone,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(term);
+    });
+
+    return { purchases };
+  });
+
+/** Full purchase detail: customer, immutable snapshot and payment history. */
+export const getPurchaseDetail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ purchaseId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const db = (context as any).supabase;
+    const { data: purchase, error } = await db
+      .from("purchases")
+      .select(
+        "id, reference, status, fulfillment_status, currency_code, total_idr, first_payment_percentage, first_payment_idr, outstanding_idr, paid_idr, created_at, customer_id, customers(id, full_name, email, phone, country, preferred_language_code)",
+      )
+      .eq("id", data.purchaseId)
+      .maybeSingle();
+    if (error) throw new Error("This purchase could not be loaded.");
+    if (!purchase) throw new Error("This purchase could not be found.");
+
+    const [{ data: snapshot }, { data: payments }, { data: siblings }] = await Promise.all([
+      db.from("purchase_snapshots").select("data, created_at").eq("purchase_id", data.purchaseId).maybeSingle(),
+      db
+        .from("payment_requests")
+        .select("id, kind, status, amount_idr, provider, provider_reference, provider_payment_url, paid_at, expires_at, created_at")
+        .eq("purchase_id", data.purchaseId)
+        .order("created_at", { ascending: true }),
+      purchase.customer_id
+        ? db
+            .from("purchases")
+            .select("id, reference, status, total_idr, paid_idr, outstanding_idr, created_at")
+            .eq("customer_id", purchase.customer_id)
+            .neq("id", data.purchaseId)
+            .order("created_at", { ascending: false })
+            .limit(20)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    return {
+      purchase,
+      snapshot: snapshot?.data ?? null,
+      snapshot_taken_at: snapshot?.created_at ?? null,
+      payments: payments ?? [],
+      other_purchases: siblings ?? [],
+    };
+  });
+
+export const setPurchaseFulfillment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        purchaseId: z.string().uuid(),
+        status: z.enum(PURCHASE_FULFILLMENT_STATUSES),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await (context as any).supabase.rpc("is_admin");
+    if (isAdmin !== true) throw new Error("Only an ADMIN may perform this operation.");
+    const { setFulfillmentStatus } = await import("@/lib/purchase.server");
+    return setFulfillmentStatus(data.purchaseId, data.status);
   });
 
 export const requestBalancePayment = createServerFn({ method: "POST" })
@@ -73,4 +175,45 @@ export const requestBalancePayment = createServerFn({ method: "POST" })
     const { createBalanceRequest } = await import("@/lib/purchase.server");
     const request = await createBalanceRequest(data.purchaseId);
     return { request };
+  });
+
+/* ------------------------------------------------------------------ */
+/* Customers (operational contact records)                            */
+/* ------------------------------------------------------------------ */
+
+export const listCustomers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ search: z.string().max(120).optional() }).optional().parse(data))
+  .handler(async ({ context, data }) => {
+    const db = (context as any).supabase;
+    const { data: customers, error } = await db
+      .from("customers")
+      .select("id, full_name, email, phone, country, preferred_language_code, created_at")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) throw new Error("These customers could not be loaded.");
+
+    const { data: purchases } = await db
+      .from("purchases")
+      .select("id, customer_id, total_idr, paid_idr, outstanding_idr");
+
+    const term = (data?.search ?? "").trim().toLowerCase();
+    const rows = (customers ?? [])
+      .filter((c: any) =>
+        !term ||
+        [c.full_name, c.email, c.phone].filter(Boolean).join(" ").toLowerCase().includes(term),
+      )
+      .map((c: any) => {
+        const own = (purchases ?? []).filter((p: any) => p.customer_id === c.id);
+        return {
+          ...c,
+          purchase_count: own.length,
+          total_idr: own.reduce((s: number, p: any) => s + Number(p.total_idr), 0),
+          paid_idr: own.reduce((s: number, p: any) => s + Number(p.paid_idr), 0),
+          outstanding_idr: own.reduce((s: number, p: any) => s + Number(p.outstanding_idr), 0),
+          purchases: own.map((p: any) => p.id),
+        };
+      });
+
+    return { customers: rows };
   });

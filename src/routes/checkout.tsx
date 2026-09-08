@@ -9,6 +9,7 @@ import { formatIdr } from "@/lib/public-catalog";
 import { confirmCheckout, getCheckoutSummary } from "@/lib/purchase.functions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -38,6 +39,12 @@ function CheckoutPage() {
   const summaryFn = useServerFn(getCheckoutSummary);
   const confirm = useServerFn(confirmCheckout);
   const [busy, setBusy] = useState(false);
+  const [contact, setContact] = useState({
+    full_name: "",
+    email: "",
+    phone: "",
+    country: "",
+  });
 
   const summary = useQuery({
     queryKey: ["checkout-summary"],
@@ -52,7 +59,7 @@ function CheckoutPage() {
   async function book() {
     setBusy(true);
     try {
-      const result = await confirm({ data: undefined as never });
+      const result = await confirm({ data: contact });
       await queryClient.invalidateQueries({ queryKey: PUBLIC_CART_KEY });
       await cart.refetch();
       const id = result.purchase?.id;
@@ -65,6 +72,7 @@ function CheckoutPage() {
       setBusy(false);
     }
   }
+
 
   return (
     <PublicPage>
@@ -145,9 +153,54 @@ function CheckoutPage() {
             </div>
           </div>
 
+          <div className="mt-8 space-y-3 border-t border-border pt-4">
+            <h2 className="text-sm uppercase tracking-[0.14em] text-muted-foreground">
+              Your contact details
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="space-y-1 text-sm">
+                <span>Full name</span>
+                <Input
+                  value={contact.full_name}
+                  autoComplete="name"
+                  onChange={(e) => setContact({ ...contact, full_name: e.target.value })}
+                />
+              </label>
+              <label className="space-y-1 text-sm">
+                <span>Email</span>
+                <Input
+                  type="email"
+                  value={contact.email}
+                  autoComplete="email"
+                  onChange={(e) => setContact({ ...contact, email: e.target.value })}
+                />
+              </label>
+              <label className="space-y-1 text-sm">
+                <span>Phone / WhatsApp</span>
+                <Input
+                  value={contact.phone}
+                  autoComplete="tel"
+                  onChange={(e) => setContact({ ...contact, phone: e.target.value })}
+                />
+              </label>
+              <label className="space-y-1 text-sm">
+                <span>Country (optional)</span>
+                <Input
+                  value={contact.country}
+                  autoComplete="country-name"
+                  onChange={(e) => setContact({ ...contact, country: e.target.value })}
+                />
+              </label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              We use these details only to organise and confirm your trip.
+            </p>
+          </div>
+
           <div className="mt-6 space-y-3">
             <Button className="w-full" disabled={blocked || busy} onClick={book}>
               {busy ? "Confirming…" : "Confirm and pay deposit"}
+
             </Button>
             <Link to="/cart" className="block text-center text-sm underline underline-offset-2">
               Back to cart
