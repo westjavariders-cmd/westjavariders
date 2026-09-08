@@ -684,21 +684,46 @@ export function validatePricing(args: {
             break;
           }
           if (!component.is_active) warn(`Rule "${rule.label}" uses an inactive component.`);
-          const basis = component.unit_basis;
-          const needed =
-            basis === "per_person"
-              ? pricing.people_variable
-              : basis === "per_day"
-                ? pricing.days_variable
-                : basis === "per_night"
-                  ? pricing.nights_variable
-                  : basis === "per_session"
-                    ? pricing.sessions_variable
-                    : "fixed";
-          if (!needed) {
-            err(
-              `Component "${component.internal_name}" is priced ${basis.replace("_", " ")}, but no question supplies that quantity.`,
-            );
+          if (rule.quantity_variable) {
+            if (!numericVariables.has(rule.quantity_variable)) {
+              err(
+                `Component "${component.internal_name}" takes its quantity from "${rule.quantity_variable}", which is not an active number question.`,
+              );
+            }
+          } else {
+            const basis = component.unit_basis;
+            const needed =
+              basis === "per_person"
+                ? pricing.people_variable
+                : basis === "per_day"
+                  ? pricing.days_variable
+                  : basis === "per_night"
+                    ? pricing.nights_variable
+                    : basis === "per_session"
+                      ? pricing.sessions_variable
+                      : "fixed";
+            if (!needed) {
+              err(
+                `Component "${component.internal_name}" is priced ${basis.replace("_", " ")}, but no question supplies that quantity.`,
+              );
+            }
+          }
+          if (rule.condition_variable) {
+            if (!allVariables.has(rule.condition_variable)) {
+              err(`Rule "${rule.label}" tests "${rule.condition_variable}", which no longer exists.`);
+            }
+            if (
+              !rule.condition_operator ||
+              !PRICING_CONDITION_OPERATORS.some((o) => o.value === rule.condition_operator)
+            ) {
+              err(`Rule "${rule.label}" has no valid condition.`);
+            }
+            if (
+              ["equals", "not_equals", "greater_than", "less_than"].includes(rule.condition_operator ?? "") &&
+              !rule.condition_value?.trim()
+            ) {
+              err(`Rule "${rule.label}" has no comparison value.`);
+            }
           }
           break;
         }
