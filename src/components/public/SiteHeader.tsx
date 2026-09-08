@@ -1,11 +1,23 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Menu, X } from "lucide-react";
 
 import { getPublicCart } from "@/lib/public.functions";
+import { setFxCurrency } from "@/lib/fx.functions";
 import { formatIdr } from "@/lib/public-catalog";
+import { formatCustomerAmount } from "@/lib/fx";
+
+/** One display rule for every customer-facing total. */
+export function displayTotal(
+  amountIdr: number,
+  fx?: { currency_code: string; symbol: string } | null,
+  customerAmount?: number | null,
+): string {
+  if (!fx || fx.currency_code === "IDR" || customerAmount == null) return formatIdr(amountIdr);
+  return formatCustomerAmount(customerAmount, fx.currency_code, fx.symbol);
+}
 
 export const PUBLIC_CART_KEY = ["public-cart"] as const;
 
@@ -15,10 +27,47 @@ export function usePublicCart() {
   return useQuery({ queryKey: PUBLIC_CART_KEY, queryFn: () => fetchCart() });
 }
 
+/** Currency selector. The server decides what is supported and at what rate. */
+function CurrencySelector() {
+  const cart = usePublicCart();
+  const queryClient = useQueryClient();
+  const select = useServerFn(setFxCurrency);
+  const change = useMutation({
+    mutationFn: (code: string) => select({ data: { code } }),
+    onSuccess: () => queryClient.invalidateQueries(),
+  });
+
+  const fx = cart.data?.fx;
+  if (!fx || fx.currencies.length < 2) return null;
+
+  return (
+    <label>
+      <span className="sr-only">Currency</span>
+      <select
+        aria-label="Currency"
+        className="rounded-full border border-border bg-background px-2 py-1.5 text-xs font-medium"
+        value={fx.currency_code}
+        disabled={change.isPending}
+        onChange={(e) => change.mutate(e.target.value)}
+      >
+        {fx.currencies.map((c) => (
+          <option key={c.code} value={c.code}>
+            {c.code}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const cart = usePublicCart();
-  const total = formatIdr(cart.data?.payable_total_idr ?? 0);
+  const total = displayTotal(
+    cart.data?.payable_total_idr ?? 0,
+    cart.data?.fx,
+    cart.data?.payable_total_customer,
+  );
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/95 backdrop-blur">
@@ -47,13 +96,16 @@ export function SiteHeader() {
           </Link>
         </nav>
 
-        <Link
-          to="/cart"
-          className="rounded-full border border-border px-3 py-1.5 text-xs font-medium tracking-wide"
-        >
-          <span className="hidden sm:inline">TOTAL PRICE — </span>
-          {total}
-        </Link>
+        <div className="flex items-center gap-2">
+          <CurrencySelector />
+          <Link
+            to="/cart"
+            className="rounded-full border border-border px-3 py-1.5 text-xs font-medium tracking-wide"
+          >
+            <span className="hidden sm:inline">TOTAL PRICE — </span>
+            {total}
+          </Link>
+        </div>
       </div>
 
       {open && (

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { setBaseCurrency } from "@/lib/admin.functions";
+import { listFxRates, setFxRate } from "@/lib/fx.functions";
 import { recordAdminAction } from "@/lib/admin-audit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -149,7 +150,7 @@ function CurrenciesPage() {
     <>
       <PageHeader
         title="Currencies"
-        description="Currencies available to the platform. Exchange rates are a later phase."
+        description="Currencies available to the platform, and the exchange rate used for customer prices."
         breadcrumb={["Admin", "Settings", "Currencies"]}
         actions={
           adminSession.isAdmin ? (
@@ -220,7 +221,9 @@ function CurrenciesPage() {
         </p>
       )}
 
-      <Card>
+      <FxRatesCard isAdmin={adminSession.isAdmin} />
+
+      <Card className="mt-6">
         <CardContent className="overflow-x-auto p-0">
           <Table>
             <TableHeader>
@@ -354,5 +357,112 @@ function CurrenciesPage() {
         </CardContent>
       </Card>
     </>
+  );
+}
+
+/**
+ * Exchange rates. Rupiah is always the base: each rate says how many Rupiah
+ * one unit of that currency is worth. Customer prices are converted from the
+ * exact Rupiah amount and rounded up once.
+ */
+function FxRatesCard({ isAdmin }: { isAdmin: boolean }) {
+  const queryClient = useQueryClient();
+  const fetchRates = useServerFn(listFxRates);
+  const saveRate = useServerFn(setFxRate);
+  const [edits, setEdits] = useState<Record<string, string>>({});
+
+  const rates = useQuery({ queryKey: ["fx-rates"], queryFn: () => fetchRates() });
+
+  const save = useMutation({
+    mutationFn: (vars: { code: string; rate: string }) => saveRate({ data: vars }),
+    onSuccess: (_r, vars) => {
+      toast.success(`Rate saved for ${vars.code}`);
+      setEdits((e) => {
+        const next = { ...e };
+        delete next[vars.code];
+        return next;
+      });
+      queryClient.invalidateQueries({ queryKey: ["fx-rates"] });
+      queryClient.invalidateQueries({ queryKey: ["audit-log"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "The rate could not be saved."),
+  });
+
+  return (
+    <Card>
+      <CardContent className="space-y-3 p-4">
+        <div>
+          <h2 className="text-sm font-semibold">Exchange rates</h2>
+          <p className="text-xs text-muted-foreground">
+            How many Rupiah one unit of each currency is worth. Prices are always calculated in
+            Rupiah and converted once, rounded up, for display and for the booking record.
+          </p>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Currency</TableHead>
+              <TableHead>Rupiah per unit</TableHead>
+              <TableHead>Updated</TableHead>
+              <TableHead>Source</TableHead>
+              {isAdmin && <TableHead className="w-24" />}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rates.data?.map((row) => {
+              const value = edits[row.currency_code] ?? row.rate ?? "";
+              const dirty = value.trim() !== (row.rate ?? "");
+              return (
+                <TableRow key={row.currency_code}>
+                  <TableCell className="font-mono text-xs">{row.currency_code}</TableCell>
+                  <TableCell>
+                    {isAdmin ? (
+                      <Input
+                        className="w-32"
+                        inputMode="decimal"
+                        value={value}
+                        placeholder="Not set"
+                        onChange={(e) =>
+                          setEdits((s2) => ({ ...s2, [row.currency_code]: e.target.value }))
+                        }
+                      />
+                    ) : (
+                      (row.rate ?? "Not set")
+                    )}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {row.effective_at ? new Date(row.effective_at).toLocaleString() : "—"}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {row.source ?? "—"}
+                  </TableCell>
+                  {isAdmin && (
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={!dirty || save.isPending}
+                        onClick={() =>
+                          save.mutate({ code: row.currency_code, rate: value.trim() })
+                        }
+                      >
+                        Save
+                      </Button>
+                    </TableCell>
+                  )}
+                </TableRow>
+              );
+            })}
+            {rates.data?.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={isAdmin ? 5 : 4} className="text-sm text-muted-foreground">
+                  Only Rupiah is active, so no exchange rate is needed.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }

@@ -4,7 +4,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { PublicPage, PUBLIC_CART_KEY, usePublicCart } from "@/components/public/SiteHeader";
+import {
+  PublicPage,
+  PUBLIC_CART_KEY,
+  displayTotal,
+  usePublicCart,
+} from "@/components/public/SiteHeader";
 import { formatIdr } from "@/lib/public-catalog";
 import { discardDraftPackage, removeCartPackage } from "@/lib/cart.functions";
 import { Button } from "@/components/ui/button";
@@ -167,11 +172,18 @@ function CartPage() {
               Total price
             </span>
             <span className="text-2xl font-semibold">
-              {formatIdr(cart.data?.payable_total_idr ?? 0)}
+              {displayTotal(
+                cart.data?.payable_total_idr ?? 0,
+                cart.data?.fx,
+                cart.data?.payable_total_customer,
+              )}
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
             Indicative total. It is confirmed when you book.
+            {cart.data?.fx && cart.data.fx.currency_code !== "IDR"
+              ? ` Charged in Rupiah: ${formatIdr(cart.data.payable_total_idr)}.`
+              : ""}
           </p>
           <Button
             className="w-full"
