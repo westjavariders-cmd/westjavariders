@@ -25,6 +25,7 @@ import {
   type PurchaseFulfillmentStatus,
 } from "@/lib/customer";
 import { activePaymentProvider, providerByName } from "@/lib/payments/provider.server";
+import { validateGift, type GiftData, type GiftInput } from "@/lib/voucher";
 
 export { CartError };
 
