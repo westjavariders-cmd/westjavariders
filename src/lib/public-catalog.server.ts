@@ -109,7 +109,14 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
     ? ((await db.from("field_options").select("*").in("field_id", fieldIds).order("display_order")).data ?? [])
     : [];
 
+  const catalogueTypes = (fields.data ?? [])
+    .filter((f: any) => f.is_active)
+    .map((f: any) => fieldCatalogueType(f))
+    .filter((t: CatalogueType | null): t is CatalogueType => t != null);
+  const catalogue = await resolveCatalogues(catalogueTypes);
+
   return {
+    catalogue,
     product: {
       id: product.id,
       title: translation.data?.title || product.internal_name,
