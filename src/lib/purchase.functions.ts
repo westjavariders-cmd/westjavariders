@@ -130,23 +130,30 @@ export const getPurchaseDetail = createServerFn({ method: "POST" })
     if (error) throw new Error("This purchase could not be loaded.");
     if (!purchase) throw new Error("This purchase could not be found.");
 
-    const [{ data: snapshot }, { data: payments }, { data: siblings }] = await Promise.all([
-      db.from("purchase_snapshots").select("data, created_at").eq("purchase_id", data.purchaseId).maybeSingle(),
-      db
-        .from("payment_requests")
-        .select("id, kind, status, amount_idr, provider, provider_reference, provider_payment_url, paid_at, expires_at, created_at")
-        .eq("purchase_id", data.purchaseId)
-        .order("created_at", { ascending: true }),
-      purchase.customer_id
-        ? db
-            .from("purchases")
-            .select("id, reference, status, total_idr, paid_idr, outstanding_idr, created_at")
-            .eq("customer_id", purchase.customer_id)
-            .neq("id", data.purchaseId)
-            .order("created_at", { ascending: false })
-            .limit(20)
-        : Promise.resolve({ data: [] }),
-    ]);
+    const [{ data: snapshot }, { data: payments }, { data: siblings }, { data: vouchers }] =
+      await Promise.all([
+        db.from("purchase_snapshots").select("data, created_at").eq("purchase_id", data.purchaseId).maybeSingle(),
+        db
+          .from("payment_requests")
+          .select("id, kind, status, amount_idr, provider, provider_reference, provider_payment_url, paid_at, expires_at, created_at")
+          .eq("purchase_id", data.purchaseId)
+          .order("created_at", { ascending: true }),
+        purchase.customer_id
+          ? db
+              .from("purchases")
+              .select("id, reference, status, total_idr, paid_idr, outstanding_idr, created_at")
+              .eq("customer_id", purchase.customer_id)
+              .neq("id", data.purchaseId)
+              .order("created_at", { ascending: false })
+              .limit(20)
+          : Promise.resolve({ data: [] }),
+        // One voucher per purchased package: a booking can have several.
+        db
+          .from("vouchers")
+          .select("id, code, voucher_type, status, valid_until, package_id, entitlement")
+          .eq("purchase_id", data.purchaseId)
+          .order("code", { ascending: true }),
+      ]);
 
     return {
       purchase,
@@ -154,8 +161,10 @@ export const getPurchaseDetail = createServerFn({ method: "POST" })
       snapshot_taken_at: snapshot?.created_at ?? null,
       payments: payments ?? [],
       other_purchases: siblings ?? [],
+      vouchers: vouchers ?? [],
     };
   });
+
 
 export const setPurchaseFulfillment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
