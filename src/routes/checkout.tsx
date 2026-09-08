@@ -146,20 +146,34 @@ function CheckoutPage() {
               <span className="text-sm uppercase tracking-[0.14em] text-muted-foreground">
                 Total price
               </span>
-              <span className="text-xl font-semibold">{formatIdr(data.total_idr)}</span>
+              <span className="text-xl font-semibold">
+                {displayTotal(data.total_idr, data.fx, data.customer_total)}
+              </span>
             </div>
             <div className="flex items-baseline justify-between">
               <span className="text-sm">
                 To pay today ({data.first_payment_percentage}%)
               </span>
-              <span className="text-2xl font-semibold">{formatIdr(data.first_payment_idr)}</span>
+              <span className="text-2xl font-semibold">
+                {displayTotal(data.first_payment_idr, data.fx, data.customer_first_payment)}
+              </span>
             </div>
             <div className="flex items-baseline justify-between">
               <span className="text-sm text-muted-foreground">
                 Balance, settled with us before your trip
               </span>
-              <span className="text-base">{formatIdr(data.outstanding_idr)}</span>
+              <span className="text-base">
+                {displayTotal(data.outstanding_idr, data.fx, data.customer_outstanding)}
+              </span>
             </div>
+            {data.fx.currency_code !== "IDR" && (
+              <p className="text-xs text-muted-foreground">
+                Converted at {data.fx.rate} Rupiah per {data.fx.currency_code} and fixed when you
+                book. Payment is taken in Rupiah: {formatIdr(data.first_payment_idr)} today,
+                {" "}
+                {formatIdr(data.outstanding_idr)} as the balance.
+              </p>
+            )}
           </div>
 
           <div className="mt-8 space-y-3 border-t border-border pt-4">
