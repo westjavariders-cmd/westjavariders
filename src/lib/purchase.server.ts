@@ -26,7 +26,7 @@ import {
 } from "@/lib/customer";
 import { activePaymentProvider, providerByName } from "@/lib/payments/provider.server";
 import { validateGift, type GiftData, type GiftInput } from "@/lib/voucher";
-import { fxContext, freezeFx, displayAmount, type FxContext } from "@/lib/fx.server";
+import { fxContext, freezeFx, displayAmount } from "@/lib/fx.server";
 import { toPublicFx, type PublicFxContext } from "@/lib/fx.functions";
 
 export { CartError };
@@ -321,6 +321,13 @@ export type PurchaseView = {
   outstanding_idr: number;
   paid_idr: number;
   created_at: string;
+  /** Frozen customer currency, null for purchases taken in Rupiah. */
+  customer_currency_code: string | null;
+  fx_rate: string | null;
+  fx_effective_at: string | null;
+  customer_total_amount: number | null;
+  customer_first_payment_amount: number | null;
+  customer_outstanding_amount: number | null;
   payment: {
     id: string;
     kind: PaymentRequestKind;
@@ -328,6 +335,8 @@ export type PurchaseView = {
     amount_idr: number;
     provider: string | null;
     payment_url: string | null;
+    customer_currency_code: string | null;
+    customer_amount: number | null;
   } | null;
   snapshot: any;
 };
@@ -337,7 +346,7 @@ async function loadPurchase(purchaseId: string): Promise<PurchaseView | null> {
   const { data: purchase } = await db
     .from("purchases")
     .select(
-      "id, reference, status, fulfillment_status, currency_code, total_idr, first_payment_percentage, first_payment_idr, outstanding_idr, paid_idr, created_at",
+      "id, reference, status, fulfillment_status, currency_code, total_idr, first_payment_percentage, first_payment_idr, outstanding_idr, paid_idr, created_at, customer_currency_code, fx_rate, fx_effective_at, customer_total_amount, customer_first_payment_amount, customer_outstanding_amount",
     )
     .eq("id", purchaseId)
     .maybeSingle();
@@ -346,7 +355,9 @@ async function loadPurchase(purchaseId: string): Promise<PurchaseView | null> {
   const [{ data: requests }, { data: snapshot }] = await Promise.all([
     db
       .from("payment_requests")
-      .select("id, kind, status, amount_idr, provider, provider_payment_url, created_at")
+      .select(
+        "id, kind, status, amount_idr, provider, provider_payment_url, created_at, customer_currency_code, fx_rate, customer_amount",
+      )
       .eq("purchase_id", purchaseId)
       .order("created_at", { ascending: false }),
     db.from("purchase_snapshots").select("data").eq("purchase_id", purchaseId).maybeSingle(),
@@ -364,6 +375,19 @@ async function loadPurchase(purchaseId: string): Promise<PurchaseView | null> {
     first_payment_idr: Number(purchase.first_payment_idr),
     outstanding_idr: Number(purchase.outstanding_idr),
     paid_idr: Number(purchase.paid_idr),
+    customer_currency_code: purchase.customer_currency_code ?? null,
+    fx_rate: purchase.fx_rate != null ? String(purchase.fx_rate) : null,
+    fx_effective_at: purchase.fx_effective_at ?? null,
+    customer_total_amount:
+      purchase.customer_total_amount != null ? Number(purchase.customer_total_amount) : null,
+    customer_first_payment_amount:
+      purchase.customer_first_payment_amount != null
+        ? Number(purchase.customer_first_payment_amount)
+        : null,
+    customer_outstanding_amount:
+      purchase.customer_outstanding_amount != null
+        ? Number(purchase.customer_outstanding_amount)
+        : null,
     payment: open
       ? {
           id: open.id,
@@ -372,6 +396,8 @@ async function loadPurchase(purchaseId: string): Promise<PurchaseView | null> {
           amount_idr: Number(open.amount_idr),
           provider: open.provider,
           payment_url: open.provider_payment_url,
+          customer_currency_code: open.customer_currency_code ?? null,
+          customer_amount: open.customer_amount != null ? Number(open.customer_amount) : null,
         }
       : null,
     snapshot: snapshot?.data ?? null,
@@ -463,6 +489,10 @@ export async function createPurchaseFromCart(
   const gift = validateGift(giftInput);
   const customerId = await findOrCreateCustomer(contact);
 
+  // FX is frozen here, from the same rate the customer was just shown.
+  const fx = await fxContext(revalidation.fx.currency_code);
+  const frozen = freezeFx(fx, revalidation.total_idr, revalidation.first_payment_idr);
+
   const { data: purchaseId, error } = await db.rpc("create_purchase", {
     _cart_id: revalidation.cart_id,
     _customer_id: customerId,
@@ -470,12 +500,25 @@ export async function createPurchaseFromCart(
     _percentage: revalidation.first_payment_percentage,
     _first_payment_idr: revalidation.first_payment_idr,
     _outstanding_idr: revalidation.outstanding_idr,
-    _snapshot: buildSnapshot(revalidation, contact, gift) as never,
+    _snapshot: buildSnapshot(revalidation, contact, gift, frozen) as never,
     _is_gift: gift.is_gift,
     _gift_recipient_name: gift.gift_recipient_name,
     _gift_message: gift.gift_message,
   });
   if (error || !purchaseId) fail(SAFE_ERROR);
+
+  if (frozen) {
+    await db.from("purchases").update(frozen).eq("id", purchaseId as string);
+    await db
+      .from("payment_requests")
+      .update({
+        customer_currency_code: frozen.customer_currency_code,
+        fx_rate: frozen.fx_rate,
+        customer_amount: frozen.customer_first_payment_amount,
+      })
+      .eq("purchase_id", purchaseId as string)
+      .eq("kind", "first_payment");
+  }
 
   await syncPackageQuotes(revalidation);
 
@@ -554,7 +597,9 @@ export async function createBalanceRequest(purchaseId: string) {
   const db = await admin();
   const { data: purchase } = await db
     .from("purchases")
-    .select("id, outstanding_idr, status")
+    .select(
+      "id, outstanding_idr, status, customer_currency_code, fx_rate, customer_outstanding_amount",
+    )
     .eq("id", purchaseId)
     .maybeSingle();
   if (!purchase) fail("This purchase could not be found.");
@@ -573,6 +618,13 @@ export async function createBalanceRequest(purchaseId: string) {
       purchase_id: purchaseId,
       kind: "balance",
       amount_idr: Number(purchase.outstanding_idr),
+      // The historical rate agreed at purchase time, never today's rate.
+      customer_currency_code: purchase.customer_currency_code ?? null,
+      fx_rate: purchase.fx_rate ?? null,
+      customer_amount:
+        purchase.customer_outstanding_amount != null
+          ? Number(purchase.customer_outstanding_amount)
+          : null,
     });
     if (error) fail(SAFE_ERROR);
   }
