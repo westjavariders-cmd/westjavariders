@@ -11,6 +11,8 @@ import { getRequest, setResponseHeader } from "@tanstack/react-start/server";
 import {
   MASTER_LANGUAGE,
   evaluateDependencies,
+  stripInactiveAnswers,
+
   type PreviewValues,
   type ProductBundle,
 } from "@/lib/catalog";
