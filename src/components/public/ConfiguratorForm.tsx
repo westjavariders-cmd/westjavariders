@@ -238,6 +238,22 @@ export function ConfiguratorForm({
                   </div>
                 )}
 
+                {catalogueType && options.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No choices are available right now.
+                  </p>
+                )}
+                {catalogueType &&
+                  (() => {
+                    const chosen = options.find((o) => o.internal_value === value) as
+                      | { description?: string | null }
+                      | undefined;
+                    return chosen?.description ? (
+                      <p className="text-xs text-muted-foreground">{chosen.description}</p>
+                    ) : null;
+                  })()}
+
+
                 {f.field_type === "multi_select" && (
                   <div className="flex flex-wrap gap-2">
                     {options.map((o) => {
