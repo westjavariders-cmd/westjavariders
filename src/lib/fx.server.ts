@@ -68,7 +68,7 @@ function readCookieCurrency(): string | null {
 function writeCookieCurrency(code: string) {
   setResponseHeader(
     "Set-Cookie",
-    `${CURRENCY_COOKIE}=${code}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=${60 * 60 * 24 * 30}`,
+    `${CURRENCY_COOKIE}=${code}; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=${60 * 60 * 24 * 30}`,
   );
 }
 

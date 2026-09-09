@@ -71,9 +71,11 @@ function readCookieToken(): string | null {
 }
 
 function writeCookieToken(token: string) {
+  // SameSite=None so the cookie survives embedded/preview contexts, where a
+  // Lax cookie is treated as third-party and never sent back.
   setResponseHeader(
     "Set-Cookie",
-    `${CART_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=${60 * 60 * 24 * 30}`,
+    `${CART_COOKIE}=${token}; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=${60 * 60 * 24 * 30}`,
   );
 }
 
