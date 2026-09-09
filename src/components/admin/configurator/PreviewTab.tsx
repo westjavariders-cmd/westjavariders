@@ -49,6 +49,28 @@ export function PreviewTab({ bundle }: { bundle: ProductBundle }) {
   });
 
   const evaluated = useMemo(() => evaluateDependencies(bundle, values), [bundle, values]);
+
+  // Catalogue-backed questions have no manual options: their choices come from
+  // the existing Generic Catalogue Bridge resolver, exactly as in public.
+  const catalogueTypes = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          bundle.fields
+            .filter((f) => f.is_active)
+            .map((f) => fieldCatalogueType(f as never))
+            .filter((t): t is CatalogueType => t != null),
+        ),
+      ),
+    [bundle.fields],
+  );
+  const { data: catalogue } = useQuery({
+    queryKey: ["preview-catalogue", catalogueTypes],
+    enabled: catalogueTypes.length > 0,
+    queryFn: () => previewCatalogue({ data: { types: catalogueTypes } }),
+  });
+  const catalogueItems: Partial<Record<CatalogueType, CatalogueItem[]>> = catalogue ?? {};
+
   const step = activeSteps[Math.min(stepIndex, Math.max(activeSteps.length - 1, 0))];
 
   if (activeSteps.length === 0 || !step) {
