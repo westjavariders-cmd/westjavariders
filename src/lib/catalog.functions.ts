@@ -136,7 +136,7 @@ async function assertActivatable(supabase: any, productId: string) {
     supabase.from("config_flows").select("id").eq("product_id", productId).maybeSingle(),
     supabase
       .from("fields")
-      .select("id, step_id, variable_name, field_type, is_active")
+      .select("id, step_id, variable_name, field_type, is_active, internal_name, option_source, catalogue_type")
       .eq("product_id", productId),
   ]);
 
@@ -169,12 +169,32 @@ async function assertActivatable(supabase: any, productId: string) {
         "field_id",
         selectFields.map((f: any) => f.id),
       );
+
+    // Catalogue-backed questions take their choices from the existing
+    // Catalogue Bridge, so they are validated against live active items.
+    const { fieldCatalogueType } = await import("@/lib/catalogue-bridge");
+    const types = selectFields
+      .map((f: any) => fieldCatalogueType(f))
+      .filter((t: any): t is string => !!t);
+    let items: Record<string, unknown[]> = {};
+    if (types.length) {
+      const { resolveCatalogues } = await import("@/lib/catalogue-bridge.server");
+      items = (await resolveCatalogues(types as never)) as never;
+    }
+
+    const { selectFieldActivationError } = await import("@/lib/catalog");
     for (const f of selectFields) {
-      const has = (options ?? []).some((o: any) => o.field_id === f.id && o.is_active);
-      if (!has) fail("Every choice question needs at least one active option before activating.");
+      const type = fieldCatalogueType(f);
+      const problem = selectFieldActivationError(f, {
+        activeManualOptions: (options ?? []).filter((o: any) => o.field_id === f.id && o.is_active)
+          .length,
+        catalogueItems: type ? (items[type]?.length ?? 0) : 0,
+      });
+      if (problem) fail(problem);
     }
   }
 }
+
 
 export const setProductStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
