@@ -57,7 +57,7 @@ export function PreviewTab({ bundle }: { bundle: ProductBundle }) {
 
   const missing = stepFields.filter((f) => {
     const e = evaluated.fields[f.id];
-    if (!e?.required || f.field_type === "info_block") return false;
+    if (!e?.required || e.reset || f.field_type === "info_block") return false;
     const v = values[f.variable_name];
     return v == null || v === "" || (Array.isArray(v) && v.length === 0);
   });
