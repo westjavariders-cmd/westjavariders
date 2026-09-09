@@ -22,7 +22,8 @@ Phase 2 — Admin foundation: DONE (auth, first-admin setup, shell, settings/cur
 - [x] Phase 10 — Global purchase + payment core (revalidation, purchase, immutable snapshot, payment requests, Xendit adapter, webhook idempotency)
 - [ ] Phase 11 — Voucher, snapshot PDF, email delivery
 - [ ] Phase 8 — Special modules
-- [ ] Phase 9 — Public website
+- [x] Website configuration foundation (pages, sections, blocks, media, CTAs, product references, navigation, multilingual)
+- [ ] Phase 9 — Public website (final design & content on top of the website configuration foundation)
 - [ ] Phase 10 — SEO, analytics, QA, launch
 
 ## Open decisions
