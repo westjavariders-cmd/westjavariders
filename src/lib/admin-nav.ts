@@ -31,6 +31,15 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { label: "Promo Codes", to: "/admin/promo-codes", status: "available" },
   { label: "Reviews", to: "/admin/reviews", status: "planned" },
   {
+    label: "Website",
+    to: "/admin/website",
+    status: "available",
+    children: [
+      { label: "Pages", to: "/admin/website", status: "available" },
+      { label: "Navigation", to: "/admin/website/navigation", status: "available" },
+    ],
+  },
+  {
     label: "Settings",
     to: "/admin/settings",
     status: "available",

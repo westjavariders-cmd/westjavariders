@@ -19,6 +19,7 @@ import { Route as AdminNoAccessRouteImport } from './routes/admin/no-access'
 import { Route as AdminSetupRouteImport } from './routes/admin/setup'
 import { Route as BuildYourTripIndexRouteImport } from './routes/build-your-trip.index'
 import { Route as BuildYourTripProductIdRouteImport } from './routes/build-your-trip.$productId'
+import { Route as PagesSlugRouteImport } from './routes/pages.$slug'
 import { Route as PurchasePurchaseIdRouteImport } from './routes/purchase.$purchaseId'
 import { Route as AdminAppIndexRouteImport } from './routes/admin/_app/index'
 import { Route as AdminAppCatalogTaxonomyRouteImport } from './routes/admin/_app/catalog-taxonomy'
@@ -97,6 +98,11 @@ const BuildYourTripIndexRoute = BuildYourTripIndexRouteImport.update({
 const BuildYourTripProductIdRoute = BuildYourTripProductIdRouteImport.update({
   id: '/build-your-trip/$productId',
   path: '/build-your-trip/$productId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PagesSlugRoute = PagesSlugRouteImport.update({
+  id: '/pages/$slug',
+  path: '/pages/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PurchasePurchaseIdRoute = PurchasePurchaseIdRouteImport.update({
@@ -268,6 +274,7 @@ export interface FileRoutesByFullPath {
   '/admin/no-access': typeof AdminNoAccessRoute
   '/admin/setup': typeof AdminSetupRoute
   '/build-your-trip/$productId': typeof BuildYourTripProductIdRoute
+  '/pages/$slug': typeof PagesSlugRoute
   '/purchase/$purchaseId': typeof PurchasePurchaseIdRoute
   '/build-your-trip/': typeof BuildYourTripIndexRoute
   '/admin/catalog-taxonomy': typeof AdminAppCatalogTaxonomyRoute
@@ -309,6 +316,7 @@ export interface FileRoutesByTo {
   '/admin/no-access': typeof AdminNoAccessRoute
   '/admin/setup': typeof AdminSetupRoute
   '/build-your-trip/$productId': typeof BuildYourTripProductIdRoute
+  '/pages/$slug': typeof PagesSlugRoute
   '/purchase/$purchaseId': typeof PurchasePurchaseIdRoute
   '/build-your-trip': typeof BuildYourTripIndexRoute
   '/admin/catalog-taxonomy': typeof AdminAppCatalogTaxonomyRoute
@@ -351,6 +359,7 @@ export interface FileRoutesById {
   '/admin/no-access': typeof AdminNoAccessRoute
   '/admin/setup': typeof AdminSetupRoute
   '/build-your-trip/$productId': typeof BuildYourTripProductIdRoute
+  '/pages/$slug': typeof PagesSlugRoute
   '/purchase/$purchaseId': typeof PurchasePurchaseIdRoute
   '/build-your-trip/': typeof BuildYourTripIndexRoute
   '/admin/_app/catalog-taxonomy': typeof AdminAppCatalogTaxonomyRoute
@@ -394,6 +403,7 @@ export interface FileRouteTypes {
     | '/admin/no-access'
     | '/admin/setup'
     | '/build-your-trip/$productId'
+    | '/pages/$slug'
     | '/purchase/$purchaseId'
     | '/build-your-trip/'
     | '/admin/catalog-taxonomy'
@@ -435,6 +445,7 @@ export interface FileRouteTypes {
     | '/admin/no-access'
     | '/admin/setup'
     | '/build-your-trip/$productId'
+    | '/pages/$slug'
     | '/purchase/$purchaseId'
     | '/build-your-trip'
     | '/admin/catalog-taxonomy'
@@ -476,6 +487,7 @@ export interface FileRouteTypes {
     | '/admin/no-access'
     | '/admin/setup'
     | '/build-your-trip/$productId'
+    | '/pages/$slug'
     | '/purchase/$purchaseId'
     | '/build-your-trip/'
     | '/admin/_app/catalog-taxonomy'
@@ -515,6 +527,7 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRoute
   BuildYourTripProductIdRoute: typeof BuildYourTripProductIdRoute
+  PagesSlugRoute: typeof PagesSlugRoute
   PurchasePurchaseIdRoute: typeof PurchasePurchaseIdRoute
   BuildYourTripIndexRoute: typeof BuildYourTripIndexRoute
   ApiPublicPaymentsXenditRoute: typeof ApiPublicPaymentsXenditRoute
@@ -590,6 +603,13 @@ declare module '@tanstack/react-router' {
       path: '/build-your-trip/$productId'
       fullPath: '/build-your-trip/$productId'
       preLoaderRoute: typeof BuildYourTripProductIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pages/$slug': {
+      id: '/pages/$slug'
+      path: '/pages/$slug'
+      fullPath: '/pages/$slug'
+      preLoaderRoute: typeof PagesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/purchase/$purchaseId': {
@@ -895,6 +915,7 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRoute,
   BuildYourTripProductIdRoute: BuildYourTripProductIdRoute,
+  PagesSlugRoute: PagesSlugRoute,
   PurchasePurchaseIdRoute: PurchasePurchaseIdRoute,
   BuildYourTripIndexRoute: BuildYourTripIndexRoute,
   ApiPublicPaymentsXenditRoute: ApiPublicPaymentsXenditRoute,

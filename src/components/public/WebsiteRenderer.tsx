@@ -159,13 +159,23 @@ function Section({ section }: { section: PublicSection }) {
   );
 }
 
-export function WebsiteRenderer({ page }: { page: PublicWebsitePage }) {
+export function WebsiteRenderer({
+  page,
+  showHeading = true,
+}: {
+  page: PublicWebsitePage;
+  showHeading?: boolean;
+}) {
   return (
     <div className="space-y-10 py-4">
-      <header className="space-y-2">
-        {page.title && <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{page.title}</h1>}
-        {page.subtitle && <p className="text-sm text-muted-foreground">{page.subtitle}</p>}
-      </header>
+      {showHeading && (page.title || page.subtitle) && (
+        <header className="space-y-2">
+          {page.title && (
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{page.title}</h1>
+          )}
+          {page.subtitle && <p className="text-sm text-muted-foreground">{page.subtitle}</p>}
+        </header>
+      )}
       {page.sections.map((section) => (
         <Section key={section.id} section={section} />
       ))}
