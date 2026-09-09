@@ -191,11 +191,13 @@ export function ConfiguratorForm({
               ? catalogueItems.map((item) => ({
                   id: item.id,
                   internal_value: item.id,
+                  description: item.description,
                   customer_label:
                     item.customer_price_idr == null
                       ? item.name
                       : `${item.name} · ${formatIdr(item.customer_price_idr)}`,
                 }))
+
               : bundle.options
                   .filter((o) => o.field_id === f.id && o.is_active)
                   .filter((o) => !evaluated.hiddenOptionIds.has(o.id));
