@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Menu, X } from "lucide-react";
 
 import { getPublicCart } from "@/lib/public.functions";
+import { getWebsiteNav } from "@/lib/website.functions";
 import { setFxCurrency } from "@/lib/fx.functions";
 import { formatIdr } from "@/lib/public-catalog";
 import { formatCustomerAmount } from "@/lib/fx";
@@ -60,9 +61,17 @@ function CurrencySelector() {
   );
 }
 
+/** The configured menu, when Admin has set one up. */
+function useWebsiteNav() {
+  const load = useServerFn(getWebsiteNav);
+  return useQuery({ queryKey: ["website-nav"], queryFn: () => load({ data: {} }) });
+}
+
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const cart = usePublicCart();
+  const nav = useWebsiteNav();
+  const navItems = nav.data?.items ?? [];
   const total = displayTotal(
     cart.data?.payable_total_idr ?? 0,
     cart.data?.fx,
