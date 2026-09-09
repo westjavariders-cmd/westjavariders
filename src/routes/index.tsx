@@ -44,24 +44,32 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const { page } = Route.useLoaderData();
+
   return (
     <PublicPage>
       <div className="py-8">
         <h1 className="text-3xl font-semibold tracking-tight">
-          Surf, travel and local experiences in Cimaja
+          {page?.title ?? "Surf, travel and local experiences in Cimaja"}
         </h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          West Java's warm-water pointbreaks, local guides and trips built exactly the way you want
-          them.
+          {page?.subtitle ??
+            "West Java's warm-water pointbreaks, local guides and trips built exactly the way you want them."}
         </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Button asChild>
-            <Link to="/build-your-trip">Build your trip</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link to="/cart">View your cart</Link>
-          </Button>
-        </div>
+
+        {page && page.sections.length > 0 ? (
+          <WebsiteRenderer page={page} showHeading={false} />
+        ) : (
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Button asChild>
+              <Link to="/build-your-trip">Build your trip</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/cart">View your cart</Link>
+            </Button>
+          </div>
+        )}
+
         <p className="mt-10 text-xs text-muted-foreground">
           <Link to="/admin" className="underline underline-offset-2">
             Staff sign in
