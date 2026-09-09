@@ -124,13 +124,22 @@ export function validateBundle(b: ProductBundle): ValidationIssue[] {
     }
     if (SELECT_FIELD_TYPES.includes(f.field_type)) {
       const active = b.options.filter((o) => o.field_id === f.id && o.is_active);
-      if (active.length === 0) {
-        err(`Field "${f.internal_name}" is a select field with no active option.`);
+      // A catalogue-backed question takes its choices from the catalogue, so it
+      // never needs manual options.
+      if (isCatalogueField(f as never)) {
+        // nothing to check here; the catalogue is the source of truth
+      } else if (active.length === 0) {
+        if (f.is_required) {
+          err(`Field "${f.internal_name}" is a required select field with no active option.`);
+        } else {
+          warn(`Field "${f.internal_name}" is a select field with no active option yet.`);
+        }
       }
       if (f.field_type === "single_select" && active.filter((o) => o.is_default).length > 1) {
         err(`Field "${f.internal_name}" has more than one default option.`);
       }
     }
+
     if (f.min_value != null && f.max_value != null && Number(f.min_value) > Number(f.max_value)) {
       err(`Field "${f.internal_name}" has a minimum above its maximum.`);
     }
