@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import {
   evaluateDependencies,
@@ -6,12 +7,19 @@ import {
   type PreviewValues,
   type ProductBundle,
 } from "@/lib/catalog";
+import {
+  fieldCatalogueType,
+  type CatalogueItem,
+  type CatalogueType,
+} from "@/lib/catalogue-bridge";
+import { previewCatalogue } from "@/lib/catalog.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+
 
 /**
  * Renders the product's real saved configuration so the administrator can
