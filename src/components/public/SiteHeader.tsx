@@ -132,9 +132,23 @@ export function SiteHeader() {
 
       {open && (
         <nav className="flex flex-col gap-1 border-t border-border/60 px-4 py-2 text-sm sm:hidden">
-          <Link to="/build-your-trip" className="py-2" onClick={() => setOpen(false)}>
-            Build your trip
-          </Link>
+          {navItems.length > 0 ? (
+            navItems.map((item) => (
+              <a
+                key={item.id}
+                href={item.href}
+                {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                className="py-2"
+                onClick={() => setOpen(false)}
+              >
+                {item.label}
+              </a>
+            ))
+          ) : (
+            <Link to="/build-your-trip" className="py-2" onClick={() => setOpen(false)}>
+              Build your trip
+            </Link>
+          )}
           <Link to="/cart" className="py-2" onClick={() => setOpen(false)}>
             Cart
           </Link>
