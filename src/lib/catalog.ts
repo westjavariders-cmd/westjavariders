@@ -192,6 +192,23 @@ function asText(v: PreviewValues[string]): string {
   return String(v);
 }
 
+/** Generic yes/no reading, so "is yes"/"is no" also work on select answers. */
+const TRUTHY = ["true", "yes", "y", "1", "on"];
+const FALSY = ["false", "no", "n", "0", "off"];
+
+function isYes(v: PreviewValues[string]): boolean {
+  if (v === true) return true;
+  if (Array.isArray(v)) return v.some((x) => TRUTHY.includes(String(x).trim().toLowerCase()));
+  return TRUTHY.includes(asText(v).trim().toLowerCase());
+}
+
+function isNo(v: PreviewValues[string]): boolean {
+  if (v === false) return true;
+  const text = asText(v).trim().toLowerCase();
+  if (Array.isArray(v)) return !isYes(v);
+  return text === "" || FALSY.includes(text);
+}
+
 function conditionMet(d: Dependency, value: PreviewValues[string]): boolean {
   const text = asText(value);
   const target = d.source_option_id ? (d.compare_value ?? "") : (d.compare_value ?? "");
@@ -211,13 +228,14 @@ function conditionMet(d: Dependency, value: PreviewValues[string]): boolean {
     case "is_not_empty":
       return text.trim() !== "";
     case "is_true":
-      return value === true || text === "true";
+      return isYes(value);
     case "is_false":
-      return value === false || text === "false" || text === "";
+      return isNo(value);
     default:
       return false;
   }
 }
+
 
 export function evaluateDependencies(
   b: ProductBundle,
