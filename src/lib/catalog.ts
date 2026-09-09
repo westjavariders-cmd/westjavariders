@@ -88,6 +88,29 @@ export type ProductBundle = {
 
 export const MASTER_LANGUAGE = "en";
 
+/**
+ * Activation check for one choice question, shared by the browser and the
+ * server. A manual question needs at least one active option of its own; a
+ * catalogue-backed one needs at least one active customer-visible item in the
+ * catalogue it points at. A catalogue source with no valid catalogue chosen
+ * counts as manual, so it still needs options and cannot silently pass.
+ */
+export function selectFieldActivationError(
+  field: { internal_name?: string | null; option_source?: string | null; catalogue_type?: string | null; variable_name: string; field_type: string; id: string },
+  counts: { activeManualOptions: number; catalogueItems: number },
+): string | null {
+  if (!SELECT_FIELD_TYPES.includes(field.field_type)) return null;
+  if (isCatalogueField(field as never)) {
+    return counts.catalogueItems > 0
+      ? null
+      : "A choice question uses a catalogue with no active item. Add or activate catalogue items before activating.";
+  }
+  return counts.activeManualOptions > 0
+    ? null
+    : "Every choice question needs at least one active option before activating.";
+}
+
+
 /* ------------------------------------------------------------------ */
 /* Validation                                                         */
 /* ------------------------------------------------------------------ */
