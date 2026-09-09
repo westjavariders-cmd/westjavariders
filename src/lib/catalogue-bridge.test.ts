@@ -135,3 +135,49 @@ describe("pricing exposure", () => {
     ).toEqual({ room_price: 750000 });
   });
 });
+
+describe("catalogue-backed accommodation question", () => {
+  const roomField = {
+    id: "f3",
+    variable_name: "hotelroom",
+    field_type: "single_select",
+    option_source: "catalogue",
+    catalogue_type: "accommodation_room",
+  };
+  const items = { accommodation_room: [room("active-room", 750000)] };
+
+  it("offers an active room and stores it through the shared bridge shape", () => {
+    const { selections, invalid } = resolveCatalogueSelections(
+      [roomField],
+      { hotelroom: "active-room" },
+      items,
+    );
+    expect(invalid).toEqual([]);
+    expect(selections[0]).toEqual({
+      variable_name: "hotelroom",
+      catalogue_type: "accommodation_room",
+      item_id: "active-room",
+      name: "Room active-room",
+      reference: null,
+      customer_price_idr: 750000,
+    });
+    expect(cataloguePriceVariables(selections)).toEqual({ hotelroom_price: 750000 });
+  });
+
+  it("does not offer a room that is no longer active", () => {
+    const { selections, invalid } = resolveCatalogueSelections(
+      [roomField],
+      { hotelroom: "inactive-room" },
+      items,
+    );
+    expect(selections).toEqual([]);
+    expect(invalid).toHaveLength(1);
+  });
+
+  it("leaves transport and motorbike questions unchanged", () => {
+    const transportField = { ...roomField, id: "f4", variable_name: "ride", catalogue_type: "transport" };
+    const bikeField = { ...roomField, id: "f5", variable_name: "bike", catalogue_type: "motorbike" };
+    expect(fieldCatalogueType(transportField)).toBe("transport");
+    expect(fieldCatalogueType(bikeField)).toBe("motorbike");
+  });
+});
