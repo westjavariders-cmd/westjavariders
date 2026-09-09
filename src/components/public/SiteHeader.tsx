@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Menu, X } from "lucide-react";
 
 import { getPublicCart } from "@/lib/public.functions";
+import { getWebsiteNav } from "@/lib/website.functions";
 import { setFxCurrency } from "@/lib/fx.functions";
 import { formatIdr } from "@/lib/public-catalog";
 import { formatCustomerAmount } from "@/lib/fx";
@@ -60,9 +61,17 @@ function CurrencySelector() {
   );
 }
 
+/** The configured menu, when Admin has set one up. */
+function useWebsiteNav() {
+  const load = useServerFn(getWebsiteNav);
+  return useQuery({ queryKey: ["website-nav"], queryFn: () => load({ data: {} }) });
+}
+
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const cart = usePublicCart();
+  const nav = useWebsiteNav();
+  const navItems = nav.data?.items ?? [];
   const total = displayTotal(
     cart.data?.payable_total_idr ?? 0,
     cart.data?.fx,
@@ -88,9 +97,22 @@ export function SiteHeader() {
         </div>
 
         <nav className="hidden items-center gap-5 text-sm sm:flex">
-          <Link to="/build-your-trip" activeProps={{ className: "font-semibold" }}>
-            Build your trip
-          </Link>
+          {navItems.length > 0 ? (
+            navItems.map((item) => (
+              <a
+                key={item.id}
+                href={item.href}
+                {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                {item.label}
+              </a>
+            ))
+          ) : (
+            <Link to="/build-your-trip" activeProps={{ className: "font-semibold" }}>
+              Build your trip
+            </Link>
+          )}
           <Link to="/cart" className="text-muted-foreground hover:text-foreground">
             Cart
           </Link>
@@ -110,9 +132,23 @@ export function SiteHeader() {
 
       {open && (
         <nav className="flex flex-col gap-1 border-t border-border/60 px-4 py-2 text-sm sm:hidden">
-          <Link to="/build-your-trip" className="py-2" onClick={() => setOpen(false)}>
-            Build your trip
-          </Link>
+          {navItems.length > 0 ? (
+            navItems.map((item) => (
+              <a
+                key={item.id}
+                href={item.href}
+                {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                className="py-2"
+                onClick={() => setOpen(false)}
+              >
+                {item.label}
+              </a>
+            ))
+          ) : (
+            <Link to="/build-your-trip" className="py-2" onClick={() => setOpen(false)}>
+              Build your trip
+            </Link>
+          )}
           <Link to="/cart" className="py-2" onClick={() => setOpen(false)}>
             Cart
           </Link>

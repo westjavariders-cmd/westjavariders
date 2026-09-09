@@ -191,12 +191,12 @@ export async function websitePage(
     Array.from(new Set(productRefs.map((r: any) => r.product_id))) as string[],
   );
 
-  const pageText = pickTranslation(pageTx.data ?? [], wanted, fallback);
+  const pageText = pickTranslation<any>((pageTx.data ?? []) as any[], wanted, fallback);
 
   const sectionsOut: PublicSection[] = await Promise.all(
     activeSections.map(async (section: any) => {
-      const text = pickTranslation(
-        (sectionTx.data ?? []).filter((t: any) => t.section_id === section.id),
+      const text = pickTranslation<any>(
+        ((sectionTx.data ?? []) as any[]).filter((t: any) => t.section_id === section.id),
         wanted,
         fallback,
       );
@@ -205,15 +205,15 @@ export async function websitePage(
         activeBlocks
           .filter((b: any) => b.section_id === section.id)
           .map(async (block: any): Promise<PublicBlock> => {
-            const blockText = pickTranslation(
-              (blockTx.data ?? []).filter((t: any) => t.block_id === block.id),
+            const blockText = pickTranslation<any>(
+              ((blockTx.data ?? []) as any[]).filter((t: any) => t.block_id === block.id),
               wanted,
               fallback,
             );
 
             const destination = resolveDestination({
               kind: block.cta_kind,
-              pageSlug: block.cta_page_id ? ctaSlug.get(block.cta_page_id) : null,
+              pageSlug: block.cta_page_id ? (ctaSlug.get(block.cta_page_id) ?? null) : null,
               productId: block.cta_product_id,
               externalUrl: block.cta_external_url,
             });
@@ -288,12 +288,12 @@ export async function websiteNav(language?: string): Promise<PublicNavItem[]> {
     .map((item: any) => {
       const destination = resolveDestination({
         kind: item.destination_kind,
-        pageSlug: item.destination_page_id ? slug.get(item.destination_page_id) : null,
+        pageSlug: item.destination_page_id ? (slug.get(item.destination_page_id) ?? null) : null,
         productId: item.destination_product_id,
         externalUrl: item.destination_external_url,
       });
-      const text = pickTranslation(
-        (translations.data ?? []).filter((t: any) => t.nav_item_id === item.id),
+      const text = pickTranslation<any>(
+        ((translations.data ?? []) as any[]).filter((t: any) => t.nav_item_id === item.id),
         wanted,
         fallback,
       );

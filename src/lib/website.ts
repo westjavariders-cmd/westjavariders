@@ -157,6 +157,8 @@ export function moveInOrder<T>(rows: T[], index: number, direction: -1 | 1): T[]
   const target = index + direction;
   if (index < 0 || index >= rows.length || target < 0 || target >= rows.length) return rows;
   const next = [...rows];
-  [next[index], next[target]] = [next[target], next[index]];
+  const moved = next[index] as T;
+  next[index] = next[target] as T;
+  next[target] = moved;
   return next;
 }
