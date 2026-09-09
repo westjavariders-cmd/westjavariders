@@ -8,6 +8,7 @@
 import { isPurchasable } from "@/lib/pricing";
 import {
   WEBSITE_MEDIA_BUCKET,
+  isPubliclyListable,
   pickTranslation,
   resolveDestination,
   visibleSorted,
@@ -157,6 +158,7 @@ async function resolveProducts(db: any, productIds: string[]) {
   );
 
   for (const product of products.data ?? []) {
+    if (!isPubliclyListable(product.status)) continue;
     const bookable = isPurchasable(product.status, pricingStatus.get(product.id));
     resolved.set(product.id, {
       id: product.id,

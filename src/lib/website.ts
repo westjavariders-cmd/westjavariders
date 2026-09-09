@@ -168,3 +168,36 @@ export function moveInOrder<T>(rows: T[], index: number, direction: -1 | 1): T[]
   next[target] = moved;
   return next;
 }
+
+/**
+ * Public listing rule for products referenced by a website block: only a
+ * product that is itself active may appear. Whether it can be booked stays
+ * with the existing commercial rule (product + pricing active).
+ */
+export function isPubliclyListable(productStatus: string | null | undefined): boolean {
+  return productStatus === "active";
+}
+
+/**
+ * The products a configured page shows, in configured order, taken only from
+ * its active product selection blocks. Nothing is added that the block does
+ * not reference.
+ */
+export function configuredPageProducts<T extends { id: string }>(page: {
+  sections: { blocks: { kind: string; products: T[] }[] }[];
+} | null): T[] {
+  if (!page) return [];
+  const out: T[] = [];
+  const seen = new Set<string>();
+  for (const section of page.sections) {
+    for (const block of section.blocks) {
+      if (block.kind !== "product_selection") continue;
+      for (const product of block.products) {
+        if (seen.has(product.id)) continue;
+        seen.add(product.id);
+        out.push(product);
+      }
+    }
+  }
+  return out;
+}
