@@ -11,6 +11,8 @@ import { getRequest, setResponseHeader } from "@tanstack/react-start/server";
 import {
   MASTER_LANGUAGE,
   evaluateDependencies,
+  stripInactiveAnswers,
+
   type PreviewValues,
   type ProductBundle,
 } from "@/lib/catalog";
@@ -305,20 +307,24 @@ export async function quotePackage(args: {
       .map((f: any) => fieldCatalogueType(f))
       .filter((t: CatalogueType | null): t is CatalogueType => t != null),
   );
+  // Answers for fields the saved dependencies currently hide or reset are
+  // dropped first, so they never price, validate or persist.
+  const visibleAnswers = stripInactiveAnswers(loaded.bundle, args.answers as never) as PreviewValues;
   const answers = stripInvalidCatalogueAnswers(
     catalogueFields as never,
-    args.answers as Record<string, unknown>,
+    visibleAnswers as Record<string, unknown>,
     catalogue,
   ) as PreviewValues;
   const { selections, invalid } = resolveCatalogueSelections(
     catalogueFields as never,
-    args.answers as Record<string, unknown>,
+    visibleAnswers as Record<string, unknown>,
     catalogue,
     (f) => {
       const field = catalogueFields.find((x: any) => x.variable_name === f.variable_name) as any;
       return field?.customer_label || field?.internal_name || f.variable_name;
     },
   );
+
 
   const inputs = resolveInputs(loaded.bundle, answers as never);
   for (const [name, amount] of Object.entries(cataloguePriceVariables(selections))) {

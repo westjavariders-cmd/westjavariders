@@ -6,6 +6,8 @@ import { toast } from "sonner";
 
 import {
   evaluateDependencies,
+  stripInactiveAnswers,
+
   type Field,
   type PreviewValues,
   type ProductBundle,
@@ -116,6 +118,16 @@ export function ConfiguratorForm({
   }, [values, promo, packageId]);
 
   const evaluated = useMemo(() => evaluateDependencies(bundle, values), [bundle, values]);
+
+  // Applies the saved reset/hide actions to the answers themselves, so a hidden
+  // question keeps no value.
+  useEffect(() => {
+    setValues((v) => {
+      const next = stripInactiveAnswers(bundle, v);
+      return JSON.stringify(next) === JSON.stringify(v) ? v : next;
+    });
+  }, [bundle, values]);
+
   const step = activeSteps[Math.min(stepIndex, Math.max(activeSteps.length - 1, 0))];
 
   function set(f: Field, value: PreviewValues[string]) {
@@ -179,11 +191,13 @@ export function ConfiguratorForm({
               ? catalogueItems.map((item) => ({
                   id: item.id,
                   internal_value: item.id,
+                  description: item.description,
                   customer_label:
                     item.customer_price_idr == null
                       ? item.name
                       : `${item.name} · ${formatIdr(item.customer_price_idr)}`,
                 }))
+
               : bundle.options
                   .filter((o) => o.field_id === f.id && o.is_active)
                   .filter((o) => !evaluated.hiddenOptionIds.has(o.id));
@@ -223,6 +237,22 @@ export function ConfiguratorForm({
                     ))}
                   </div>
                 )}
+
+                {catalogueType && options.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No choices are available right now.
+                  </p>
+                )}
+                {catalogueType &&
+                  (() => {
+                    const chosen = options.find((o) => o.internal_value === value) as
+                      | { description?: string | null }
+                      | undefined;
+                    return chosen?.description ? (
+                      <p className="text-xs text-muted-foreground">{chosen.description}</p>
+                    ) : null;
+                  })()}
+
 
                 {f.field_type === "multi_select" && (
                   <div className="flex flex-wrap gap-2">

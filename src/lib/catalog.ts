@@ -1,4 +1,6 @@
 import type { Database } from "@/integrations/supabase/types";
+import { isCatalogueField } from "@/lib/catalogue-bridge";
+
 
 /**
  * Shared catalog/configurator types, reads, validation and dependency
@@ -124,13 +126,22 @@ export function validateBundle(b: ProductBundle): ValidationIssue[] {
     }
     if (SELECT_FIELD_TYPES.includes(f.field_type)) {
       const active = b.options.filter((o) => o.field_id === f.id && o.is_active);
-      if (active.length === 0) {
-        err(`Field "${f.internal_name}" is a select field with no active option.`);
+      // A catalogue-backed question takes its choices from the catalogue, so it
+      // never needs manual options.
+      if (isCatalogueField(f as never)) {
+        // nothing to check here; the catalogue is the source of truth
+      } else if (active.length === 0) {
+        if (f.is_required) {
+          err(`Field "${f.internal_name}" is a required select field with no active option.`);
+        } else {
+          warn(`Field "${f.internal_name}" is a select field with no active option yet.`);
+        }
       }
       if (f.field_type === "single_select" && active.filter((o) => o.is_default).length > 1) {
         err(`Field "${f.internal_name}" has more than one default option.`);
       }
     }
+
     if (f.min_value != null && f.max_value != null && Number(f.min_value) > Number(f.max_value)) {
       err(`Field "${f.internal_name}" has a minimum above its maximum.`);
     }
@@ -192,6 +203,23 @@ function asText(v: PreviewValues[string]): string {
   return String(v);
 }
 
+/** Generic yes/no reading, so "is yes"/"is no" also work on select answers. */
+const TRUTHY = ["true", "yes", "y", "1", "on"];
+const FALSY = ["false", "no", "n", "0", "off"];
+
+function isYes(v: PreviewValues[string]): boolean {
+  if (v === true) return true;
+  if (Array.isArray(v)) return v.some((x) => TRUTHY.includes(String(x).trim().toLowerCase()));
+  return TRUTHY.includes(asText(v).trim().toLowerCase());
+}
+
+function isNo(v: PreviewValues[string]): boolean {
+  if (v === false) return true;
+  const text = asText(v).trim().toLowerCase();
+  if (Array.isArray(v)) return !isYes(v);
+  return text === "" || FALSY.includes(text);
+}
+
 function conditionMet(d: Dependency, value: PreviewValues[string]): boolean {
   const text = asText(value);
   const target = d.source_option_id ? (d.compare_value ?? "") : (d.compare_value ?? "");
@@ -211,13 +239,14 @@ function conditionMet(d: Dependency, value: PreviewValues[string]): boolean {
     case "is_not_empty":
       return text.trim() !== "";
     case "is_true":
-      return value === true || text === "true";
+      return isYes(value);
     case "is_false":
-      return value === false || text === "false" || text === "";
+      return isNo(value);
     default:
       return false;
   }
 }
+
 
 export function evaluateDependencies(
   b: ProductBundle,
@@ -297,4 +326,24 @@ export function evaluateDependencies(
   }
 
   return { fields: effects, hiddenOptionIds };
+}
+
+/**
+ * Removes answers for fields that are currently hidden or reset by the saved
+ * dependency actions, so they are never validated, priced or persisted as an
+ * active configuration value. Generic: it works from the dependency records.
+ */
+export function stripInactiveAnswers(b: ProductBundle, values: PreviewValues): PreviewValues {
+  const { fields: effects } = evaluateDependencies(b, values);
+  const next: PreviewValues = { ...values };
+  for (const f of b.fields) {
+    const e = effects[f.id];
+    if (!e) continue;
+    const inactive = (e.hidden && !e.forcedVisible) || e.reset;
+    if (!inactive) continue;
+    if (f.field_type === "multi_select") next[f.variable_name] = [];
+    else if (f.field_type === "boolean") next[f.variable_name] = false;
+    else next[f.variable_name] = "";
+  }
+  return next;
 }
