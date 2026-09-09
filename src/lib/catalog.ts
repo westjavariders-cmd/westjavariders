@@ -327,3 +327,23 @@ export function evaluateDependencies(
 
   return { fields: effects, hiddenOptionIds };
 }
+
+/**
+ * Removes answers for fields that are currently hidden or reset by the saved
+ * dependency actions, so they are never validated, priced or persisted as an
+ * active configuration value. Generic: it works from the dependency records.
+ */
+export function stripInactiveAnswers(b: ProductBundle, values: PreviewValues): PreviewValues {
+  const { fields: effects } = evaluateDependencies(b, values);
+  const next: PreviewValues = { ...values };
+  for (const f of b.fields) {
+    const e = effects[f.id];
+    if (!e) continue;
+    const inactive = (e.hidden && !e.forcedVisible) || e.reset;
+    if (!inactive) continue;
+    if (f.field_type === "multi_select") next[f.variable_name] = [];
+    else if (f.field_type === "boolean") next[f.variable_name] = false;
+    else next[f.variable_name] = "";
+  }
+  return next;
+}
