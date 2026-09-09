@@ -119,9 +119,17 @@ export function PreviewTab({ bundle }: { bundle: ProductBundle }) {
           {stepFields.map((f) => {
             const e = evaluated.fields[f.id]!;
             const value = e.forcedValue ?? values[f.variable_name] ?? "";
-            const options = bundle.options
-              .filter((o) => o.field_id === f.id && o.is_active)
-              .filter((o) => !evaluated.hiddenOptionIds.has(o.id));
+            const catalogueType = fieldCatalogueType(f as never);
+            const options = catalogueType
+              ? (catalogueItems[catalogueType] ?? []).map((item) => ({
+                  id: item.id,
+                  internal_value: item.id,
+                  customer_label: item.name,
+                }))
+              : bundle.options
+                  .filter((o) => o.field_id === f.id && o.is_active)
+                  .filter((o) => !evaluated.hiddenOptionIds.has(o.id));
+
 
             if (f.field_type === "info_block") {
               return (
