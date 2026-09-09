@@ -1,9 +1,27 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { PublicPage } from "@/components/public/SiteHeader";
+import { WebsiteRenderer } from "@/components/public/WebsiteRenderer";
+import { getWebsitePage } from "@/lib/website.functions";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
+  loader: async () => {
+    const { page } = await getWebsitePage({ data: { slug: "home" } });
+    return { page };
+  },
+  errorComponent: ({ error }) => (
+    <PublicPage>
+      <p role="alert" className="py-8 text-sm text-muted-foreground">
+        {error.message}
+      </p>
+    </PublicPage>
+  ),
+  notFoundComponent: () => (
+    <PublicPage>
+      <p className="py-8 text-sm text-muted-foreground">This page isn't available.</p>
+    </PublicPage>
+  ),
   head: () => ({
     meta: [
       { title: "Cimaja Boardriders | Surf & Travel in West Java" },
