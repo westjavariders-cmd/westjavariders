@@ -97,9 +97,22 @@ export function SiteHeader() {
         </div>
 
         <nav className="hidden items-center gap-5 text-sm sm:flex">
-          <Link to="/build-your-trip" activeProps={{ className: "font-semibold" }}>
-            Build your trip
-          </Link>
+          {navItems.length > 0 ? (
+            navItems.map((item) => (
+              <a
+                key={item.id}
+                href={item.href}
+                {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                {item.label}
+              </a>
+            ))
+          ) : (
+            <Link to="/build-your-trip" activeProps={{ className: "font-semibold" }}>
+              Build your trip
+            </Link>
+          )}
           <Link to="/cart" className="text-muted-foreground hover:text-foreground">
             Cart
           </Link>
