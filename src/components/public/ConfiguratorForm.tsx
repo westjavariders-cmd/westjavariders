@@ -116,6 +116,16 @@ export function ConfiguratorForm({
   }, [values, promo, packageId]);
 
   const evaluated = useMemo(() => evaluateDependencies(bundle, values), [bundle, values]);
+
+  // Applies the saved reset/hide actions to the answers themselves, so a hidden
+  // question keeps no value.
+  useEffect(() => {
+    setValues((v) => {
+      const next = stripInactiveAnswers(bundle, v);
+      return JSON.stringify(next) === JSON.stringify(v) ? v : next;
+    });
+  }, [bundle, values]);
+
   const step = activeSteps[Math.min(stepIndex, Math.max(activeSteps.length - 1, 0))];
 
   function set(f: Field, value: PreviewValues[string]) {
