@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import {
   evaluateDependencies,
@@ -6,12 +7,19 @@ import {
   type PreviewValues,
   type ProductBundle,
 } from "@/lib/catalog";
+import {
+  fieldCatalogueType,
+  type CatalogueItem,
+  type CatalogueType,
+} from "@/lib/catalogue-bridge";
+import { previewCatalogue } from "@/lib/catalog.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+
 
 /**
  * Renders the product's real saved configuration so the administrator can
@@ -41,6 +49,28 @@ export function PreviewTab({ bundle }: { bundle: ProductBundle }) {
   });
 
   const evaluated = useMemo(() => evaluateDependencies(bundle, values), [bundle, values]);
+
+  // Catalogue-backed questions have no manual options: their choices come from
+  // the existing Generic Catalogue Bridge resolver, exactly as in public.
+  const catalogueTypes = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          bundle.fields
+            .filter((f) => f.is_active)
+            .map((f) => fieldCatalogueType(f as never))
+            .filter((t): t is CatalogueType => t != null),
+        ),
+      ),
+    [bundle.fields],
+  );
+  const { data: catalogue } = useQuery({
+    queryKey: ["preview-catalogue", catalogueTypes],
+    enabled: catalogueTypes.length > 0,
+    queryFn: () => previewCatalogue({ data: { types: catalogueTypes } }),
+  });
+  const catalogueItems: Partial<Record<CatalogueType, CatalogueItem[]>> = catalogue ?? {};
+
   const step = activeSteps[Math.min(stepIndex, Math.max(activeSteps.length - 1, 0))];
 
   if (activeSteps.length === 0 || !step) {
@@ -89,9 +119,17 @@ export function PreviewTab({ bundle }: { bundle: ProductBundle }) {
           {stepFields.map((f) => {
             const e = evaluated.fields[f.id]!;
             const value = e.forcedValue ?? values[f.variable_name] ?? "";
-            const options = bundle.options
-              .filter((o) => o.field_id === f.id && o.is_active)
-              .filter((o) => !evaluated.hiddenOptionIds.has(o.id));
+            const catalogueType = fieldCatalogueType(f as never);
+            const options = catalogueType
+              ? (catalogueItems[catalogueType] ?? []).map((item) => ({
+                  id: item.id,
+                  internal_value: item.id,
+                  customer_label: item.name,
+                }))
+              : bundle.options
+                  .filter((o) => o.field_id === f.id && o.is_active)
+                  .filter((o) => !evaluated.hiddenOptionIds.has(o.id));
+
 
             if (f.field_type === "info_block") {
               return (

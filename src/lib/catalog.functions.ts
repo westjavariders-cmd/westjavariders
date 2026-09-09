@@ -253,3 +253,18 @@ export const addComponentFromTemplate = createServerFn({ method: "POST" })
     });
     return { ok: true };
   });
+
+/**
+ * Active, customer-safe catalogue items for the Admin preview, resolved by the
+ * existing Generic Catalogue Bridge resolver (same data the public
+ * configurator receives). Read-only; no new catalogue logic.
+ */
+export const previewCatalogue = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({ types: z.array(z.enum(["accommodation_room", "transport", "motorbike"])) }).parse(data),
+  )
+  .handler(async ({ data }) => {
+    const { resolveCatalogues } = await import("@/lib/catalogue-bridge.server");
+    return await resolveCatalogues(data.types);
+  });
