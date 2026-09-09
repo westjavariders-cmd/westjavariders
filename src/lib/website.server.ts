@@ -74,6 +74,65 @@ export type PublicWebsitePage = {
 
 export type PublicNavItem = { id: string; label: string; href: string; external: boolean };
 
+export type PublicLanding = {
+  title: string | null;
+  subtitle: string | null;
+  video_url: string | null;
+  image_url: string | null;
+  image_alt: string | null;
+  cta: { label: string; href: string; external: boolean } | null;
+  language: string;
+};
+
+/**
+ * The entry screen, only when it is switched on. Returns publishable fields
+ * plus time-limited media links; never storage paths or Admin-only fields.
+ */
+export async function websiteLanding(language?: string): Promise<PublicLanding | null> {
+  const db = await admin();
+  const fallback = await defaultLanguage(db);
+  const wanted = language && language.trim() !== "" ? language : fallback;
+
+  const { data: landing } = await db
+    .from("website_landing")
+    .select(
+      "id, is_active, video_path, image_path, image_alt, cta_kind, cta_page_id, cta_product_id, cta_external_url",
+    )
+    .maybeSingle();
+  if (!landing || landing.is_active !== true) return null;
+
+  const [translations, ctaPage, video, image] = await Promise.all([
+    db
+      .from("website_landing_translations")
+      .select("language_code, title, subtitle, cta_label")
+      .eq("landing_id", landing.id),
+    landing.cta_page_id
+      ? db.from("website_pages").select("slug, is_active").eq("id", landing.cta_page_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    signedMedia(db, landing.video_path),
+    signedMedia(db, landing.image_path),
+  ]);
+
+  const text = pickTranslation<any>((translations.data ?? []) as any[], wanted, fallback);
+  const destination = resolveDestination({
+    kind: landing.cta_kind,
+    pageSlug: ctaPage.data?.is_active ? ctaPage.data.slug : null,
+    productId: landing.cta_product_id,
+    externalUrl: landing.cta_external_url,
+  });
+
+  return {
+    title: text?.title ?? null,
+    subtitle: text?.subtitle ?? null,
+    video_url: video,
+    image_url: image,
+    image_alt: landing.image_alt ?? null,
+    cta: destination && text?.cta_label ? { label: text.cta_label, ...destination } : null,
+    language: wanted,
+  };
+}
+
+
 /** Products referenced by blocks, resolved from the product system only. */
 async function resolveProducts(db: any, productIds: string[]) {
   const resolved = new Map<string, PublicBlockProduct>();

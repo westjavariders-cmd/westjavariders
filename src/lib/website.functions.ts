@@ -514,3 +514,86 @@ export const reorderNavItems = createServerFn({ method: "POST" })
     await audit(supabase, userId, "website.nav.reordered", "website_nav_items", null, null);
     return { ok: true };
   });
+
+/* ------------------------------------------------------------------ */
+/* Entry / Landing                                                    */
+/* ------------------------------------------------------------------ */
+
+export const getWebsiteLanding = createServerFn({ method: "POST" })
+  .inputValidator((data) => z.object({ language: z.string().max(10).optional() }).parse(data ?? {}))
+  .handler(async ({ data }) => {
+    const { websiteLanding } = await import("@/lib/website.server");
+    return { landing: await websiteLanding(data.language) };
+  });
+
+export const saveLanding = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        is_active: z.boolean(),
+        video_path: z.string().max(500).nullable().optional(),
+        image_path: z.string().max(500).nullable().optional(),
+        image_alt: text(200),
+        cta_kind: z.enum(DESTINATION_KINDS),
+        cta_page_id: z.string().uuid().nullable().optional(),
+        cta_product_id: z.string().uuid().nullable().optional(),
+        cta_external_url: z.string().max(2000).nullable().optional(),
+        language,
+        title: text(200),
+        subtitle: text(500),
+        cta_label: text(80),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = ctx(context);
+    await assertAdmin(supabase);
+
+    const external = data.cta_kind === "external" ? (data.cta_external_url ?? null) : null;
+    if (data.cta_kind === "external" && !(external && /^https:\/\/[^\s]+$/.test(external))) {
+      fail("An external link must start with https://");
+    }
+    if (data.cta_kind === "page" && !data.cta_page_id) fail("Choose the page the button opens.");
+    if (data.cta_kind === "product" && !data.cta_product_id) fail("Choose the product the button opens.");
+
+    const { data: existing } = await supabase.from("website_landing").select("id").maybeSingle();
+
+    const row = {
+      is_active: data.is_active,
+      video_path: data.video_path ?? null,
+      image_path: data.image_path ?? null,
+      image_alt: data.image_alt ?? null,
+      cta_kind: data.cta_kind,
+      cta_page_id: data.cta_kind === "page" ? (data.cta_page_id ?? null) : null,
+      cta_product_id: data.cta_kind === "product" ? (data.cta_product_id ?? null) : null,
+      cta_external_url: external,
+    };
+
+    let landingId = existing?.id as string | undefined;
+    if (landingId) {
+      const { error } = await supabase.from("website_landing").update(row).eq("id", landingId);
+      if (error) fail("The entry screen could not be saved.");
+    } else {
+      const { data: created, error } = await supabase
+        .from("website_landing")
+        .insert(row)
+        .select("id")
+        .single();
+      if (error || !created) fail("The entry screen could not be saved.");
+      landingId = created.id as string;
+    }
+
+    await upsertTranslation(
+      supabase,
+      "website_landing_translations",
+      "landing_id",
+      landingId,
+      data.language,
+      { title: data.title ?? null, subtitle: data.subtitle ?? null, cta_label: data.cta_label ?? null },
+    );
+    await audit(supabase, userId, "website.landing.updated", "website_landing", landingId, null, {
+      is_active: data.is_active,
+    });
+    return { id: landingId };
+  });
