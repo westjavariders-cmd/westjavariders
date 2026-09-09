@@ -6,6 +6,8 @@ import { toast } from "sonner";
 
 import {
   evaluateDependencies,
+  stripInactiveAnswers,
+
   type Field,
   type PreviewValues,
   type ProductBundle,
