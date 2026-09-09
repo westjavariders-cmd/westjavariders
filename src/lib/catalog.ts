@@ -1,4 +1,6 @@
 import type { Database } from "@/integrations/supabase/types";
+import { isCatalogueField } from "@/lib/catalogue-bridge";
+
 
 /**
  * Shared catalog/configurator types, reads, validation and dependency
