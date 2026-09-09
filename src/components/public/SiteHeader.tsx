@@ -91,7 +91,7 @@ export function SiteHeader() {
             {open ? <X className="size-4" /> : <Menu className="size-4" />}
             MENU
           </button>
-          <Link to="/" className="text-sm font-semibold uppercase tracking-[0.18em]">
+          <Link to="/home" className="text-sm font-semibold uppercase tracking-[0.18em]">
             Cimaja Boardriders
           </Link>
         </div>
