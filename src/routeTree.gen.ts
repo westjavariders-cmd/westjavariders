@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as HomeRouteImport } from './routes/home'
 import { Route as AdminAppRouteRouteImport } from './routes/admin/_app/route'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminNoAccessRouteImport } from './routes/admin/no-access'
@@ -51,6 +52,7 @@ import { Route as AdminAppVouchersIndexRouteImport } from './routes/admin/_app/v
 import { Route as AdminAppVouchersVoucherIdRouteImport } from './routes/admin/_app/vouchers.$voucherId'
 import { Route as AdminAppWebsiteIndexRouteImport } from './routes/admin/_app/website.index'
 import { Route as AdminAppWebsitePageIdRouteImport } from './routes/admin/_app/website.$pageId'
+import { Route as AdminAppWebsiteLandingRouteImport } from './routes/admin/_app/website.landing'
 import { Route as AdminAppWebsiteNavigationRouteImport } from './routes/admin/_app/website.navigation'
 import { Route as ApiPublicPaymentsXenditRouteImport } from './routes/api/public/payments/xendit'
 
@@ -72,6 +74,11 @@ const CartRoute = CartRouteImport.update({
 const CheckoutRoute = CheckoutRouteImport.update({
   id: '/checkout',
   path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminAppRouteRoute = AdminAppRouteRouteImport.update({
@@ -272,6 +279,11 @@ const AdminAppWebsitePageIdRoute = AdminAppWebsitePageIdRouteImport.update({
   path: '/website/$pageId',
   getParentRoute: () => AdminAppRouteRoute,
 } as any)
+const AdminAppWebsiteLandingRoute = AdminAppWebsiteLandingRouteImport.update({
+  id: '/website/landing',
+  path: '/website/landing',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
 const AdminAppWebsiteNavigationRoute =
   AdminAppWebsiteNavigationRouteImport.update({
     id: '/website/navigation',
@@ -289,6 +301,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteRouteWithChildren
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
+  '/home': typeof HomeRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/no-access': typeof AdminNoAccessRoute
   '/admin/setup': typeof AdminSetupRoute
@@ -318,6 +331,7 @@ export interface FileRoutesByFullPath {
   '/admin/transport/$transportId': typeof AdminAppTransportTransportIdRoute
   '/admin/vouchers/$voucherId': typeof AdminAppVouchersVoucherIdRoute
   '/admin/website/$pageId': typeof AdminAppWebsitePageIdRoute
+  '/admin/website/landing': typeof AdminAppWebsiteLandingRoute
   '/admin/website/navigation': typeof AdminAppWebsiteNavigationRoute
   '/api/public/payments/xendit': typeof ApiPublicPaymentsXenditRoute
   '/admin/hotels/': typeof AdminAppHotelsIndexRoute
@@ -334,6 +348,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminAppIndexRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
+  '/home': typeof HomeRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/no-access': typeof AdminNoAccessRoute
   '/admin/setup': typeof AdminSetupRoute
@@ -362,6 +377,7 @@ export interface FileRoutesByTo {
   '/admin/transport/$transportId': typeof AdminAppTransportTransportIdRoute
   '/admin/vouchers/$voucherId': typeof AdminAppVouchersVoucherIdRoute
   '/admin/website/$pageId': typeof AdminAppWebsitePageIdRoute
+  '/admin/website/landing': typeof AdminAppWebsiteLandingRoute
   '/admin/website/navigation': typeof AdminAppWebsiteNavigationRoute
   '/api/public/payments/xendit': typeof ApiPublicPaymentsXenditRoute
   '/admin/hotels': typeof AdminAppHotelsIndexRoute
@@ -379,6 +395,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteRouteWithChildren
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
+  '/home': typeof HomeRoute
   '/admin/_app': typeof AdminAppRouteRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
   '/admin/no-access': typeof AdminNoAccessRoute
@@ -409,6 +426,7 @@ export interface FileRoutesById {
   '/admin/_app/transport/$transportId': typeof AdminAppTransportTransportIdRoute
   '/admin/_app/vouchers/$voucherId': typeof AdminAppVouchersVoucherIdRoute
   '/admin/_app/website/$pageId': typeof AdminAppWebsitePageIdRoute
+  '/admin/_app/website/landing': typeof AdminAppWebsiteLandingRoute
   '/admin/_app/website/navigation': typeof AdminAppWebsiteNavigationRoute
   '/api/public/payments/xendit': typeof ApiPublicPaymentsXenditRoute
   '/admin/_app/hotels/': typeof AdminAppHotelsIndexRoute
@@ -427,6 +445,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/cart'
     | '/checkout'
+    | '/home'
     | '/admin/login'
     | '/admin/no-access'
     | '/admin/setup'
@@ -456,6 +475,7 @@ export interface FileRouteTypes {
     | '/admin/transport/$transportId'
     | '/admin/vouchers/$voucherId'
     | '/admin/website/$pageId'
+    | '/admin/website/landing'
     | '/admin/website/navigation'
     | '/api/public/payments/xendit'
     | '/admin/hotels/'
@@ -472,6 +492,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/cart'
     | '/checkout'
+    | '/home'
     | '/admin/login'
     | '/admin/no-access'
     | '/admin/setup'
@@ -500,6 +521,7 @@ export interface FileRouteTypes {
     | '/admin/transport/$transportId'
     | '/admin/vouchers/$voucherId'
     | '/admin/website/$pageId'
+    | '/admin/website/landing'
     | '/admin/website/navigation'
     | '/api/public/payments/xendit'
     | '/admin/hotels'
@@ -516,6 +538,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/cart'
     | '/checkout'
+    | '/home'
     | '/admin/_app'
     | '/admin/login'
     | '/admin/no-access'
@@ -546,6 +569,7 @@ export interface FileRouteTypes {
     | '/admin/_app/transport/$transportId'
     | '/admin/_app/vouchers/$voucherId'
     | '/admin/_app/website/$pageId'
+    | '/admin/_app/website/landing'
     | '/admin/_app/website/navigation'
     | '/api/public/payments/xendit'
     | '/admin/_app/hotels/'
@@ -563,6 +587,7 @@ export interface RootRouteChildren {
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRoute
+  HomeRoute: typeof HomeRoute
   BuildYourTripProductIdRoute: typeof BuildYourTripProductIdRoute
   PagesSlugRoute: typeof PagesSlugRoute
   PurchasePurchaseIdRoute: typeof PurchasePurchaseIdRoute
@@ -598,6 +623,13 @@ declare module '@tanstack/react-router' {
       path: '/checkout'
       fullPath: '/checkout'
       preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/_app': {
@@ -866,6 +898,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAppWebsitePageIdRouteImport
       parentRoute: typeof AdminAppRouteRoute
     }
+    '/admin/_app/website/landing': {
+      id: '/admin/_app/website/landing'
+      path: '/website/landing'
+      fullPath: '/admin/website/landing'
+      preLoaderRoute: typeof AdminAppWebsiteLandingRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
     '/admin/_app/website/navigation': {
       id: '/admin/_app/website/navigation'
       path: '/website/navigation'
@@ -906,6 +945,7 @@ interface AdminAppRouteRouteChildren {
   AdminAppTransportTransportIdRoute: typeof AdminAppTransportTransportIdRoute
   AdminAppVouchersVoucherIdRoute: typeof AdminAppVouchersVoucherIdRoute
   AdminAppWebsitePageIdRoute: typeof AdminAppWebsitePageIdRoute
+  AdminAppWebsiteLandingRoute: typeof AdminAppWebsiteLandingRoute
   AdminAppWebsiteNavigationRoute: typeof AdminAppWebsiteNavigationRoute
   AdminAppHotelsIndexRoute: typeof AdminAppHotelsIndexRoute
   AdminAppMotorbikesIndexRoute: typeof AdminAppMotorbikesIndexRoute
@@ -940,6 +980,7 @@ const AdminAppRouteRouteChildren: AdminAppRouteRouteChildren = {
   AdminAppTransportTransportIdRoute: AdminAppTransportTransportIdRoute,
   AdminAppVouchersVoucherIdRoute: AdminAppVouchersVoucherIdRoute,
   AdminAppWebsitePageIdRoute: AdminAppWebsitePageIdRoute,
+  AdminAppWebsiteLandingRoute: AdminAppWebsiteLandingRoute,
   AdminAppWebsiteNavigationRoute: AdminAppWebsiteNavigationRoute,
   AdminAppHotelsIndexRoute: AdminAppHotelsIndexRoute,
   AdminAppMotorbikesIndexRoute: AdminAppMotorbikesIndexRoute,
@@ -978,6 +1019,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRouteRoute: AdminRouteRouteWithChildren,
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRoute,
+  HomeRoute: HomeRoute,
   BuildYourTripProductIdRoute: BuildYourTripProductIdRoute,
   PagesSlugRoute: PagesSlugRoute,
   PurchasePurchaseIdRoute: PurchasePurchaseIdRoute,

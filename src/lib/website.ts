@@ -55,6 +55,12 @@ export type MediaKind = (typeof MEDIA_KINDS)[number];
 export const HOME_SLUG = "home";
 export const BOOK_INDIVIDUALLY_SLUG = "book-individually";
 
+/**
+ * Home has its own address so it stays reachable when the entry screen owns
+ * the site root. Buttons pointing at Home therefore never loop back.
+ */
+export const HOME_ROUTE = "/home";
+
 /* ------------------------------------------------------------------ */
 /* Slugs                                                              */
 /* ------------------------------------------------------------------ */
@@ -135,7 +141,7 @@ export function resolveDestination(destination: Destination): ResolvedDestinatio
     case "page": {
       const slug = destination.pageSlug;
       if (!slug || !isSafeSlug(slug)) return null;
-      return { href: slug === HOME_SLUG ? "/" : `/pages/${slug}`, external: false };
+      return { href: slug === HOME_SLUG ? HOME_ROUTE : `/pages/${slug}`, external: false };
     }
     case "product": {
       const id = destination.productId;

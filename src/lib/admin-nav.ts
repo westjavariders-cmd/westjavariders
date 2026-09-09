@@ -36,6 +36,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
     status: "available",
     children: [
       { label: "Pages", to: "/admin/website", status: "available" },
+      { label: "Entry / Landing", to: "/admin/website/landing", status: "available" },
       { label: "Navigation", to: "/admin/website/navigation", status: "available" },
     ],
   },

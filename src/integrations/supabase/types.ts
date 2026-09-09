@@ -2511,6 +2511,114 @@ export type Database = {
           },
         ]
       }
+      website_landing: {
+        Row: {
+          created_at: string
+          cta_external_url: string | null
+          cta_kind: Database["public"]["Enums"]["website_destination_kind"]
+          cta_page_id: string | null
+          cta_product_id: string | null
+          id: string
+          image_alt: string | null
+          image_path: string | null
+          is_active: boolean
+          singleton: boolean
+          updated_at: string
+          video_path: string | null
+        }
+        Insert: {
+          created_at?: string
+          cta_external_url?: string | null
+          cta_kind?: Database["public"]["Enums"]["website_destination_kind"]
+          cta_page_id?: string | null
+          cta_product_id?: string | null
+          id?: string
+          image_alt?: string | null
+          image_path?: string | null
+          is_active?: boolean
+          singleton?: boolean
+          updated_at?: string
+          video_path?: string | null
+        }
+        Update: {
+          created_at?: string
+          cta_external_url?: string | null
+          cta_kind?: Database["public"]["Enums"]["website_destination_kind"]
+          cta_page_id?: string | null
+          cta_product_id?: string | null
+          id?: string
+          image_alt?: string | null
+          image_path?: string | null
+          is_active?: boolean
+          singleton?: boolean
+          updated_at?: string
+          video_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_landing_cta_page_id_fkey"
+            columns: ["cta_page_id"]
+            isOneToOne: false
+            referencedRelation: "website_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "website_landing_cta_product_id_fkey"
+            columns: ["cta_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      website_landing_translations: {
+        Row: {
+          created_at: string
+          cta_label: string | null
+          id: string
+          landing_id: string
+          language_code: string
+          subtitle: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cta_label?: string | null
+          id?: string
+          landing_id: string
+          language_code: string
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cta_label?: string | null
+          id?: string
+          landing_id?: string
+          language_code?: string
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_landing_translations_landing_id_fkey"
+            columns: ["landing_id"]
+            isOneToOne: false
+            referencedRelation: "website_landing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "website_landing_translations_language_code_fkey"
+            columns: ["language_code"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       website_nav_item_translations: {
         Row: {
           created_at: string

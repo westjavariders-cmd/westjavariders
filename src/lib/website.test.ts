@@ -88,7 +88,7 @@ describe("destination resolution", () => {
       external: false,
     });
     expect(resolveDestination({ kind: "page", pageSlug: "home" })).toEqual({
-      href: "/",
+      href: "/home",
       external: false,
     });
   });

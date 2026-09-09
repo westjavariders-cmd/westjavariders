@@ -1,16 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { HomeContent } from "@/components/public/HomeContent";
-import { LandingScreen } from "@/components/public/LandingScreen";
 import { PublicPage } from "@/components/public/SiteHeader";
-import { getWebsiteLanding, getWebsitePage } from "@/lib/website.functions";
+import { getWebsitePage } from "@/lib/website.functions";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/home")({
   loader: async () => {
-    const { landing } = await getWebsiteLanding({ data: {} });
-    if (landing) return { landing, page: null };
     const { page } = await getWebsitePage({ data: { slug: "home" } });
-    return { landing: null, page };
+    return { page };
   },
   errorComponent: ({ error }) => (
     <PublicPage>
@@ -26,29 +23,27 @@ export const Route = createFileRoute("/")({
   ),
   head: () => ({
     meta: [
-      { title: "Cimaja Boardriders | Surf & Travel in West Java" },
+      { title: "Cimaja Boardriders | Surf trips & experiences in West Java" },
       {
         name: "description",
         content:
-          "Cimaja Boardriders — surf, travel and local experiences based in Cimaja, West Java, Indonesia.",
+          "Plan surf trips, transfers, stays and local experiences in Cimaja, West Java, with the Cimaja Boardriders team.",
       },
-      { property: "og:title", content: "Cimaja Boardriders" },
+      { property: "og:title", content: "Cimaja Boardriders — Surf & travel in West Java" },
       {
         property: "og:description",
-        content: "Surf, explore, experience West Java with Cimaja Boardriders.",
+        content:
+          "Plan surf trips, transfers, stays and local experiences in Cimaja, West Java, with the Cimaja Boardriders team.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: Index,
+  component: HomeRoute,
 });
 
-function Index() {
-  const { landing, page } = Route.useLoaderData();
-
-  if (landing) return <LandingScreen landing={landing} />;
-
+function HomeRoute() {
+  const { page } = Route.useLoaderData();
   return (
     <PublicPage>
       <HomeContent page={page} />
