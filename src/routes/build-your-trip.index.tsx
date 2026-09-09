@@ -30,17 +30,30 @@ export const Route = createFileRoute("/build-your-trip/")({
 
 function BuildYourTrip() {
   const load = useServerFn(listPublicProducts);
+  const loadPage = useServerFn(getWebsitePage);
   const products = useQuery({ queryKey: ["public-products"], queryFn: () => load() });
+  const configured = useQuery({
+    queryKey: ["website-page", "build-your-trip"],
+    queryFn: () => loadPage({ data: { slug: "build-your-trip" } }),
+  });
+
+  const page = configured.data?.page ?? null;
+  const hasConfigured = Boolean(page && page.sections.length > 0);
 
   return (
     <PublicPage>
-      <h1 className="text-2xl font-semibold tracking-tight">Build your trip</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">{page?.title ?? "Build your trip"}</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Pick an experience, choose your options and see your price straight away.
+        {page?.subtitle ?? "Pick an experience, choose your options and see your price straight away."}
       </p>
 
+      {hasConfigured && page && <WebsiteRenderer page={page} showHeading={false} />}
+
+      {!hasConfigured && (
       <div className="mt-6 space-y-3">
-        {products.isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
+        {(products.isPending || configured.isPending) && (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        )}
         {products.data?.products.length === 0 && (
           <p className="text-sm text-muted-foreground">
             Nothing is open for booking right now. Please check back soon.
