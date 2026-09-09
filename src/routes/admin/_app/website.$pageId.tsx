@@ -331,6 +331,7 @@ function WebsitePageEditor() {
   async function uploadMedia(files: FileList | null) {
     if (!files || files.length === 0 || !blockDraft) return;
     const file = files[0];
+    if (!file) return;
     const kind = file.type.startsWith("video/") ? "video" : "image";
     setUploading(true);
     try {
