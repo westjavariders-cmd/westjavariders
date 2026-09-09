@@ -1,0 +1,162 @@
+/**
+ * Website configuration — pure helpers shared by Admin and the public site.
+ *
+ * This layer only describes presentation: pages, sections, blocks, their
+ * order, their visibility, their text per language and where their button
+ * goes. It never prices anything and never owns commercial data — products
+ * are referenced by their existing identity.
+ */
+
+export const WEBSITE_MEDIA_BUCKET = "website-media";
+
+export const BLOCK_KINDS = [
+  "hero",
+  "image_text",
+  "text",
+  "product_selection",
+  "video",
+  "people",
+  "door",
+] as const;
+export type BlockKind = (typeof BLOCK_KINDS)[number];
+
+export const BLOCK_KIND_LABELS: Record<BlockKind, string> = {
+  hero: "Hero / feature",
+  image_text: "Image + text",
+  text: "Text / information",
+  product_selection: "Product selection",
+  video: "Video / media",
+  people: "People / team",
+  door: "Home door",
+};
+
+export const DESTINATION_KINDS = [
+  "none",
+  "page",
+  "product",
+  "build_your_trip",
+  "book_individually",
+  "external",
+] as const;
+export type DestinationKind = (typeof DESTINATION_KINDS)[number];
+
+export const DESTINATION_LABELS: Record<DestinationKind, string> = {
+  none: "No button",
+  page: "Website page",
+  product: "Product",
+  build_your_trip: "Build your trip",
+  book_individually: "Book individually",
+  external: "External link",
+};
+
+export const MEDIA_KINDS = ["image", "video"] as const;
+export type MediaKind = (typeof MEDIA_KINDS)[number];
+
+export const HOME_SLUG = "home";
+export const BOOK_INDIVIDUALLY_SLUG = "book-individually";
+
+/* ------------------------------------------------------------------ */
+/* Slugs                                                              */
+/* ------------------------------------------------------------------ */
+
+const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+/** Routes stay predictable: lower case words joined by single hyphens. */
+export function isSafeSlug(slug: string): boolean {
+  return SLUG_RE.test(slug) && slug.length <= 80;
+}
+
+export function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+/* ------------------------------------------------------------------ */
+/* Visibility and order                                               */
+/* ------------------------------------------------------------------ */
+
+/** Only what is switched on, in the configured order (stable for ties). */
+export function visibleSorted<T extends { is_active: boolean; sort_order: number }>(rows: T[]): T[] {
+  return rows
+    .filter((r) => r.is_active)
+    .map((r, index) => ({ r, index }))
+    .sort((a, b) => a.r.sort_order - b.r.sort_order || a.index - b.index)
+    .map((x) => x.r);
+}
+
+/* ------------------------------------------------------------------ */
+/* Language                                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Content for the requested language, falling back to the default language
+ * when it has not been translated yet. Never machine-translates.
+ */
+export function pickTranslation<T extends { language_code: string }>(
+  rows: T[],
+  language: string,
+  fallback: string,
+): T | null {
+  return (
+    rows.find((r) => r.language_code === language) ??
+    rows.find((r) => r.language_code === fallback) ??
+    null
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Destinations                                                       */
+/* ------------------------------------------------------------------ */
+
+export type Destination = {
+  kind: DestinationKind;
+  pageSlug?: string | null;
+  productId?: string | null;
+  externalUrl?: string | null;
+};
+
+export type ResolvedDestination = { href: string; external: boolean };
+
+/**
+ * Controlled destinations only. Anything incomplete or unsafe resolves to
+ * nothing rather than to a broken or arbitrary route.
+ */
+export function resolveDestination(destination: Destination): ResolvedDestination | null {
+  switch (destination.kind) {
+    case "build_your_trip":
+      return { href: "/build-your-trip", external: false };
+    case "book_individually":
+      return { href: `/pages/${BOOK_INDIVIDUALLY_SLUG}`, external: false };
+    case "page": {
+      const slug = destination.pageSlug;
+      if (!slug || !isSafeSlug(slug)) return null;
+      return { href: slug === HOME_SLUG ? "/" : `/pages/${slug}`, external: false };
+    }
+    case "product": {
+      const id = destination.productId;
+      if (!id) return null;
+      return { href: `/build-your-trip/${id}`, external: false };
+    }
+    case "external": {
+      const url = destination.externalUrl;
+      if (!url || !/^https:\/\/[^\s]+$/.test(url)) return null;
+      return { href: url, external: true };
+    }
+    default:
+      return null;
+  }
+}
+
+/** Moves one row within an ordered list. Returns the same array when no move applies. */
+export function moveInOrder<T>(rows: T[], index: number, direction: -1 | 1): T[] {
+  const target = index + direction;
+  if (index < 0 || index >= rows.length || target < 0 || target >= rows.length) return rows;
+  const next = [...rows];
+  [next[index], next[target]] = [next[target], next[index]];
+  return next;
+}

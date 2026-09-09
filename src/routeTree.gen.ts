@@ -19,6 +19,7 @@ import { Route as AdminNoAccessRouteImport } from './routes/admin/no-access'
 import { Route as AdminSetupRouteImport } from './routes/admin/setup'
 import { Route as BuildYourTripIndexRouteImport } from './routes/build-your-trip.index'
 import { Route as BuildYourTripProductIdRouteImport } from './routes/build-your-trip.$productId'
+import { Route as PagesSlugRouteImport } from './routes/pages.$slug'
 import { Route as PurchasePurchaseIdRouteImport } from './routes/purchase.$purchaseId'
 import { Route as AdminAppIndexRouteImport } from './routes/admin/_app/index'
 import { Route as AdminAppCatalogTaxonomyRouteImport } from './routes/admin/_app/catalog-taxonomy'
@@ -48,6 +49,9 @@ import { Route as AdminAppTransportIndexRouteImport } from './routes/admin/_app/
 import { Route as AdminAppTransportTransportIdRouteImport } from './routes/admin/_app/transport.$transportId'
 import { Route as AdminAppVouchersIndexRouteImport } from './routes/admin/_app/vouchers.index'
 import { Route as AdminAppVouchersVoucherIdRouteImport } from './routes/admin/_app/vouchers.$voucherId'
+import { Route as AdminAppWebsiteIndexRouteImport } from './routes/admin/_app/website.index'
+import { Route as AdminAppWebsitePageIdRouteImport } from './routes/admin/_app/website.$pageId'
+import { Route as AdminAppWebsiteNavigationRouteImport } from './routes/admin/_app/website.navigation'
 import { Route as ApiPublicPaymentsXenditRouteImport } from './routes/api/public/payments/xendit'
 
 const IndexRoute = IndexRouteImport.update({
@@ -97,6 +101,11 @@ const BuildYourTripIndexRoute = BuildYourTripIndexRouteImport.update({
 const BuildYourTripProductIdRoute = BuildYourTripProductIdRouteImport.update({
   id: '/build-your-trip/$productId',
   path: '/build-your-trip/$productId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PagesSlugRoute = PagesSlugRouteImport.update({
+  id: '/pages/$slug',
+  path: '/pages/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PurchasePurchaseIdRoute = PurchasePurchaseIdRouteImport.update({
@@ -253,6 +262,22 @@ const AdminAppVouchersVoucherIdRoute =
     path: '/vouchers/$voucherId',
     getParentRoute: () => AdminAppRouteRoute,
   } as any)
+const AdminAppWebsiteIndexRoute = AdminAppWebsiteIndexRouteImport.update({
+  id: '/website/',
+  path: '/website/',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppWebsitePageIdRoute = AdminAppWebsitePageIdRouteImport.update({
+  id: '/website/$pageId',
+  path: '/website/$pageId',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppWebsiteNavigationRoute =
+  AdminAppWebsiteNavigationRouteImport.update({
+    id: '/website/navigation',
+    path: '/website/navigation',
+    getParentRoute: () => AdminAppRouteRoute,
+  } as any)
 const ApiPublicPaymentsXenditRoute = ApiPublicPaymentsXenditRouteImport.update({
   id: '/api/public/payments/xendit',
   path: '/api/public/payments/xendit',
@@ -268,6 +293,7 @@ export interface FileRoutesByFullPath {
   '/admin/no-access': typeof AdminNoAccessRoute
   '/admin/setup': typeof AdminSetupRoute
   '/build-your-trip/$productId': typeof BuildYourTripProductIdRoute
+  '/pages/$slug': typeof PagesSlugRoute
   '/purchase/$purchaseId': typeof PurchasePurchaseIdRoute
   '/build-your-trip/': typeof BuildYourTripIndexRoute
   '/admin/catalog-taxonomy': typeof AdminAppCatalogTaxonomyRoute
@@ -291,6 +317,8 @@ export interface FileRoutesByFullPath {
   '/admin/settings/users': typeof AdminAppSettingsUsersRoute
   '/admin/transport/$transportId': typeof AdminAppTransportTransportIdRoute
   '/admin/vouchers/$voucherId': typeof AdminAppVouchersVoucherIdRoute
+  '/admin/website/$pageId': typeof AdminAppWebsitePageIdRoute
+  '/admin/website/navigation': typeof AdminAppWebsiteNavigationRoute
   '/api/public/payments/xendit': typeof ApiPublicPaymentsXenditRoute
   '/admin/hotels/': typeof AdminAppHotelsIndexRoute
   '/admin/motorbikes/': typeof AdminAppMotorbikesIndexRoute
@@ -299,6 +327,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings/': typeof AdminAppSettingsIndexRoute
   '/admin/transport/': typeof AdminAppTransportIndexRoute
   '/admin/vouchers/': typeof AdminAppVouchersIndexRoute
+  '/admin/website/': typeof AdminAppWebsiteIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -309,6 +338,7 @@ export interface FileRoutesByTo {
   '/admin/no-access': typeof AdminNoAccessRoute
   '/admin/setup': typeof AdminSetupRoute
   '/build-your-trip/$productId': typeof BuildYourTripProductIdRoute
+  '/pages/$slug': typeof PagesSlugRoute
   '/purchase/$purchaseId': typeof PurchasePurchaseIdRoute
   '/build-your-trip': typeof BuildYourTripIndexRoute
   '/admin/catalog-taxonomy': typeof AdminAppCatalogTaxonomyRoute
@@ -331,6 +361,8 @@ export interface FileRoutesByTo {
   '/admin/settings/users': typeof AdminAppSettingsUsersRoute
   '/admin/transport/$transportId': typeof AdminAppTransportTransportIdRoute
   '/admin/vouchers/$voucherId': typeof AdminAppVouchersVoucherIdRoute
+  '/admin/website/$pageId': typeof AdminAppWebsitePageIdRoute
+  '/admin/website/navigation': typeof AdminAppWebsiteNavigationRoute
   '/api/public/payments/xendit': typeof ApiPublicPaymentsXenditRoute
   '/admin/hotels': typeof AdminAppHotelsIndexRoute
   '/admin/motorbikes': typeof AdminAppMotorbikesIndexRoute
@@ -339,6 +371,7 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminAppSettingsIndexRoute
   '/admin/transport': typeof AdminAppTransportIndexRoute
   '/admin/vouchers': typeof AdminAppVouchersIndexRoute
+  '/admin/website': typeof AdminAppWebsiteIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -351,6 +384,7 @@ export interface FileRoutesById {
   '/admin/no-access': typeof AdminNoAccessRoute
   '/admin/setup': typeof AdminSetupRoute
   '/build-your-trip/$productId': typeof BuildYourTripProductIdRoute
+  '/pages/$slug': typeof PagesSlugRoute
   '/purchase/$purchaseId': typeof PurchasePurchaseIdRoute
   '/build-your-trip/': typeof BuildYourTripIndexRoute
   '/admin/_app/catalog-taxonomy': typeof AdminAppCatalogTaxonomyRoute
@@ -374,6 +408,8 @@ export interface FileRoutesById {
   '/admin/_app/settings/users': typeof AdminAppSettingsUsersRoute
   '/admin/_app/transport/$transportId': typeof AdminAppTransportTransportIdRoute
   '/admin/_app/vouchers/$voucherId': typeof AdminAppVouchersVoucherIdRoute
+  '/admin/_app/website/$pageId': typeof AdminAppWebsitePageIdRoute
+  '/admin/_app/website/navigation': typeof AdminAppWebsiteNavigationRoute
   '/api/public/payments/xendit': typeof ApiPublicPaymentsXenditRoute
   '/admin/_app/hotels/': typeof AdminAppHotelsIndexRoute
   '/admin/_app/motorbikes/': typeof AdminAppMotorbikesIndexRoute
@@ -382,6 +418,7 @@ export interface FileRoutesById {
   '/admin/_app/settings/': typeof AdminAppSettingsIndexRoute
   '/admin/_app/transport/': typeof AdminAppTransportIndexRoute
   '/admin/_app/vouchers/': typeof AdminAppVouchersIndexRoute
+  '/admin/_app/website/': typeof AdminAppWebsiteIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -394,6 +431,7 @@ export interface FileRouteTypes {
     | '/admin/no-access'
     | '/admin/setup'
     | '/build-your-trip/$productId'
+    | '/pages/$slug'
     | '/purchase/$purchaseId'
     | '/build-your-trip/'
     | '/admin/catalog-taxonomy'
@@ -417,6 +455,8 @@ export interface FileRouteTypes {
     | '/admin/settings/users'
     | '/admin/transport/$transportId'
     | '/admin/vouchers/$voucherId'
+    | '/admin/website/$pageId'
+    | '/admin/website/navigation'
     | '/api/public/payments/xendit'
     | '/admin/hotels/'
     | '/admin/motorbikes/'
@@ -425,6 +465,7 @@ export interface FileRouteTypes {
     | '/admin/settings/'
     | '/admin/transport/'
     | '/admin/vouchers/'
+    | '/admin/website/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -435,6 +476,7 @@ export interface FileRouteTypes {
     | '/admin/no-access'
     | '/admin/setup'
     | '/build-your-trip/$productId'
+    | '/pages/$slug'
     | '/purchase/$purchaseId'
     | '/build-your-trip'
     | '/admin/catalog-taxonomy'
@@ -457,6 +499,8 @@ export interface FileRouteTypes {
     | '/admin/settings/users'
     | '/admin/transport/$transportId'
     | '/admin/vouchers/$voucherId'
+    | '/admin/website/$pageId'
+    | '/admin/website/navigation'
     | '/api/public/payments/xendit'
     | '/admin/hotels'
     | '/admin/motorbikes'
@@ -465,6 +509,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/transport'
     | '/admin/vouchers'
+    | '/admin/website'
   id:
     | '__root__'
     | '/'
@@ -476,6 +521,7 @@ export interface FileRouteTypes {
     | '/admin/no-access'
     | '/admin/setup'
     | '/build-your-trip/$productId'
+    | '/pages/$slug'
     | '/purchase/$purchaseId'
     | '/build-your-trip/'
     | '/admin/_app/catalog-taxonomy'
@@ -499,6 +545,8 @@ export interface FileRouteTypes {
     | '/admin/_app/settings/users'
     | '/admin/_app/transport/$transportId'
     | '/admin/_app/vouchers/$voucherId'
+    | '/admin/_app/website/$pageId'
+    | '/admin/_app/website/navigation'
     | '/api/public/payments/xendit'
     | '/admin/_app/hotels/'
     | '/admin/_app/motorbikes/'
@@ -507,6 +555,7 @@ export interface FileRouteTypes {
     | '/admin/_app/settings/'
     | '/admin/_app/transport/'
     | '/admin/_app/vouchers/'
+    | '/admin/_app/website/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -515,6 +564,7 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRoute
   BuildYourTripProductIdRoute: typeof BuildYourTripProductIdRoute
+  PagesSlugRoute: typeof PagesSlugRoute
   PurchasePurchaseIdRoute: typeof PurchasePurchaseIdRoute
   BuildYourTripIndexRoute: typeof BuildYourTripIndexRoute
   ApiPublicPaymentsXenditRoute: typeof ApiPublicPaymentsXenditRoute
@@ -590,6 +640,13 @@ declare module '@tanstack/react-router' {
       path: '/build-your-trip/$productId'
       fullPath: '/build-your-trip/$productId'
       preLoaderRoute: typeof BuildYourTripProductIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pages/$slug': {
+      id: '/pages/$slug'
+      path: '/pages/$slug'
+      fullPath: '/pages/$slug'
+      preLoaderRoute: typeof PagesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/purchase/$purchaseId': {
@@ -795,6 +852,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAppVouchersVoucherIdRouteImport
       parentRoute: typeof AdminAppRouteRoute
     }
+    '/admin/_app/website/': {
+      id: '/admin/_app/website/'
+      path: '/website'
+      fullPath: '/admin/website/'
+      preLoaderRoute: typeof AdminAppWebsiteIndexRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/website/$pageId': {
+      id: '/admin/_app/website/$pageId'
+      path: '/website/$pageId'
+      fullPath: '/admin/website/$pageId'
+      preLoaderRoute: typeof AdminAppWebsitePageIdRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/website/navigation': {
+      id: '/admin/_app/website/navigation'
+      path: '/website/navigation'
+      fullPath: '/admin/website/navigation'
+      preLoaderRoute: typeof AdminAppWebsiteNavigationRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
     '/api/public/payments/xendit': {
       id: '/api/public/payments/xendit'
       path: '/api/public/payments/xendit'
@@ -827,6 +905,8 @@ interface AdminAppRouteRouteChildren {
   AdminAppSettingsUsersRoute: typeof AdminAppSettingsUsersRoute
   AdminAppTransportTransportIdRoute: typeof AdminAppTransportTransportIdRoute
   AdminAppVouchersVoucherIdRoute: typeof AdminAppVouchersVoucherIdRoute
+  AdminAppWebsitePageIdRoute: typeof AdminAppWebsitePageIdRoute
+  AdminAppWebsiteNavigationRoute: typeof AdminAppWebsiteNavigationRoute
   AdminAppHotelsIndexRoute: typeof AdminAppHotelsIndexRoute
   AdminAppMotorbikesIndexRoute: typeof AdminAppMotorbikesIndexRoute
   AdminAppOrdersIndexRoute: typeof AdminAppOrdersIndexRoute
@@ -834,6 +914,7 @@ interface AdminAppRouteRouteChildren {
   AdminAppSettingsIndexRoute: typeof AdminAppSettingsIndexRoute
   AdminAppTransportIndexRoute: typeof AdminAppTransportIndexRoute
   AdminAppVouchersIndexRoute: typeof AdminAppVouchersIndexRoute
+  AdminAppWebsiteIndexRoute: typeof AdminAppWebsiteIndexRoute
 }
 
 const AdminAppRouteRouteChildren: AdminAppRouteRouteChildren = {
@@ -858,6 +939,8 @@ const AdminAppRouteRouteChildren: AdminAppRouteRouteChildren = {
   AdminAppSettingsUsersRoute: AdminAppSettingsUsersRoute,
   AdminAppTransportTransportIdRoute: AdminAppTransportTransportIdRoute,
   AdminAppVouchersVoucherIdRoute: AdminAppVouchersVoucherIdRoute,
+  AdminAppWebsitePageIdRoute: AdminAppWebsitePageIdRoute,
+  AdminAppWebsiteNavigationRoute: AdminAppWebsiteNavigationRoute,
   AdminAppHotelsIndexRoute: AdminAppHotelsIndexRoute,
   AdminAppMotorbikesIndexRoute: AdminAppMotorbikesIndexRoute,
   AdminAppOrdersIndexRoute: AdminAppOrdersIndexRoute,
@@ -865,6 +948,7 @@ const AdminAppRouteRouteChildren: AdminAppRouteRouteChildren = {
   AdminAppSettingsIndexRoute: AdminAppSettingsIndexRoute,
   AdminAppTransportIndexRoute: AdminAppTransportIndexRoute,
   AdminAppVouchersIndexRoute: AdminAppVouchersIndexRoute,
+  AdminAppWebsiteIndexRoute: AdminAppWebsiteIndexRoute,
 }
 
 const AdminAppRouteRouteWithChildren = AdminAppRouteRoute._addFileChildren(
@@ -895,6 +979,7 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRoute,
   BuildYourTripProductIdRoute: BuildYourTripProductIdRoute,
+  PagesSlugRoute: PagesSlugRoute,
   PurchasePurchaseIdRoute: PurchasePurchaseIdRoute,
   BuildYourTripIndexRoute: BuildYourTripIndexRoute,
   ApiPublicPaymentsXenditRoute: ApiPublicPaymentsXenditRoute,

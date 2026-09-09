@@ -2351,6 +2351,420 @@ export type Database = {
           },
         ]
       }
+      website_block_products: {
+        Row: {
+          block_id: string
+          created_at: string
+          id: string
+          product_id: string
+          sort_order: number
+        }
+        Insert: {
+          block_id: string
+          created_at?: string
+          id?: string
+          product_id: string
+          sort_order?: number
+        }
+        Update: {
+          block_id?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_block_products_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "website_blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "website_block_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      website_block_translations: {
+        Row: {
+          block_id: string
+          body: string | null
+          created_at: string
+          cta_label: string | null
+          id: string
+          language_code: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          block_id: string
+          body?: string | null
+          created_at?: string
+          cta_label?: string | null
+          id?: string
+          language_code: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          block_id?: string
+          body?: string | null
+          created_at?: string
+          cta_label?: string | null
+          id?: string
+          language_code?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_block_translations_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "website_blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "website_block_translations_language_code_fkey"
+            columns: ["language_code"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      website_blocks: {
+        Row: {
+          block_kind: Database["public"]["Enums"]["website_block_kind"]
+          created_at: string
+          cta_external_url: string | null
+          cta_kind: Database["public"]["Enums"]["website_destination_kind"]
+          cta_page_id: string | null
+          cta_product_id: string | null
+          id: string
+          internal_name: string
+          is_active: boolean
+          media_kind: string | null
+          media_path: string | null
+          section_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          block_kind: Database["public"]["Enums"]["website_block_kind"]
+          created_at?: string
+          cta_external_url?: string | null
+          cta_kind?: Database["public"]["Enums"]["website_destination_kind"]
+          cta_page_id?: string | null
+          cta_product_id?: string | null
+          id?: string
+          internal_name: string
+          is_active?: boolean
+          media_kind?: string | null
+          media_path?: string | null
+          section_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          block_kind?: Database["public"]["Enums"]["website_block_kind"]
+          created_at?: string
+          cta_external_url?: string | null
+          cta_kind?: Database["public"]["Enums"]["website_destination_kind"]
+          cta_page_id?: string | null
+          cta_product_id?: string | null
+          id?: string
+          internal_name?: string
+          is_active?: boolean
+          media_kind?: string | null
+          media_path?: string | null
+          section_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_blocks_cta_page_id_fkey"
+            columns: ["cta_page_id"]
+            isOneToOne: false
+            referencedRelation: "website_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "website_blocks_cta_product_id_fkey"
+            columns: ["cta_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "website_blocks_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "website_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      website_nav_item_translations: {
+        Row: {
+          created_at: string
+          id: string
+          label: string | null
+          language_code: string
+          nav_item_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          language_code: string
+          nav_item_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          language_code?: string
+          nav_item_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_nav_item_translations_language_code_fkey"
+            columns: ["language_code"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "website_nav_item_translations_nav_item_id_fkey"
+            columns: ["nav_item_id"]
+            isOneToOne: false
+            referencedRelation: "website_nav_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      website_nav_items: {
+        Row: {
+          created_at: string
+          destination_external_url: string | null
+          destination_kind: Database["public"]["Enums"]["website_destination_kind"]
+          destination_page_id: string | null
+          destination_product_id: string | null
+          id: string
+          internal_name: string
+          is_active: boolean
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          destination_external_url?: string | null
+          destination_kind?: Database["public"]["Enums"]["website_destination_kind"]
+          destination_page_id?: string | null
+          destination_product_id?: string | null
+          id?: string
+          internal_name: string
+          is_active?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          destination_external_url?: string | null
+          destination_kind?: Database["public"]["Enums"]["website_destination_kind"]
+          destination_page_id?: string | null
+          destination_product_id?: string | null
+          id?: string
+          internal_name?: string
+          is_active?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_nav_items_destination_page_id_fkey"
+            columns: ["destination_page_id"]
+            isOneToOne: false
+            referencedRelation: "website_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "website_nav_items_destination_product_id_fkey"
+            columns: ["destination_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      website_page_translations: {
+        Row: {
+          created_at: string
+          id: string
+          language_code: string
+          page_id: string
+          subtitle: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          language_code: string
+          page_id: string
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          language_code?: string
+          page_id?: string
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_page_translations_language_code_fkey"
+            columns: ["language_code"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "website_page_translations_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "website_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      website_pages: {
+        Row: {
+          created_at: string
+          id: string
+          internal_name: string
+          is_active: boolean
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          internal_name: string
+          is_active?: boolean
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          internal_name?: string
+          is_active?: boolean
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      website_section_translations: {
+        Row: {
+          created_at: string
+          id: string
+          language_code: string
+          section_id: string
+          subtitle: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          language_code: string
+          section_id: string
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          language_code?: string
+          section_id?: string
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_section_translations_language_code_fkey"
+            columns: ["language_code"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "website_section_translations_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "website_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      website_sections: {
+        Row: {
+          created_at: string
+          id: string
+          internal_name: string
+          is_active: boolean
+          page_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          internal_name: string
+          is_active?: boolean
+          page_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          internal_name?: string
+          is_active?: boolean
+          page_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_sections_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "website_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -2475,6 +2889,21 @@ export type Database = {
       user_role: "ADMIN" | "STAFF"
       voucher_status: "ACTIVE" | "USED" | "EXPIRED" | "CANCELLED"
       voucher_type: "STANDARD" | "GIFT"
+      website_block_kind:
+        | "hero"
+        | "image_text"
+        | "text"
+        | "product_selection"
+        | "video"
+        | "people"
+        | "door"
+      website_destination_kind:
+        | "none"
+        | "page"
+        | "product"
+        | "build_your_trip"
+        | "book_individually"
+        | "external"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2672,6 +3101,23 @@ export const Constants = {
       user_role: ["ADMIN", "STAFF"],
       voucher_status: ["ACTIVE", "USED", "EXPIRED", "CANCELLED"],
       voucher_type: ["STANDARD", "GIFT"],
+      website_block_kind: [
+        "hero",
+        "image_text",
+        "text",
+        "product_selection",
+        "video",
+        "people",
+        "door",
+      ],
+      website_destination_kind: [
+        "none",
+        "page",
+        "product",
+        "build_your_trip",
+        "book_individually",
+        "external",
+      ],
     },
   },
 } as const
