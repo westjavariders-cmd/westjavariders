@@ -3,7 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
 import { PublicPage } from "@/components/public/SiteHeader";
+import { WebsiteRenderer } from "@/components/public/WebsiteRenderer";
 import { listPublicProducts } from "@/lib/public.functions";
+import { getWebsitePage } from "@/lib/website.functions";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const Route = createFileRoute("/build-your-trip/")({
@@ -82,6 +84,7 @@ function BuildYourTrip() {
           </Link>
         ))}
       </div>
+      )}
     </PublicPage>
   );
 }
