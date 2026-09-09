@@ -50,6 +50,8 @@ import { Route as AdminAppTransportTransportIdRouteImport } from './routes/admin
 import { Route as AdminAppVouchersIndexRouteImport } from './routes/admin/_app/vouchers.index'
 import { Route as AdminAppVouchersVoucherIdRouteImport } from './routes/admin/_app/vouchers.$voucherId'
 import { Route as AdminAppWebsiteIndexRouteImport } from './routes/admin/_app/website.index'
+import { Route as AdminAppWebsitePageIdRouteImport } from './routes/admin/_app/website.$pageId'
+import { Route as AdminAppWebsiteNavigationRouteImport } from './routes/admin/_app/website.navigation'
 import { Route as ApiPublicPaymentsXenditRouteImport } from './routes/api/public/payments/xendit'
 
 const IndexRoute = IndexRouteImport.update({
@@ -265,6 +267,17 @@ const AdminAppWebsiteIndexRoute = AdminAppWebsiteIndexRouteImport.update({
   path: '/website/',
   getParentRoute: () => AdminAppRouteRoute,
 } as any)
+const AdminAppWebsitePageIdRoute = AdminAppWebsitePageIdRouteImport.update({
+  id: '/website/$pageId',
+  path: '/website/$pageId',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppWebsiteNavigationRoute =
+  AdminAppWebsiteNavigationRouteImport.update({
+    id: '/website/navigation',
+    path: '/website/navigation',
+    getParentRoute: () => AdminAppRouteRoute,
+  } as any)
 const ApiPublicPaymentsXenditRoute = ApiPublicPaymentsXenditRouteImport.update({
   id: '/api/public/payments/xendit',
   path: '/api/public/payments/xendit',
@@ -304,6 +317,8 @@ export interface FileRoutesByFullPath {
   '/admin/settings/users': typeof AdminAppSettingsUsersRoute
   '/admin/transport/$transportId': typeof AdminAppTransportTransportIdRoute
   '/admin/vouchers/$voucherId': typeof AdminAppVouchersVoucherIdRoute
+  '/admin/website/$pageId': typeof AdminAppWebsitePageIdRoute
+  '/admin/website/navigation': typeof AdminAppWebsiteNavigationRoute
   '/api/public/payments/xendit': typeof ApiPublicPaymentsXenditRoute
   '/admin/hotels/': typeof AdminAppHotelsIndexRoute
   '/admin/motorbikes/': typeof AdminAppMotorbikesIndexRoute
@@ -346,6 +361,8 @@ export interface FileRoutesByTo {
   '/admin/settings/users': typeof AdminAppSettingsUsersRoute
   '/admin/transport/$transportId': typeof AdminAppTransportTransportIdRoute
   '/admin/vouchers/$voucherId': typeof AdminAppVouchersVoucherIdRoute
+  '/admin/website/$pageId': typeof AdminAppWebsitePageIdRoute
+  '/admin/website/navigation': typeof AdminAppWebsiteNavigationRoute
   '/api/public/payments/xendit': typeof ApiPublicPaymentsXenditRoute
   '/admin/hotels': typeof AdminAppHotelsIndexRoute
   '/admin/motorbikes': typeof AdminAppMotorbikesIndexRoute
@@ -391,6 +408,8 @@ export interface FileRoutesById {
   '/admin/_app/settings/users': typeof AdminAppSettingsUsersRoute
   '/admin/_app/transport/$transportId': typeof AdminAppTransportTransportIdRoute
   '/admin/_app/vouchers/$voucherId': typeof AdminAppVouchersVoucherIdRoute
+  '/admin/_app/website/$pageId': typeof AdminAppWebsitePageIdRoute
+  '/admin/_app/website/navigation': typeof AdminAppWebsiteNavigationRoute
   '/api/public/payments/xendit': typeof ApiPublicPaymentsXenditRoute
   '/admin/_app/hotels/': typeof AdminAppHotelsIndexRoute
   '/admin/_app/motorbikes/': typeof AdminAppMotorbikesIndexRoute
@@ -436,6 +455,8 @@ export interface FileRouteTypes {
     | '/admin/settings/users'
     | '/admin/transport/$transportId'
     | '/admin/vouchers/$voucherId'
+    | '/admin/website/$pageId'
+    | '/admin/website/navigation'
     | '/api/public/payments/xendit'
     | '/admin/hotels/'
     | '/admin/motorbikes/'
@@ -478,6 +499,8 @@ export interface FileRouteTypes {
     | '/admin/settings/users'
     | '/admin/transport/$transportId'
     | '/admin/vouchers/$voucherId'
+    | '/admin/website/$pageId'
+    | '/admin/website/navigation'
     | '/api/public/payments/xendit'
     | '/admin/hotels'
     | '/admin/motorbikes'
@@ -522,6 +545,8 @@ export interface FileRouteTypes {
     | '/admin/_app/settings/users'
     | '/admin/_app/transport/$transportId'
     | '/admin/_app/vouchers/$voucherId'
+    | '/admin/_app/website/$pageId'
+    | '/admin/_app/website/navigation'
     | '/api/public/payments/xendit'
     | '/admin/_app/hotels/'
     | '/admin/_app/motorbikes/'
@@ -834,6 +859,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAppWebsiteIndexRouteImport
       parentRoute: typeof AdminAppRouteRoute
     }
+    '/admin/_app/website/$pageId': {
+      id: '/admin/_app/website/$pageId'
+      path: '/website/$pageId'
+      fullPath: '/admin/website/$pageId'
+      preLoaderRoute: typeof AdminAppWebsitePageIdRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/website/navigation': {
+      id: '/admin/_app/website/navigation'
+      path: '/website/navigation'
+      fullPath: '/admin/website/navigation'
+      preLoaderRoute: typeof AdminAppWebsiteNavigationRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
     '/api/public/payments/xendit': {
       id: '/api/public/payments/xendit'
       path: '/api/public/payments/xendit'
@@ -866,6 +905,8 @@ interface AdminAppRouteRouteChildren {
   AdminAppSettingsUsersRoute: typeof AdminAppSettingsUsersRoute
   AdminAppTransportTransportIdRoute: typeof AdminAppTransportTransportIdRoute
   AdminAppVouchersVoucherIdRoute: typeof AdminAppVouchersVoucherIdRoute
+  AdminAppWebsitePageIdRoute: typeof AdminAppWebsitePageIdRoute
+  AdminAppWebsiteNavigationRoute: typeof AdminAppWebsiteNavigationRoute
   AdminAppHotelsIndexRoute: typeof AdminAppHotelsIndexRoute
   AdminAppMotorbikesIndexRoute: typeof AdminAppMotorbikesIndexRoute
   AdminAppOrdersIndexRoute: typeof AdminAppOrdersIndexRoute
@@ -898,6 +939,8 @@ const AdminAppRouteRouteChildren: AdminAppRouteRouteChildren = {
   AdminAppSettingsUsersRoute: AdminAppSettingsUsersRoute,
   AdminAppTransportTransportIdRoute: AdminAppTransportTransportIdRoute,
   AdminAppVouchersVoucherIdRoute: AdminAppVouchersVoucherIdRoute,
+  AdminAppWebsitePageIdRoute: AdminAppWebsitePageIdRoute,
+  AdminAppWebsiteNavigationRoute: AdminAppWebsiteNavigationRoute,
   AdminAppHotelsIndexRoute: AdminAppHotelsIndexRoute,
   AdminAppMotorbikesIndexRoute: AdminAppMotorbikesIndexRoute,
   AdminAppOrdersIndexRoute: AdminAppOrdersIndexRoute,
