@@ -26,7 +26,7 @@ Phase 2 — Admin foundation: DONE (auth, first-admin setup, shell, settings/cur
 - [ ] Phase 9 — Public website (final design & content on top of the website configuration foundation)
 - [ ] Phase 10 — SEO, analytics, QA, launch
 
-- [ ] Option → Component links in the Configurator Option editor (reuse existing component_quantity pricing rules; extend atomic duplication)
+- [x] Option → Component links in the Configurator Option editor (reuse existing component_quantity pricing rules; extend atomic duplication)
 
 ## Open decisions
 - [ ] FX source, refresh frequency, safety margin (Phase 4)
