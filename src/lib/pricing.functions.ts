@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { MASTER_LANGUAGE, type ProductBundle } from "@/lib/catalog";
+import { findOptionComponentRule } from "@/lib/option-components";
 import {
   evaluateFormula,
   formulaScope,
@@ -366,4 +367,136 @@ export const runPricingTests = createServerFn({ method: "POST" })
       };
     });
     return runs;
+  });
+
+/* ------------------------------------------------------------------ */
+/* Configurator Option → Component links                              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Loads the option, its owning field, the component and the product's pricing
+ * record, and checks they all belong to the same product. Returns the exact
+ * link signature used by the existing structured component pricing rules.
+ */
+async function loadOptionLinkContext(supabase: any, optionId: string, componentId: string) {
+  const { data: option } = await supabase
+    .from("field_options")
+    .select("id, field_id, internal_value, customer_label")
+    .eq("id", optionId)
+    .maybeSingle();
+  if (!option) fail("That answer option could not be found.");
+
+  const { data: field } = await supabase
+    .from("fields")
+    .select("id, product_id, variable_name, internal_name")
+    .eq("id", option.field_id)
+    .maybeSingle();
+  if (!field) fail("That question could not be found.");
+
+  const { data: component } = await supabase
+    .from("product_components")
+    .select("id, product_id, internal_name")
+    .eq("id", componentId)
+    .maybeSingle();
+  if (!component) fail("That component could not be found.");
+  if (component.product_id !== field.product_id) {
+    fail("That component belongs to a different product.");
+  }
+
+  let { data: pricing } = await supabase
+    .from("product_pricing")
+    .select("id, product_id")
+    .eq("product_id", field.product_id)
+    .maybeSingle();
+  if (!pricing) {
+    const { data: created, error } = await supabase
+      .from("product_pricing")
+      .insert({ product_id: field.product_id })
+      .select("id, product_id")
+      .single();
+    if (error || !created) fail(SAFE_ERROR);
+    pricing = created;
+  }
+
+  const { data: rules } = await supabase
+    .from("pricing_rules")
+    .select("*")
+    .eq("pricing_id", pricing.id)
+    .order("display_order");
+
+  return {
+    option,
+    field,
+    component,
+    pricing,
+    rules: (rules ?? []) as any[],
+    key: {
+      componentId: component.id as string,
+      variableName: field.variable_name as string,
+      internalValue: option.internal_value as string,
+    },
+  };
+}
+
+/** Links one existing Product Component to one Configurator Option. Idempotent. */
+export const linkOptionComponent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({ optionId: z.string().uuid(), componentId: z.string().uuid() }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = ctx(context);
+    await assertAdmin(supabase);
+    const loaded = await loadOptionLinkContext(supabase, data.optionId, data.componentId);
+
+    const existing = findOptionComponentRule(loaded.rules as never, loaded.key);
+    if (existing) return { id: existing.id as string, created: false };
+
+    const { data: created, error } = await supabase
+      .from("pricing_rules")
+      .insert({
+        pricing_id: loaded.pricing.id,
+        rule_type: "component_quantity",
+        label: loaded.component.internal_name,
+        component_id: loaded.key.componentId,
+        condition_variable: loaded.key.variableName,
+        condition_operator: "equals",
+        condition_value: loaded.key.internalValue,
+        display_order: loaded.rules.length,
+      })
+      .select("id")
+      .single();
+    if (error || !created) fail(SAFE_ERROR);
+
+    await audit(supabase, userId, "option_component_linked", created.id, loaded.field.product_id, {
+      option_value: loaded.key.internalValue,
+      variable_name: loaded.key.variableName,
+      component_id: loaded.key.componentId,
+    });
+    return { id: created.id as string, created: true };
+  });
+
+/** Removes only the exact conditional rule for this Option → Component link. */
+export const unlinkOptionComponent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({ optionId: z.string().uuid(), componentId: z.string().uuid() }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = ctx(context);
+    await assertAdmin(supabase);
+    const loaded = await loadOptionLinkContext(supabase, data.optionId, data.componentId);
+
+    const rule = findOptionComponentRule(loaded.rules as never, loaded.key);
+    if (!rule) return { removed: false };
+
+    const { error } = await supabase.from("pricing_rules").delete().eq("id", rule.id);
+    if (error) fail(SAFE_ERROR);
+
+    await audit(supabase, userId, "option_component_unlinked", rule.id, loaded.field.product_id, {
+      option_value: loaded.key.internalValue,
+      variable_name: loaded.key.variableName,
+      component_id: loaded.key.componentId,
+    });
+    return { removed: true };
   });

@@ -19,13 +19,16 @@ Add a small **Components** section to each manual Configurator Option. It will d
    - removal targets only the exact matching conditional rule and leaves all unrelated rules and Components untouched;
    - record the existing Admin audit events.
 3. Extend the existing Configurator Option row with a compact **Components** section using the Product's existing Components. The field variable and option value are derived automatically and never entered by the Admin.
-4. Update the existing atomic `duplicate_product(uuid)` transaction so it also copies Product Pricing and remaps copied `component_quantity` rules to the duplicated Product Components. Existing field variable names and option internal values remain unchanged, so their conditions stay associated with the duplicated Options. Copy related tiers, formula versions/test cases, season configuration, and pricing references already belonging to the product transaction so duplication remains complete and rollback-safe; do not alter any pricing semantics.
+4. Minimally extend the existing atomic `duplicate_product(uuid)` transaction. It currently copies no pricing at all, so a duplicated Option would silently lose its Component charges. The addition copies only the Product's pricing record and its `component_quantity` rules, remapping each `component_id` to the duplicated Component. Field variable names and Option internal values are copied unchanged, so the conditions stay correctly associated. Formulas, tiers, seasons, test cases and all existing duplication behavior stay untouched.
+
+### Why a database change is required
+The duplication contract is a single atomic database transaction, and the copy logic lives inside that database function. Copying the new relationships from the application would break atomicity, so the function itself must be updated. No tables, columns, enums, policies or grants are added.
 
 ## Technical changes
 - `src/components/admin/configurator/ConfiguratorTab.tsx`: render and operate the Option Components section.
 - `src/lib/pricing.functions.ts`: authenticated exact-match list/add/remove operations.
 - A focused library helper/test file for exact Option-link matching and pricing regressions.
-- One database migration replacing only `duplicate_product(uuid)`; no tables, columns, enums, policies, or grants are added.
+- One migration that only extends `duplicate_product(uuid)` with pricing-record and component-rule copying; no tables, columns, enums, policies, or grants are added.
 - Existing duplication tests are extended to verify remapped component rule relationships and rollback behavior.
 
 ## Verification
