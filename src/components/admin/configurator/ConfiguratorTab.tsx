@@ -543,7 +543,8 @@ function OptionRow({
   }
 
   return (
-    <div className="grid items-end gap-2 rounded-md bg-muted/40 p-2 sm:grid-cols-[1fr_1fr_5rem_auto]">
+    <div className="space-y-2 rounded-md bg-muted/40 p-2">
+    <div className="grid items-end gap-2 sm:grid-cols-[1fr_1fr_5rem_auto]">
       <div>
         <Label className="text-[11px]">Internal value</Label>
         <Input
