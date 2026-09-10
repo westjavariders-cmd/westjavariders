@@ -476,7 +476,7 @@ function FieldEditor({
         </div>
       )}
 
-      {isSelect && !usesCatalogue && (
+      {isSelect && (
         <div className="space-y-2">
           {options.map((o) => (
             <OptionRow
