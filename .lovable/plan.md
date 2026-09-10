@@ -1,97 +1,42 @@
-# Read-only inspection: Configurator Options, Components, and Pricing
+# Configurator Option Component Links
 
-No code, schema, data, or UI changes are proposed or performed here.
+## Scope
+Add a small **Components** section to each manual Configurator Option. It will display, add, and remove links using the existing Structured Pricing `component_quantity` rules only. No public configurator, pricing calculation, dependency, catalogue, quantity, or commercial flow changes.
 
-## 1. Does an Option → Component relationship exist?
+## Implementation
+1. Add focused helpers for identifying an Option-linked component rule by the exact existing signature:
+   - the Product's pricing record;
+   - `rule_type = component_quantity`;
+   - selected `component_id`;
+   - owning Field `variable_name`;
+   - `condition_operator = equals`;
+   - Option `internal_value`.
+2. Add authenticated server operations to list, add, and remove these links safely:
+   - Admin-only mutations; Staff remains read-only;
+   - verify the Option, Field, Component, Product, and Structured Pricing record all belong together;
+   - adding an existing exact rule is idempotent and preserves its quantity settings;
+   - a new rule uses the Component's existing basis/product quantity mapping without changing quantity configuration;
+   - removal targets only the exact matching conditional rule and leaves all unrelated rules and Components untouched;
+   - record the existing Admin audit events.
+3. Extend the existing Configurator Option row with a compact **Components** section using the Product's existing Components. The field variable and option value are derived automatically and never entered by the Admin.
+4. Update the existing atomic `duplicate_product(uuid)` transaction so it also copies Product Pricing and remaps copied `component_quantity` rules to the duplicated Product Components. Existing field variable names and option internal values remain unchanged, so their conditions stay associated with the duplicated Options. Copy related tiers, formula versions/test cases, season configuration, and pricing references already belonging to the product transaction so duplication remains complete and rollback-safe; do not alter any pricing semantics.
 
-**No direct relationship exists.**
+## Technical changes
+- `src/components/admin/configurator/ConfiguratorTab.tsx`: render and operate the Option Components section.
+- `src/lib/pricing.functions.ts`: authenticated exact-match list/add/remove operations.
+- A focused library helper/test file for exact Option-link matching and pricing regressions.
+- One database migration replacing only `duplicate_product(uuid)`; no tables, columns, enums, policies, or grants are added.
+- Existing duplication tests are extended to verify remapped component rule relationships and rollback behavior.
 
-- `field_options` belongs only to a configurator `field`.
-- `product_components` belongs to a `product` and may retain its source template.
-- `dependencies` can use an option as a condition, but can target only fields or options.
-- `pricing_rules.component_id` links a pricing rule to a component, not an option.
-- There is no `component_id` on `field_options`, no `option_id` on `product_components` or `pricing_rules`, and no Option–Component junction table.
+## Verification
+Focused tests will cover:
+1. one Option linked to one Component;
+2. one Option linked to multiple Components;
+3. different Options activate only their Components;
+4. unlinking preserves unrelated rules;
+5. quantity questions still control quantities;
+6. hidden/reset Options cannot charge linked Components;
+7. existing structured pricing remains unchanged;
+8. atomic Product duplication preserves remapped Option/Component pricing relationships.
 
-## 2. Existing indirect behavior
-
-The pricing system can already reproduce “this selected option charges this component,” but it is not stored as a direct Option → Component link.
-
-A structured `component_quantity` pricing rule stores:
-
-- `component_id`: the existing Product Component to charge.
-- `condition_variable`: the configurator field's stable `variable_name`.
-- `condition_operator`: normally `equals` or `not_equals`.
-- `condition_value`: the Option's `internal_value` as text.
-- `quantity_variable`: an optional numeric configurator variable.
-
-For a multi-select answer, `equals` currently means that the selected value list contains the configured value. The Admin Pricing screen already exposes these controls under **Component pricing**. The Configurator Option editor does not expose them, which is why an Option cannot currently be linked there.
-
-This coupling is string-based. Renaming an Option's `internal_value` can therefore break the condition because there is no foreign key to the Option row.
-
-## 3. How Components are included in pricing
-
-### Structured pricing
-
-A Product Component is **not automatically charged** merely because it exists or is active.
-
-It contributes only when an active `pricing_rules` row of type `component_quantity` references it. The engine then:
-
-1. Finds the referenced component and requires it to be active.
-2. Evaluates the optional configurator condition.
-3. Skips the charge with a zero breakdown line when the condition is not met.
-4. Gets quantity from `pricing_rules.quantity_variable`, or from the product-level people/days/nights/sessions mapping implied by the component's `unit_basis`; fixed components use one unit.
-5. Calculates `product_components.customer_price × quantity`.
-
-Hidden or reset configurator answers are removed before pricing inputs are resolved, so they cannot satisfy the condition.
-
-### Formula pricing
-
-Structured component rules are ignored. Component customer prices are exposed to the formula as positional values such as `component_1`, but the formula must explicitly use them. There is no Option → Component relationship in formula mode either.
-
-## 4. Smallest future change
-
-### Smallest change using the current architecture
-
-No database migration is strictly required. Add an Option-level Admin control that creates, updates, or deletes the existing conditional `component_quantity` pricing rules:
-
-```text
-component_id       = selected Product Component
-condition_variable = owning Field.variable_name
-condition_operator = equals
-condition_value    = Option.internal_value
-```
-
-One Option activating several Components would create several pricing-rule rows. This preserves the current pricing engine and historical commercial flow.
-
-Likely files:
-
-- `src/components/admin/configurator/ConfiguratorTab.tsx` — expose linked Components in the Option editor.
-- `src/components/admin/pricing/ComponentPricingEditor.tsx` — extract/reuse the existing component-condition controls where appropriate.
-- `src/lib/pricing.functions.ts` — preferably add an Admin-authorized atomic operation to maintain these rules safely.
-- `src/lib/pricing.ts` — likely no calculation change; only validation helpers may need reuse or tightening.
-- `src/lib/component-pricing.test.ts` and focused Configurator Admin tests.
-
-Existing tables reused:
-
-- `field_options`
-- `fields`
-- `product_components`
-- `product_pricing`
-- `pricing_rules`
-
-### If a durable direct relationship is required
-
-Add a dedicated Option–Component junction table with foreign keys to `field_options.id` and `product_components.id`. That is more robust against renamed option values, but it is not the smallest change and would also require updates to product duplication, server loading, pricing resolution, RLS/audit, generated types, Admin UI, and tests.
-
-## Files inspected
-
-- `src/lib/catalog.ts`
-- `src/lib/pricing.ts`
-- `src/lib/pricing.functions.ts`
-- `src/components/admin/configurator/ConfiguratorTab.tsx`
-- `src/components/admin/configurator/DependenciesTab.tsx`
-- `src/components/admin/pricing/PricingTab.tsx`
-- `src/components/admin/pricing/ComponentPricingEditor.tsx`
-- `src/lib/component-pricing.test.ts`
-- `src/integrations/supabase/types.ts`
-- Existing catalog and pricing migrations
+Then run the relevant pricing, dependency/configurator, and duplication tests, followed by the full test suite, TypeScript check, and production build.
