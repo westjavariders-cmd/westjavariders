@@ -476,10 +476,17 @@ function FieldEditor({
         </div>
       )}
 
-      {isSelect && (
+      {isSelect && !usesCatalogue && (
         <div className="space-y-2">
           {options.map((o) => (
-            <OptionRow key={o.id} option={o} canEdit={canEdit} reload={reload} />
+            <OptionRow
+              key={o.id}
+              option={o}
+              field={field}
+              bundle={bundle}
+              canEdit={canEdit}
+              reload={reload}
+            />
           ))}
           {options.length === 0 && (
             <p className="text-xs text-muted-foreground">This select field has no option yet.</p>
