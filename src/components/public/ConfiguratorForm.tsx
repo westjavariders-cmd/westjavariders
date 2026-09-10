@@ -86,7 +86,6 @@ export function ConfiguratorForm({
   const complete = useServerFn(completePackage);
 
   const [stepIndexRaw, setStepIndex] = useState(0);
-  const [stepIndex, setStepIndex] = useState(0);
   const [values, setValues] = useState<PreviewValues>(() => initialValues(bundle, savedAnswers));
   const [promo, setPromo] = useState(savedPromo ?? "");
   const [quote, setQuote] = useState<Quote | null>(null);
