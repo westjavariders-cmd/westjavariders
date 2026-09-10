@@ -129,17 +129,16 @@ export function ConfiguratorForm({
     });
   }, [bundle, values]);
 
-  const step = activeSteps[Math.min(stepIndex, Math.max(activeSteps.length - 1, 0))];
+  // Navigation only walks steps that still have a visible question.
+  const activeSteps = useMemo(() => visibleSteps(bundle, values), [bundle, values]);
+  const stepIndex = Math.min(stepIndexRaw, Math.max(activeSteps.length - 1, 0));
+  const step = activeSteps[stepIndex];
 
   function set(f: Field, value: PreviewValues[string]) {
     setValues((v) => ({ ...v, [f.variable_name]: value }));
   }
 
-  const stepFields = step
-    ? bundle.fields
-        .filter((f) => f.step_id === step.id && f.is_active)
-        .filter((f) => !evaluated.fields[f.id]?.hidden)
-    : [];
+  const stepFields = step ? visibleStepFields(bundle, step.id, evaluated) : [];
 
   const ready =
     !!quote &&
