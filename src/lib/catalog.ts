@@ -352,6 +352,33 @@ export function evaluateDependencies(
 }
 
 /**
+ * Fields of a step that the customer can actually answer right now: active,
+ * and not hidden by the existing dependency evaluation. Generic — no product
+ * or field knowledge is hard-coded.
+ */
+export function visibleStepFields(
+  b: ProductBundle,
+  stepId: string,
+  evaluated: ReturnType<typeof evaluateDependencies>,
+): Field[] {
+  return b.fields
+    .filter((f) => f.step_id === stepId && f.is_active)
+    .filter((f) => !evaluated.fields[f.id]?.hidden || evaluated.fields[f.id]?.forcedVisible);
+}
+
+/**
+ * Navigation source of truth for the public configurator: active steps that
+ * still have at least one visible field. Steps whose questions are all hidden
+ * by dependencies are skipped entirely, so no empty step is ever shown.
+ */
+export function visibleSteps(b: ProductBundle, values: PreviewValues) {
+  const evaluated = evaluateDependencies(b, values);
+  return b.steps
+    .filter((s) => s.is_active)
+    .filter((s) => visibleStepFields(b, s.id, evaluated).length > 0);
+}
+
+/**
  * Removes answers for fields that are currently hidden or reset by the saved
  * dependency actions, so they are never validated, priced or persisted as an
  * active configuration value. Generic: it works from the dependency records.
