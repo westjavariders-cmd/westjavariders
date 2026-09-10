@@ -601,5 +601,121 @@ function OptionRow({
         )}
       </div>
     </div>
+      <OptionComponents option={option} field={field} bundle={bundle} canEdit={canEdit} />
+    </div>
+  );
+}
+
+/**
+ * Components charged when this option is selected. Each link is the existing
+ * structured component pricing rule; the question variable and the option value
+ * are derived here, never typed by the Admin.
+ */
+function OptionComponents({
+  option,
+  field,
+  bundle,
+  canEdit,
+}: {
+  option: FieldOption;
+  field: Field;
+  bundle: ProductBundle;
+  canEdit: boolean;
+}) {
+  const [adding, setAdding] = useState("");
+  const link = useServerFn(linkOptionComponent);
+  const unlink = useServerFn(unlinkOptionComponent);
+
+  const rulesQuery = useQuery({
+    queryKey: ["option-component-rules", bundle.product.id],
+    queryFn: async () => {
+      const { data: pricing } = await supabase
+        .from("product_pricing")
+        .select("id")
+        .eq("product_id", bundle.product.id)
+        .maybeSingle();
+      if (!pricing) return [];
+      const { data } = await supabase
+        .from("pricing_rules")
+        .select("*")
+        .eq("pricing_id", pricing.id)
+        .order("display_order");
+      return data ?? [];
+    },
+  });
+
+  const linkedIds = linkedComponentIds(
+    (rulesQuery.data ?? []) as never,
+    field.variable_name,
+    option.internal_value,
+  );
+  const linked = bundle.components.filter((c) => linkedIds.includes(c.id));
+  const available = bundle.components.filter((c) => !linkedIds.includes(c.id));
+
+  return (
+    <div className="space-y-1 border-t border-border pt-2">
+      <Label className="text-[11px]">Components charged when this option is chosen</Label>
+      {linked.length === 0 && (
+        <p className="text-[11px] text-muted-foreground">No component linked yet.</p>
+      )}
+      {linked.map((c) => (
+        <div key={c.id} className="flex items-center gap-2 text-xs">
+          <span>{c.internal_name}</span>
+          {canEdit && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={async () => {
+                try {
+                  await unlink({ data: { optionId: option.id, componentId: c.id } });
+                  toast.success("Component unlinked.");
+                  void rulesQuery.refetch();
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : "This link could not be removed.");
+                }
+              }}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+      ))}
+      {canEdit && available.length > 0 && (
+        <div className="flex items-center gap-2 pt-1">
+          <select
+            className={selectClass}
+            value={adding}
+            onChange={(e) => setAdding(e.target.value)}
+          >
+            <option value="">Add a component…</option>
+            {available.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.internal_name}
+              </option>
+            ))}
+          </select>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!adding}
+            onClick={async () => {
+              try {
+                await link({ data: { optionId: option.id, componentId: adding } });
+                setAdding("");
+                toast.success("Component linked.");
+                void rulesQuery.refetch();
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "This link could not be created.");
+              }
+            }}
+          >
+            Link
+          </Button>
+        </div>
+      )}
+      <p className="text-[11px] text-muted-foreground">
+        The component keeps its own price and quantity settings, managed on the Pricing tab.
+      </p>
+    </div>
   );
 }
