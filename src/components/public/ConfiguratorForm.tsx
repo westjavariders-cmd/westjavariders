@@ -85,7 +85,7 @@ export function ConfiguratorForm({
   const save = useServerFn(savePackageConfiguration);
   const complete = useServerFn(completePackage);
 
-  const activeSteps = bundle.steps.filter((s) => s.is_active);
+  const [stepIndexRaw, setStepIndex] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
   const [values, setValues] = useState<PreviewValues>(() => initialValues(bundle, savedAnswers));
   const [promo, setPromo] = useState(savedPromo ?? "");
