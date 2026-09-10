@@ -499,10 +499,14 @@ function FieldEditor({
 
 function OptionRow({
   option,
+  field,
+  bundle,
   canEdit,
   reload,
 }: {
   option: FieldOption;
+  field: Field;
+  bundle: ProductBundle;
   canEdit: boolean;
   reload: () => void;
 }) {
