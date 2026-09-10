@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import {
   evaluateDependencies,
   stripInactiveAnswers,
+  visibleStepFields,
+  visibleSteps,
 
   type Field,
   type PreviewValues,
