@@ -66,3 +66,32 @@ export function validateCatalogue(input: {
   }
   return issues;
 }
+
+/**
+ * The catalogue an item belongs to. When no catalogue is given, the first
+ * catalogue of that structure is used, so existing Admin screens keep working
+ * exactly as before catalogues became manageable.
+ */
+export async function resolveCatalogueId(
+  supabase: any,
+  template: CatalogueTemplate,
+  catalogueId?: string | null,
+): Promise<string | null> {
+  if (catalogueId) {
+    const { data } = await supabase
+      .from("catalogues")
+      .select("id, template")
+      .eq("id", catalogueId)
+      .maybeSingle();
+    if (!data || data.template !== template) return null;
+    return data.id as string;
+  }
+  const { data } = await supabase
+    .from("catalogues")
+    .select("id")
+    .eq("template", template)
+    .order("sort_order")
+    .limit(1)
+    .maybeSingle();
+  return (data?.id as string | undefined) ?? null;
+}
