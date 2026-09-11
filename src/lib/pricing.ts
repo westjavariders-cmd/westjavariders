@@ -398,6 +398,9 @@ export function formulaVariableNames(
           : "string";
     names.push({ name: f.variable_name, type });
   }
+  for (const name of cataloguePriceVariableNames(bundle)) {
+    names.push({ name, type: "number (catalogue price)" });
+  }
   bundle.components.forEach((c, i) => {
     names.push({ name: `component_${i + 1}`, type: `number (${c.internal_name})` });
   });
