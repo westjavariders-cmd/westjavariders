@@ -37,6 +37,7 @@ function AccommodationListPage() {
   const { adminSession } = Route.useRouteContext();
   const canEdit = adminSession.isAdmin;
   const navigate = useNavigate();
+  const { catalogue: catalogueId } = Route.useSearch();
 
   const create = useServerFn(createAccommodation);
   const setActive = useServerFn(setAccommodationActive);
@@ -51,12 +52,13 @@ function AccommodationListPage() {
   const [busy, setBusy] = useState(false);
 
   const list = useQuery({
-    queryKey: ["accommodations"],
+    queryKey: ["accommodations", catalogueId ?? null],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("accommodations")
-        .select("id, accommodation_type, internal_name, public_name, internal_reference, location, active, accommodation_rooms(id, active)")
-        .order("internal_name");
+        .select("id, accommodation_type, internal_name, public_name, internal_reference, location, active, accommodation_rooms(id, active)");
+      if (catalogueId) query = query.eq("catalogue_id", catalogueId);
+      const { data, error } = await query.order("internal_name");
       if (error) throw new Error(error.message);
       return data;
     },
@@ -85,6 +87,7 @@ function AccommodationListPage() {
           internal_name: draft.internal_name.trim(),
           accommodation_type: draft.accommodation_type,
           active: false,
+          catalogue_id: catalogueId ?? null,
         },
       });
       toast.success("Accommodation created.");
@@ -112,6 +115,10 @@ function AccommodationListPage() {
           ) : undefined
         }
       />
+
+      <CatalogueScopeBanner catalogueId={catalogueId} />
+
+
 
       {!canEdit && (
         <p className="mb-4 text-sm text-muted-foreground">
