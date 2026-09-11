@@ -1,61 +1,82 @@
-# Investigación READ-ONLY — Precio de un Component dependiente de DOS variables
+# Catalogue Templates — read-only architecture audit
 
-Caso: SURF LESSON, tarifa determinada por (People × Sessions per Day) y luego multiplicada por Number of Days. No se ha modificado nada.
+Nothing was modified. All findings below come from the actual code and database.
 
-## 1. Cómo funcionan hoy los tiers
+## 1. Current architecture
 
-Tabla `pricing_tiers` (migración `20260907190520...`): `rule_id`, `from_value`, `to_value` (null = abierto), `amount_idr`, `display_order`.
+Three independent catalogues, each with its own tables, admin screens and helper files:
 
-En `src/lib/pricing.ts`, caso `"tier"` de `priceProduct`:
-- lee **una sola** variable: `numberInput(inputs, rule.variable_name)`
-- busca el primer tramo de `pricing_tiers` cuyo rango `from_value`/`to_value` contiene ese valor
-- aporta `match.amount_idr` como importe total del tramo (no por unidad, no marginal)
+- **Accommodation** — `accommodations` (type: hotel / beach_camping) → `accommodation_rooms` (price per night) → `accommodation_room_characteristics`, plus `accommodation_photos` (multi-photo, primary flag, private bucket).
+- **Transport** — `transports` (predefined route / other location, origin, destination, 1–9 travel hours) → two price grids: `transport_people_prices` (1–4 people) and `transport_time_prices` (1–9 hours). Its price is the sum of one time price + one people price.
+- **Motorbike** — a single `motorbikes` table with one flat customer/supplier price pair and one photo path.
 
-## 2. Cuántas variables determinan un tier
+They meet at exactly one seam: the **Catalogue Bridge**. A configurator question with `option_source = catalogue` and a `catalogue_type` gets its options from the bridge, which returns one uniform shape (`CatalogueItem`: id, name, reference, description, photo, customer price). The customer's choice is stored on the package as a historical snapshot, and the item's price is exposed to pricing as `<question>_price`.
 
-Exactamente **una**: `pricing_rules.variable_name`. No hay segunda columna de variable ni segundo rango en `pricing_tiers`.
+There is **no public catalogue page**. Catalogue items appear only inside the configurator and in past-order summaries. `website_block_products` / "auto link products to the block" is a **separate, unrelated** mechanism that links Products (not catalogues) to website blocks. **Not related to catalogues.**
 
-## 3. ¿Puede un tier depender de dos variables?
+## 2. What is already generic — IMPLEMENTED / GENERIC
 
-No directamente. Lo más cercano hoy: `pricing_rules.condition_variable` / `condition_operator` / `condition_value` (evaluado por `conditionHolds`), que existe en los tipos de regla `component_quantity` y `conditional`, **pero el caso `tier` no evalúa la condición** — el `switch` de `tier` va directo a `variable_name`. Así que una regla de tier no se puede restringir por una segunda variable.
+- The `CatalogueItem` contract and its customer-safe projection (supplier costs, internal notes and supplier contacts can never cross the bridge). **GENERIC**
+- Selection matching, invalid-selection removal, and the price-variable injection. **GENERIC**
+- Pricing: nothing in the pricing engine branches on catalogue type. It only asks "is this question catalogue-backed?". **GENERIC**
+- Configurator rendering (public form and admin preview): identical option UI for all three catalogues. **GENERIC**
+- Persistence: package selections and purchase snapshots store the type as plain text, so **adding** a new type is backward-compatible. **GENERIC**
+- Security: every catalogue table uses the same rule — staff can read, admins can write, anonymous users cannot touch them. **GENERIC**
 
-## 4. ¿Existe estructura multidimensional?
+## 3. What is hardcoded — HARDCODED
 
-No. No hay matriz de precios, ni tabla de combinaciones, ni clave compuesta. Tipos de regla existentes (`PRICING_RULE_TYPES`): `fixed`, `variable_times_amount`, `component_quantity`, `conditional`, `tier`.
+- The list of the three catalogue types exists in **four** places: the database enum `catalogue_source_type`, the `CATALOGUE_TYPES` list, the labels map, and a duplicated labels map inside the admin question editor. **HARDCODED**
+- One bespoke data resolver per catalogue (rooms join their parent hotel and photos; transport only exposes a price when unambiguous; motorbike reads flat columns) plus the switch that picks one. These are genuinely different queries, not boilerplate. **HARDCODED**
+- Admin screens are copy-pasted: three list screens and three detail screens (~1,900 lines total) with no shared catalogue list/detail component. Photo manager, characteristics editor and price grids each exist for one catalogue only. **HARDCODED**
+- Admin navigation lists "Hotels / Rooms", "Transport", "Motorbikes" as three fixed top-level entries — there is no "Catalogues" group. **HARDCODED**
+- All public-facing type labels are English strings in code. There is **no translation table for catalogue items** (unlike products and website content). Per-item public text is limited to `public_name` and `description`. **HARDCODED**
+- No categories/placements relationship for any catalogue table (products have both). **HARDCODED**
 
-## 5. ¿Se puede conseguir con `pricing_rules` / `variable_times_amount` sin tocar el Pricing Core?
+## 4. What would have to change — REQUIRES CHANGE
 
-Sí, por combinatoria, sin cambios de código:
-- `conditional`: importe fijo cuando una variable cumple una condición → una regla por combinación (People=1 & Sessions=1, etc.). Limitación: `conditionHolds` compara **una** variable por regla, así que una combinación de dos variables necesita el patrón de abajo.
-- Patrón viable hoy: una regla `tier` sobre People **por cada** valor de Sessions per Day, y como el tier no admite condición, la separación por sesiones debe hacerse con **fórmula** (punto 6) o con `variable_times_amount` cuando la tarifa sea lineal (`tarifa = sessions × importe × ...`).
-- `component_quantity` multiplica el `customer_price` del componente por **una** cantidad: `unit_basis` (mapeada a `people_variable` / `days_variable` / `nights_variable` / `sessions_variable` en `product_pricing`) o el override `pricing_rules.quantity_variable`. Nunca por dos a la vez.
+To reach `New Catalogue → choose template → configure → own public name`:
 
-## 6. ¿Puede una fórmula seleccionar tarifa según People + Sessions?
+1. A `catalogues` instance table: id, template (accommodation / transport / motorbike), internal name, public name, description, active, sort order. **REQUIRES CHANGE**
+2. An owning `catalogue_id` on `accommodations`, `transports`, `motorbikes`, backfilled so today's records belong to one default instance per template. **REQUIRES CHANGE**
+3. Configurator questions must point at a **catalogue instance**, not a hardcoded type. Keeping the existing `catalogue_type` column and adding an optional instance reference is the non-breaking route: an unset instance means "all items of this template", exactly today's behaviour. **REQUIRES CHANGE / RISK**
+4. The three resolvers stay, but each accepts an optional instance filter. The switch becomes template-based instead of type-based. **REQUIRES CHANGE**
+5. One `New Catalogue` admin flow with a template picker, then routing into the existing (unchanged) editor for that template. **REQUIRES CHANGE**
+6. Optional, only if multilingual catalogue text is wanted: a `catalogue_translations` table following the existing product/website translation pattern. **REQUIRES CHANGE**
 
-Sí. El evaluador (`evaluateFormula`, tokenizer + parser propio) soporta `IF(cond, a, b)` anidado, `MIN`, `MAX`, `CONTAINS`, comparaciones y `+ - * /`. Por tanto:
+Unchanged: pricing engine, packages, cart, checkout, purchase snapshots, vouchers, currency. Existing selections keep working because their stored type strings are untouched.
 
-```text
-IF(people <= 1, IF(sessions == 1, A, B),
-IF(people <= 2, IF(sessions == 1, C, D), IF(sessions == 1, E, F))) * days
-```
+## 5. Is Template + Instance viable? — VIABLE, with one condition
 
-es una fórmula válida hoy: una tabla de tarifas expresada como `IF` anidados. Las fórmulas no son solo aritmética; sí son solo expresiones (sin tablas, sin lookups, sin bucles).
+Yes, technically viable, because the bridge already isolates the configurator, pricing and persistence from catalogue internals. The condition: the three templates must stay **exactly three behaviours**. A template is a *behaviour* (per-night rooms; people×hours grid; flat item price), not an arbitrary schema. Any future service that does not fit one of these three should be a normal **Product + Components** using the existing pricing system, not a new catalogue type. No CMS, no page builder, no schema builder, no new pricing engine.
 
-## 7. ¿(tarifa por People + Sessions) × Days?
+## 6. Minimum safe implementation
 
-Sí, **en modo fórmula**, con la expresión anterior. Límites conocidos: `MAX_EXPRESSION_LENGTH = 2000` caracteres y `MAX_DEPTH = 32` de anidamiento.
+Phase A (structure only, invisible to customers):
+- Create `catalogues`, add nullable `catalogue_id` to the three tables, create one default instance per template, and point every existing record at it. Behaviour identical.
 
-En modo `structured` no es posible en una sola regla: ninguna regla multiplica una tarifa seleccionada por una tercera variable.
+Phase B (admin):
+- Add a "Catalogues" navigation group and a single `New Catalogue` flow with template selection. Existing Hotels / Transport / Motorbikes screens remain reachable and unchanged, now scoped by instance.
 
-## 8. Limitación concreta
+Phase C (configurator):
+- Add the optional instance reference to catalogue questions and pass it into the resolvers. Unset = today's behaviour.
 
-- `mode = "formula"` es **excluyente**: `priceProduct` devuelve solo el resultado de la fórmula e **ignora** `base_amount_idr`, todas las `pricing_rules` y las entradas de componentes. Si el producto ya usa reglas estructuradas (componentes de Media, Accommodation, etc.), pasarlo a fórmula obliga a reescribir todo el precio dentro de la fórmula.
-- El precio del componente SURF LESSON (`product_components.customer_price`) no se usaría: las tarifas irían escritas como números dentro de la fórmula, y editarlas exige crear una nueva `formula_versions` (la versión activa es inmutable).
-- Mantenimiento: con 8 personas × 3 opciones de sesiones son 24 ramas `IF` a mano.
-- `tier` no acepta condición, así que la vía estructurada "una tabla de tiers por número de sesiones" no está disponible sin cambios de código.
+Phase D (optional):
+- Public naming/description per instance and, if needed, catalogue translations using the existing pattern.
 
-## Qué se puede hacer HOY
+Each phase is independently shippable and reversible. Full test suite plus catalogue-bridge, configurator, cart and pricing regressions run at each step.
 
-1. Modo fórmula con `IF` anidados × `days` — funciona ya, sin migración; coste: reescribir el precio completo del producto en la fórmula.
-2. Modo estructurado, si la tarifa es descomponible (p. ej. precio por persona-sesión constante): `component_quantity` con `quantity_variable`, o `variable_times_amount`, y `days` como base multiplicadora mediante `unit_basis = per_day`.
-3. Modo estructurado con matriz real de tarifas People × Sessions: **no soportado hoy**.
+## 7. Main risks — RISK
+
+- **Reference model change on questions** is the only genuinely risky edit; keeping `catalogue_type` and adding an optional instance keeps it additive. **RISK: medium, mitigated**
+- **Historical integrity:** never rename or delete an existing type value — stored package selections and purchase snapshots embed those strings verbatim. Additive only. **RISK: high if violated**
+- **Admin duplication:** refactoring the three copy-pasted admin screens into one shared shell in the same step would multiply regression surface. Do it later, separately, or not at all. **RISK: medium**
+- **Template creep:** pressure to make templates configurable would turn this into a schema builder. Explicitly out of scope. **RISK: process**
+- Four hardcoded copies of the type list must stay in sync; the duplicated labels map in the question editor should be consolidated. **RISK: low**
+
+## 8. Recommendation
+
+Compared to keeping things as they are (option A: zero effort, zero risk, but every new catalogue needs code, and public naming stays limited), generalizing (option B) costs one small additive migration and a moderate amount of admin work, with no impact on pricing, checkout or snapshots.
+
+**Recommended: option B, restricted to Template + Instance, executed as Phase A → B → C.** Do not merge the admin refactor into it, and do not add new hardcoded catalogue types for future services — those belong in Products/Components.
+
+Awaiting your decision before any implementation.
