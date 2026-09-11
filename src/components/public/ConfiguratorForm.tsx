@@ -188,7 +188,7 @@ export function ConfiguratorForm({
             const e = evaluated.fields[f.id]!;
             const value = e.forcedValue ?? values[f.variable_name] ?? "";
             const catalogueType = fieldCatalogueType(f as never);
-            const catalogueItems = itemsForField(f as never, catalogue);
+            const catalogueItems: CatalogueItem[] = itemsForField(f as never, catalogue as never);
             const options = catalogueType
               ? catalogueItems.map((item) => ({
                   id: item.id,
