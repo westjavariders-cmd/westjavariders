@@ -4,6 +4,7 @@ import {
   type PreviewValues,
   type ProductBundle,
 } from "@/lib/catalog";
+import { cataloguePriceVariable, fieldCatalogueType } from "@/lib/catalogue-bridge";
 
 /**
  * Pure pricing core: no database, no React, no browser APIs.
