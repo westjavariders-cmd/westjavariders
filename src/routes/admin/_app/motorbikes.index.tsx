@@ -136,6 +136,10 @@ function MotorbikeListPage() {
         }
       />
 
+      <CatalogueScopeBanner catalogueId={catalogueId} />
+
+
+
       {!canEdit && (
         <p className="mb-4 text-sm text-muted-foreground">
           You are signed in as STAFF: the motorbike catalogue is read-only.
