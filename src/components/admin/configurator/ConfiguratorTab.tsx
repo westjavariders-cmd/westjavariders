@@ -271,9 +271,6 @@ function FieldEditor({
       return data as Catalogue[];
     },
   });
-  const catalogueChoices = CATALOGUE_TYPES.includes(draft.catalogue_type as never)
-    ? cataloguesForType(catalogues.data ?? [], draft.catalogue_type as never)
-    : [];
 
 
   async function save() {
