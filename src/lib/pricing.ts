@@ -816,6 +816,9 @@ export function validatePricing(args: {
               : { type: "string", value: "" };
       }
       probe["base"] = { type: "number", value: fromNumberLike(pricing.base_amount_idr) };
+      for (const name of cataloguePriceVariableNames(bundle)) {
+        probe[name] = { type: "number", value: fromNumberLike(0) };
+      }
       bundle.components.forEach((c, i) => {
         probe[`component_${i + 1}`] = { type: "number", value: fromNumberLike(c.customer_price) };
       });
