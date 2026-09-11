@@ -342,6 +342,17 @@ export function priceProduct(args: {
           }
           amount = fromNumberLike(match.amount_idr);
           detail = `${rule.variable_name} = ${exactToString(q)} → tier total`;
+          if (rule.quantity_variable) {
+            const qty = numberInput(inputs, rule.quantity_variable);
+            if (qty == null) {
+              errors.push(
+                `Tier rule "${rule.label}" has no value for "${rule.quantity_variable}".`,
+              );
+              continue;
+            }
+            amount = exactMul(qty, amount);
+            detail = `${rule.variable_name} = ${exactToString(q)} → tier rate × ${rule.quantity_variable} = ${exactToString(qty)}`;
+          }
           break;
         }
       }
