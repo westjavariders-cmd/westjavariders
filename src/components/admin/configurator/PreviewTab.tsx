@@ -8,9 +8,10 @@ import {
   type ProductBundle,
 } from "@/lib/catalog";
 import {
-  fieldCatalogueType,
+  fieldCatalogueKey,
+  fieldCatalogueRefs,
   type CatalogueItem,
-  type CatalogueType,
+  type CatalogueItemsByKey,
 } from "@/lib/catalogue-bridge";
 import { previewCatalogue } from "@/lib/catalog.functions";
 import { Button } from "@/components/ui/button";
@@ -52,24 +53,16 @@ export function PreviewTab({ bundle }: { bundle: ProductBundle }) {
 
   // Catalogue-backed questions have no manual options: their choices come from
   // the existing Generic Catalogue Bridge resolver, exactly as in public.
-  const catalogueTypes = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          bundle.fields
-            .filter((f) => f.is_active)
-            .map((f) => fieldCatalogueType(f as never))
-            .filter((t): t is CatalogueType => t != null),
-        ),
-      ),
+  const catalogueRefs = useMemo(
+    () => fieldCatalogueRefs(bundle.fields.filter((f) => f.is_active) as never),
     [bundle.fields],
   );
   const { data: catalogue } = useQuery({
-    queryKey: ["preview-catalogue", catalogueTypes],
-    enabled: catalogueTypes.length > 0,
-    queryFn: () => previewCatalogue({ data: { types: catalogueTypes } }),
+    queryKey: ["preview-catalogue", catalogueRefs],
+    enabled: catalogueRefs.length > 0,
+    queryFn: () => previewCatalogue({ data: { refs: catalogueRefs } }),
   });
-  const catalogueItems: Partial<Record<CatalogueType, CatalogueItem[]>> = catalogue ?? {};
+  const catalogueItems: CatalogueItemsByKey = (catalogue ?? {}) as CatalogueItemsByKey;
 
   const step = activeSteps[Math.min(stepIndex, Math.max(activeSteps.length - 1, 0))];
 
@@ -119,9 +112,9 @@ export function PreviewTab({ bundle }: { bundle: ProductBundle }) {
           {stepFields.map((f) => {
             const e = evaluated.fields[f.id]!;
             const value = e.forcedValue ?? values[f.variable_name] ?? "";
-            const catalogueType = fieldCatalogueType(f as never);
-            const options = catalogueType
-              ? (catalogueItems[catalogueType] ?? []).map((item) => ({
+            const catalogueKeyOfField = fieldCatalogueKey(f as never);
+            const options = catalogueKeyOfField
+              ? (catalogueItems[catalogueKeyOfField] ?? []).map((item) => ({
                   id: item.id,
                   internal_value: item.id,
                   customer_label: item.name,
