@@ -422,7 +422,7 @@ export const runPricingTests = createServerFn({ method: "POST" })
           result.errors.length === 0 &&
           (c.expected_total_idr == null || Number(c.expected_total_idr) === result.total_idr),
       };
-    });
+    }));
     return runs;
   });
 
