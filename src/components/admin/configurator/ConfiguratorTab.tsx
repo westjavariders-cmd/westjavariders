@@ -24,7 +24,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { selectClass } from "./ui";
 import { CATALOGUE_TYPES, CATALOGUE_TYPE_LABELS } from "@/lib/catalogue-bridge";
-import { type Catalogue, cataloguesForType } from "@/lib/catalogue";
+import {
+  type Catalogue,
+  cataloguePublicName,
+  cataloguesForType,
+  TEMPLATE_CATALOGUE_TYPE,
+} from "@/lib/catalogue";
 
 
 type Props = { bundle: ProductBundle; canEdit: boolean; reload: () => void };
