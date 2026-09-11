@@ -43,7 +43,7 @@ describe("catalogue templates", () => {
 
   it("falls back to the internal name for public display", () => {
     expect(cataloguePublicName({ internal_name: "Hotels", public_name: null })).toBe("Hotels");
-    expect(cataloguePublicName({ internal_name: "Hotels", public_name: " Stays " })).toBe(" Stays ");
+    expect(cataloguePublicName({ internal_name: "Hotels", public_name: " Stays " })).toBe("Stays");
     expect(cataloguePublicName({ internal_name: "Hotels", public_name: "   " })).toBe("Hotels");
   });
 
