@@ -317,7 +317,11 @@ async function computePriceForConfiguration(
     fail("This product is not purchasable: its pricing is not active.");
   }
 
-  const inputs = resolveInputs(loaded.bundle, values as never);
+  const inputs = await withCataloguePrices(
+    loaded.bundle,
+    values,
+    resolveInputs(loaded.bundle, values as never),
+  );
   const active = loaded.versions.find((v: any) => v.is_active) ?? null;
   const result = priceProduct({
     bundle: loaded.bundle,
@@ -342,7 +346,11 @@ export const previewPrice = createServerFn({ method: "POST" })
       requirePurchasable: false,
     });
     const loaded = await loadPricingContext(supabase, data.productId);
-    const inputs = resolveInputs(loaded.bundle, data.values as never);
+    const inputs = await withCataloguePrices(
+      loaded.bundle,
+      data.values,
+      resolveInputs(loaded.bundle, data.values as never),
+    );
     return {
       ...result,
       resolved: Object.entries(inputs).map(([name, v]) => ({
@@ -390,8 +398,12 @@ export const runPricingTests = createServerFn({ method: "POST" })
       errors: string[];
       passed: boolean;
     };
-    const runs: TestRun[] = (cases ?? []).map((c: any) => {
-      const inputs = resolveInputs(loaded.bundle, c.inputs ?? {});
+    const runs: TestRun[] = await Promise.all((cases ?? []).map(async (c: any) => {
+      const inputs = await withCataloguePrices(
+        loaded.bundle,
+        c.inputs ?? {},
+        resolveInputs(loaded.bundle, c.inputs ?? {}),
+      );
       const result = priceProduct({
         bundle: loaded.bundle,
         pricing: loaded.pricing,
