@@ -4,6 +4,7 @@ import {
   type PreviewValues,
   type ProductBundle,
 } from "@/lib/catalog";
+import { cataloguePriceVariable, fieldCatalogueType } from "@/lib/catalogue-bridge";
 
 /**
  * Pure pricing core: no database, no React, no browser APIs.
@@ -381,6 +382,21 @@ export function formulaScope(
   return scope;
 }
 
+/**
+ * The `<variable>_price` inputs the Catalogue Bridge injects at quote time, one
+ * per active catalogue-backed question. Naming comes from the bridge itself.
+ */
+export function cataloguePriceVariableNames(bundle: ProductBundle): string[] {
+  const names: string[] = [];
+  for (const f of bundle.fields) {
+    if (!f.is_active || f.field_type === "info_block") continue;
+    if (!fieldCatalogueType(f as never)) continue;
+    const name = cataloguePriceVariable(f.variable_name);
+    if (!names.includes(name)) names.push(name);
+  }
+  return names;
+}
+
 export function formulaVariableNames(
   bundle: ProductBundle,
   pricing: ProductPricing,
@@ -396,6 +412,9 @@ export function formulaVariableNames(
           ? "list"
           : "string";
     names.push({ name: f.variable_name, type });
+  }
+  for (const name of cataloguePriceVariableNames(bundle)) {
+    names.push({ name, type: "number (catalogue price)" });
   }
   bundle.components.forEach((c, i) => {
     names.push({ name: `component_${i + 1}`, type: `number (${c.internal_name})` });
@@ -797,6 +816,9 @@ export function validatePricing(args: {
               : { type: "string", value: "" };
       }
       probe["base"] = { type: "number", value: fromNumberLike(pricing.base_amount_idr) };
+      for (const name of cataloguePriceVariableNames(bundle)) {
+        probe[name] = { type: "number", value: fromNumberLike(0) };
+      }
       bundle.components.forEach((c, i) => {
         probe[`component_${i + 1}`] = { type: "number", value: fromNumberLike(c.customer_price) };
       });
