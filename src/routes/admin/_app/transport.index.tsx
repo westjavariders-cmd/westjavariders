@@ -41,6 +41,7 @@ function TransportListPage() {
   const { adminSession } = Route.useRouteContext();
   const canEdit = adminSession.isAdmin;
   const navigate = useNavigate();
+  const { catalogue: catalogueId } = Route.useSearch();
 
   const create = useServerFn(createTransport);
   const setActive = useServerFn(setTransportActive);
@@ -55,15 +56,15 @@ function TransportListPage() {
   const [busy, setBusy] = useState(false);
 
   const list = useQuery({
-    queryKey: ["transports"],
+    queryKey: ["transports", catalogueId ?? null],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("transports")
         .select(
           "id, transport_type, internal_name, public_name, internal_reference, origin, destination, min_travel_hours, max_travel_hours, active, sort_order",
-        )
-        .order("sort_order")
-        .order("internal_name");
+        );
+      if (catalogueId) query = query.eq("catalogue_id", catalogueId);
+      const { data, error } = await query.order("sort_order").order("internal_name");
       if (error) throw new Error(error.message);
       return data as Pick<
         Transport,
@@ -107,6 +108,7 @@ function TransportListPage() {
           internal_name: draft.internal_name.trim(),
           transport_type: draft.transport_type,
           active: false,
+          catalogue_id: catalogueId ?? null,
         },
       });
       toast.success("Transport created.");
