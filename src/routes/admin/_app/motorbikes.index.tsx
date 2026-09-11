@@ -49,6 +49,8 @@ function MotorbikeListPage() {
   const { adminSession } = Route.useRouteContext();
   const canEdit = adminSession.isAdmin;
   const navigate = useNavigate();
+  const { catalogue: catalogueId } = Route.useSearch();
+  const scope = useCatalogueScope(catalogueId);
 
   const create = useServerFn(createMotorbike);
   const setActive = useServerFn(setMotorbikeActive);
@@ -62,15 +64,16 @@ function MotorbikeListPage() {
   const [busy, setBusy] = useState(false);
 
   const list = useQuery({
-    queryKey: ["motorbikes"],
+    queryKey: ["motorbikes", catalogueId ?? null],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("motorbikes")
         .select(
           "id, internal_name, public_name, internal_reference, customer_price_idr, supplier_cost_idr, active, sort_order",
-        )
-        .order("sort_order")
-        .order("internal_name");
+        );
+      // Only this catalogue's own items, when the editor was opened for one.
+      if (catalogueId) query = query.eq("catalogue_id", catalogueId);
+      const { data, error } = await query.order("sort_order").order("internal_name");
       if (error) throw new Error(error.message);
       return data as Row[];
     },
