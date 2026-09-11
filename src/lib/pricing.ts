@@ -382,6 +382,21 @@ export function formulaScope(
   return scope;
 }
 
+/**
+ * The `<variable>_price` inputs the Catalogue Bridge injects at quote time, one
+ * per active catalogue-backed question. Naming comes from the bridge itself.
+ */
+export function cataloguePriceVariableNames(bundle: ProductBundle): string[] {
+  const names: string[] = [];
+  for (const f of bundle.fields) {
+    if (!f.is_active || f.field_type === "info_block") continue;
+    if (!fieldCatalogueType(f as never)) continue;
+    const name = cataloguePriceVariable(f.variable_name);
+    if (!names.includes(name)) names.push(name);
+  }
+  return names;
+}
+
 export function formulaVariableNames(
   bundle: ProductBundle,
   pricing: ProductPricing,
