@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { MOTORBIKE_PHOTO_BUCKET, validateMotorbike } from "@/lib/motorbike";
+import { resolveCatalogueOwner } from "@/lib/catalogue";
 
 /**
  * Motorbike catalogue writes. Every mutation is Admin-only, validated
@@ -82,7 +83,7 @@ export const createMotorbike = createServerFn({ method: "POST" })
     const { count } = await supabase.from("motorbikes").select("id", { count: "exact", head: true });
     const { data: row, error } = await supabase
       .from("motorbikes")
-      .insert({ ...fields, sort_order: count ?? 0 })
+      .insert({ ...fields, sort_order: count ?? 0, catalogue_id: owner })
       .select("id")
       .single();
     if (error || !row) fail(SAFE_ERROR);

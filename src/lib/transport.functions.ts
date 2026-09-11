@@ -79,19 +79,25 @@ function normalise(fields: z.infer<typeof transportInput>) {
 
 export const createTransport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => transportInput.parse(data))
+  .inputValidator((data) =>
+    transportInput.extend({ catalogue_id: z.string().uuid().nullable().optional() }).parse(data),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = ctx(context);
     await assertAdmin(supabase);
 
-    const fields = normalise(data);
+    const { catalogue_id, ...input } = data;
+    const fields = normalise(input);
     const issues = validateTransport(fields);
     if (issues.length > 0) fail(issues[0]!);
+
+    // The item is owned by the catalogue instance it was created in.
+    const owner = await resolveCatalogueOwner(supabase, catalogue_id, "transport");
 
     const { count } = await supabase.from("transports").select("id", { count: "exact", head: true });
     const { data: row, error } = await supabase
       .from("transports")
-      .insert({ ...fields, sort_order: count ?? 0 })
+      .insert({ ...fields, sort_order: count ?? 0, catalogue_id: owner })
       .select("id")
       .single();
     if (error || !row) fail(SAFE_ERROR);
