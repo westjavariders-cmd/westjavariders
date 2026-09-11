@@ -88,7 +88,7 @@ describe("catalogue price variables in the pricing engine", () => {
         { id: "v1", version: 1, expression: "motorbike_price * 2", is_active: true } as any,
       ],
     } as never);
-    expect(issues.join(" ")).not.toContain("motorbike_price");
+    expect(JSON.stringify(issues)).not.toContain("motorbike_price");
   });
 
   it("still rejects an unknown value", () => {
@@ -99,7 +99,7 @@ describe("catalogue price variables in the pricing engine", () => {
       tiers: [],
       versions: [{ id: "v1", version: 1, expression: "unicorn_price", is_active: true } as any],
     } as never);
-    expect(issues.join(" ")).toContain("unicorn_price");
+    expect(JSON.stringify(issues)).toContain("unicorn_price");
   });
 
   it("evaluates the catalogue price like any other numeric input", () => {
