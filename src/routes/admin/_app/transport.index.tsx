@@ -58,15 +58,16 @@ function TransportListPage() {
   const [busy, setBusy] = useState(false);
 
   const list = useQuery({
-    queryKey: ["transports"],
+    queryKey: ["transports", catalogueId ?? null],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("transports")
         .select(
           "id, transport_type, internal_name, public_name, internal_reference, origin, destination, min_travel_hours, max_travel_hours, active, sort_order",
-        )
-        .order("sort_order")
-        .order("internal_name");
+        );
+      // Only this catalogue's own items, when opened for one.
+      if (catalogueId) query = query.eq("catalogue_id", catalogueId);
+      const { data, error } = await query.order("sort_order").order("internal_name");
       if (error) throw new Error(error.message);
       return data as Pick<
         Transport,
