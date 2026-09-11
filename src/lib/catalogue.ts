@@ -68,3 +68,26 @@ export function cataloguesForType(catalogues: Catalogue[], type: CatalogueType):
   const template = templateForCatalogueType(type);
   return catalogues.filter((c) => c.template === template);
 }
+
+/**
+ * The catalogue a new item belongs to. An item may only be created inside a
+ * catalogue whose behaviour matches the editor that creates it, so a Motorbike
+ * item can never land in an Accommodation catalogue.
+ */
+export async function resolveCatalogueOwner(
+  supabase: { from: (t: string) => any },
+  catalogueId: string | null | undefined,
+  template: CatalogueTemplate,
+): Promise<string | null> {
+  if (!catalogueId) return null;
+  const { data, error } = await supabase
+    .from("catalogues")
+    .select("id, template")
+    .eq("id", catalogueId)
+    .maybeSingle();
+  if (error || !data) throw new Error("This catalogue could not be found.");
+  if (data.template !== template) {
+    throw new Error("This catalogue does not accept this kind of item.");
+  }
+  return data.id as string;
+}
