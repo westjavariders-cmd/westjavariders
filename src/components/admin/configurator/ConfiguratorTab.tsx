@@ -24,7 +24,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { selectClass } from "./ui";
 import { CATALOGUE_TYPES, CATALOGUE_TYPE_LABELS } from "@/lib/catalogue-bridge";
-import { type Catalogue, cataloguesForType } from "@/lib/catalogue";
+import {
+  type Catalogue,
+  cataloguePublicName,
+  cataloguesForType,
+  TEMPLATE_CATALOGUE_TYPE,
+} from "@/lib/catalogue";
 
 
 type Props = { bundle: ProductBundle; canEdit: boolean; reload: () => void };
@@ -266,9 +271,6 @@ function FieldEditor({
       return data as Catalogue[];
     },
   });
-  const catalogueChoices = CATALOGUE_TYPES.includes(draft.catalogue_type as never)
-    ? cataloguesForType(catalogues.data ?? [], draft.catalogue_type as never)
-    : [];
 
 
   async function save() {
@@ -392,53 +394,50 @@ function FieldEditor({
               </select>
             </div>
             {draft.option_source === "catalogue" && (
-              <>
-                <div>
-                  <Label className="text-xs">Kind of catalogue</Label>
-                  <select
-                    className={selectClass}
-                    value={draft.catalogue_type}
-                    disabled={!canEdit}
-                    onChange={(e) =>
-                      setDraft({ ...draft, catalogue_type: e.target.value, catalogue_id: "" })
+              <div>
+                <Label className="text-xs">Which catalogue</Label>
+                <select
+                  className={selectClass}
+                  value={draft.catalogue_id ? draft.catalogue_id : draft.catalogue_type ? `type:${draft.catalogue_type}` : ""}
+                  disabled={!canEdit}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === "") {
+                      setDraft({ ...draft, catalogue_type: "", catalogue_id: "" });
+                      return;
                     }
-                  >
-                    <option value="">Choose a catalogue…</option>
-                    {CATALOGUE_TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {CATALOGUE_TYPE_LABELS[t]}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    Customers see the active items of this catalogue. The price of the chosen item is
-                    available to pricing as{" "}
-                    <span className="font-mono">{draft.variable_name}_price</span>.
-                  </p>
-                </div>
-                {catalogueChoices.length > 0 && (
-                  <div>
-                    <Label className="text-xs">Limit to one catalogue (optional)</Label>
-                    <select
-                      className={selectClass}
-                      value={draft.catalogue_id}
-                      disabled={!canEdit}
-                      onChange={(e) => setDraft({ ...draft, catalogue_id: e.target.value })}
-                    >
-                      <option value="">All of them</option>
-                      {catalogueChoices.map((c) => (
+                    if (v.startsWith("type:")) {
+                      setDraft({ ...draft, catalogue_type: v.slice(5), catalogue_id: "" });
+                      return;
+                    }
+                    const chosen = (catalogues.data ?? []).find((c) => c.id === v);
+                    if (!chosen) return;
+                    setDraft({
+                      ...draft,
+                      catalogue_type: TEMPLATE_CATALOGUE_TYPE[chosen.template],
+                      catalogue_id: chosen.id,
+                    });
+                  }}
+                >
+                  <option value="">Choose a catalogue…</option>
+                  {CATALOGUE_TYPES.map((t) => (
+                    <optgroup key={t} label={CATALOGUE_TYPE_LABELS[t]}>
+                      <option value={`type:${t}`}>All {CATALOGUE_TYPE_LABELS[t]}</option>
+                      {cataloguesForType(catalogues.data ?? [], t).map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.internal_name}
+                          {cataloguePublicName(c)}
                           {c.active ? "" : " (inactive)"}
                         </option>
                       ))}
-                    </select>
-                    <p className="mt-1 text-[11px] text-muted-foreground">
-                      Leave as “All of them” to keep showing every active item of this kind.
-                    </p>
-                  </div>
-                )}
-              </>
+                    </optgroup>
+                  ))}
+                </select>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Customers see the active items of the catalogue you pick. The price of the chosen
+                  item is available to pricing as{" "}
+                  <span className="font-mono">{draft.variable_name}_price</span>.
+                </p>
+              </div>
             )}
 
           </>
