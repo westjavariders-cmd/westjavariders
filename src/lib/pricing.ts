@@ -342,17 +342,6 @@ export function priceProduct(args: {
           }
           amount = fromNumberLike(match.amount_idr);
           detail = `${rule.variable_name} = ${exactToString(q)} → tier total`;
-          if (rule.quantity_variable) {
-            const qty = numberInput(inputs, rule.quantity_variable);
-            if (qty == null) {
-              errors.push(
-                `Tier rule "${rule.label}" has no value for "${rule.quantity_variable}".`,
-              );
-              continue;
-            }
-            amount = exactMul(qty, amount);
-            detail = `${rule.variable_name} = ${exactToString(q)} → tier rate × ${rule.quantity_variable} = ${exactToString(qty)}`;
-          }
           break;
         }
       }
@@ -779,11 +768,6 @@ export function validatePricing(args: {
         case "tier": {
           if (!rule.variable_name || !numericVariables.has(rule.variable_name)) {
             err(`Tier rule "${rule.label}" needs an active number question.`);
-          }
-          if (rule.quantity_variable && !numericVariables.has(rule.quantity_variable)) {
-            err(
-              `Tier rule "${rule.label}" multiplies by "${rule.quantity_variable}", which is not an active number question.`,
-            );
           }
           const own = tiers
             .filter((t) => t.rule_id === rule.id)

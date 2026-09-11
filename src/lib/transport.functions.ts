@@ -3,7 +3,6 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { TRANSPORT_TYPES, validatePeoplePrices, validateTimePrices, validateTransport } from "@/lib/transport";
-import { resolveCatalogueOwner } from "@/lib/catalogue";
 
 /**
  * Transport catalogue writes. Every mutation is Admin-only, validated
@@ -80,25 +79,19 @@ function normalise(fields: z.infer<typeof transportInput>) {
 
 export const createTransport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
-    transportInput.extend({ catalogue_id: z.string().uuid().nullable().optional() }).parse(data),
-  )
+  .inputValidator((data) => transportInput.parse(data))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = ctx(context);
     await assertAdmin(supabase);
 
-    const { catalogue_id, ...input } = data;
-    const fields = normalise(input);
+    const fields = normalise(data);
     const issues = validateTransport(fields);
     if (issues.length > 0) fail(issues[0]!);
-
-    // The item is owned by the catalogue instance it was created in.
-    const owner = await resolveCatalogueOwner(supabase, catalogue_id, "transport");
 
     const { count } = await supabase.from("transports").select("id", { count: "exact", head: true });
     const { data: row, error } = await supabase
       .from("transports")
-      .insert({ ...fields, sort_order: count ?? 0, catalogue_id: owner })
+      .insert({ ...fields, sort_order: count ?? 0 })
       .select("id")
       .single();
     if (error || !row) fail(SAFE_ERROR);

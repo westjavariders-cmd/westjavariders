@@ -136,7 +136,7 @@ async function assertActivatable(supabase: any, productId: string) {
     supabase.from("config_flows").select("id").eq("product_id", productId).maybeSingle(),
     supabase
       .from("fields")
-      .select("id, step_id, variable_name, field_type, is_active, internal_name, option_source, catalogue_type, catalogue_id")
+      .select("id, step_id, variable_name, field_type, is_active, internal_name, option_source, catalogue_type")
       .eq("product_id", productId),
   ]);
 
@@ -172,7 +172,7 @@ async function assertActivatable(supabase: any, productId: string) {
 
     // Catalogue-backed questions take their choices from the existing
     // Catalogue Bridge, so they are validated against live active items.
-    const { fieldCatalogueType, itemsForField } = await import("@/lib/catalogue-bridge");
+    const { fieldCatalogueType } = await import("@/lib/catalogue-bridge");
     const types = selectFields
       .map((f: any) => fieldCatalogueType(f))
       .filter((t: any): t is string => !!t);
@@ -184,15 +184,14 @@ async function assertActivatable(supabase: any, productId: string) {
 
     const { selectFieldActivationError } = await import("@/lib/catalog");
     for (const f of selectFields) {
+      const type = fieldCatalogueType(f);
       const problem = selectFieldActivationError(f, {
         activeManualOptions: (options ?? []).filter((o: any) => o.field_id === f.id && o.is_active)
           .length,
-        // Respects the catalogue this question is limited to, when it names one.
-        catalogueItems: itemsForField(f, items as never).length,
+        catalogueItems: type ? (items[type]?.length ?? 0) : 0,
       });
       if (problem) fail(problem);
     }
-
   }
 }
 

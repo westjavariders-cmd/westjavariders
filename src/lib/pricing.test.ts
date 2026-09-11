@@ -39,32 +39,6 @@ describe("pricing", () => {
     expect(r.total_idr).toBe(1800000);
   });
 
-  it("a tier rule multiplies the selected tier by quantity_variable when set", () => {
-    const rules: any = [{ id: "r3", pricing_id: "pr", label: "group", rule_type: "tier", variable_name: "people", quantity_variable: "nights", amount_idr: null, component_id: null, condition_variable: null, sign: "add", is_active: true, display_order: 0 }];
-    const tiers: any = [
-      { id: "t1", rule_id: "r3", from_value: "1", to_value: "1", amount_idr: 500000, display_order: 0 },
-      { id: "t2", rule_id: "r3", from_value: "2", to_value: "2", amount_idr: 700000, display_order: 1 },
-      { id: "t3", rule_id: "r3", from_value: "3", to_value: "3", amount_idr: 850000, display_order: 2 },
-    ];
-    const two = resolveInputs(bundle, { people: 2, nights: 3, level: "Advanced" });
-    const r = priceProduct({ bundle, pricing, rules, tiers, formula: null, inputs: two });
-    expect(r.errors).toEqual([]);
-    expect(r.total_idr).toBe(2100000);
-  });
-
-  it("a tier rule without quantity_variable keeps the tier total", () => {
-    const rules: any = [{ id: "r3", pricing_id: "pr", label: "group", rule_type: "tier", variable_name: "people", quantity_variable: null, amount_idr: null, component_id: null, condition_variable: null, sign: "add", is_active: true, display_order: 0 }];
-    const tiers: any = [{ id: "t1", rule_id: "r3", from_value: "1", to_value: "9", amount_idr: 700000, display_order: 0 }];
-    expect(priceProduct({ bundle, pricing, rules, tiers, formula: null, inputs: inputs() }).total_idr).toBe(700000);
-  });
-
-  it("validation rejects a tier multiplier that is not an active number question", () => {
-    const rules: any = [{ id: "r3", pricing_id: "pr", label: "group", rule_type: "tier", variable_name: "people", quantity_variable: "level", amount_idr: null, component_id: null, condition_variable: null, sign: "add", is_active: true, display_order: 0 }];
-    const tiers: any = [{ id: "t1", rule_id: "r3", from_value: "1", to_value: null, amount_idr: 700000, display_order: 0 }];
-    const issues = validatePricing({ bundle, pricing, rules, tiers, versions: [] });
-    expect(issues.some((i) => i.level === "error" && i.message.includes("multiplies by"))).toBe(true);
-  });
-
   it("conditional rules only apply when the condition holds", () => {
     const rules: any = [{ id: "r4", pricing_id: "pr", label: "adv", rule_type: "conditional", amount_idr: 500000, condition_variable: "level", condition_operator: "equals", condition_value: "Advanced", variable_name: null, component_id: null, sign: "add", is_active: true, display_order: 0 }];
     expect(priceProduct({ bundle, pricing, rules, tiers: [], formula: null, inputs: inputs() }).total_idr).toBe(500000);

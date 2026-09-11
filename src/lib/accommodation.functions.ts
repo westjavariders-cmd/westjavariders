@@ -3,7 +3,6 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { ACCOMMODATION_TYPES, isRoomSelectable, validateRoom } from "@/lib/accommodation";
-import { resolveCatalogueOwner } from "@/lib/catalogue";
 
 /**
  * Accommodation catalogue writes. Every mutation is Admin-only, validated
@@ -71,23 +70,18 @@ const accommodationInput = z.object({
 
 export const createAccommodation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
-    accommodationInput.extend({ catalogue_id: z.string().uuid().nullable().optional() }).parse(data),
-  )
+  .inputValidator((data) => accommodationInput.parse(data))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = ctx(context);
     await assertAdmin(supabase);
-    const { catalogue_id, ...fields } = data;
-    // The item is owned by the catalogue instance it was created in.
-    const owner = await resolveCatalogueOwner(supabase, catalogue_id, "accommodation");
     const { data: row, error } = await supabase
       .from("accommodations")
-      .insert({ ...fields, internal_name: fields.internal_name.trim(), catalogue_id: owner })
+      .insert({ ...data, internal_name: data.internal_name.trim() })
       .select("id")
       .single();
     if (error || !row) fail(SAFE_ERROR);
-    await audit(supabase, userId, "accommodation.created", "accommodations", row.id, fields.internal_name, {
-      accommodation_type: fields.accommodation_type,
+    await audit(supabase, userId, "accommodation.created", "accommodations", row.id, data.internal_name, {
+      accommodation_type: data.accommodation_type,
     });
     return { id: row.id as string };
   });

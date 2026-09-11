@@ -33,7 +33,6 @@ export function RuleEditor({
     rule_type: rule.rule_type as string,
     amount_idr: rule.amount_idr == null ? "" : String(rule.amount_idr),
     variable_name: rule.variable_name ?? "",
-    quantity_variable: rule.quantity_variable ?? "",
     component_id: rule.component_id ?? "",
     condition_variable: rule.condition_variable ?? "",
     condition_operator: rule.condition_operator ?? "equals",
@@ -57,7 +56,6 @@ export function RuleEditor({
         rule_type: draft.rule_type as PricingRule["rule_type"],
         amount_idr: draft.amount_idr === "" ? null : Number(draft.amount_idr),
         variable_name: draft.variable_name || null,
-        quantity_variable: draft.quantity_variable || null,
         component_id: draft.component_id || null,
         condition_variable: draft.condition_variable || null,
         condition_operator: draft.condition_operator || null,
@@ -187,27 +185,6 @@ export function RuleEditor({
             </div>
           )}
 
-          {type === "tier" && (
-            <div>
-              <Label className="text-[11px]">Multiply tier by (optional)</Label>
-              <select
-                className={selectClass}
-                value={draft.quantity_variable}
-                disabled={!canEdit}
-                onChange={(e) => setDraft({ ...draft, quantity_variable: e.target.value })}
-              >
-                <option value="">No multiplier</option>
-                {numericFields
-                  .filter((f) => f.variable_name !== draft.variable_name)
-                  .map((f) => (
-                    <option key={f.id} value={f.variable_name}>
-                      {f.internal_name} ({f.variable_name})
-                    </option>
-                  ))}
-              </select>
-            </div>
-          )}
-
           {type === "component_quantity" && (
             <div className="sm:col-span-2">
               <Label className="text-[11px]">Component</Label>
@@ -288,8 +265,7 @@ export function RuleEditor({
         {type === "tier" && (
           <div className="space-y-2 rounded-md bg-muted/40 p-2">
             <p className="text-[11px] font-medium">
-              Tiers — each amount is the total for that range (not per person). With a multiplier
-              selected, it becomes the rate that is multiplied by that question.
+              Tiers — each amount is the total for that range (not per person).
             </p>
             {tiers.map((t) => (
               <div key={t.id} className="flex items-center gap-2 text-xs">

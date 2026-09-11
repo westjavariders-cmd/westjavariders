@@ -32,10 +32,7 @@ export type CatalogueItem = {
   photo_url: string | null;
   /** Customer-facing price in whole IDR, when the catalogue defines one. */
   customer_price_idr: number | null;
-  /** The catalogue instance this item belongs to, when one is assigned. */
-  catalogue_id: string | null;
 };
-
 
 /** Keys that must never cross the bridge, whatever a catalogue table holds. */
 export const FORBIDDEN_CATALOGUE_KEYS = [
@@ -57,7 +54,6 @@ export function toCatalogueItem(type: CatalogueType, row: Record<string, unknown
     description: (row["description"] as string | null) ?? null,
     photo_url: (row["photo_url"] as string | null) ?? null,
     customer_price_idr: price == null ? null : Number(price),
-    catalogue_id: (row["catalogue_id"] as string | null) ?? null,
   };
 }
 
@@ -67,8 +63,6 @@ export type FieldSourceConfig = {
   field_type: string;
   option_source?: string | null;
   catalogue_type?: string | null;
-  /** Optional: restrict the question to one catalogue instance. */
-  catalogue_id?: string | null;
 };
 
 export function isCatalogueField(field: FieldSourceConfig): boolean {
@@ -78,24 +72,6 @@ export function isCatalogueField(field: FieldSourceConfig): boolean {
 export function fieldCatalogueType(field: FieldSourceConfig): CatalogueType | null {
   return isCatalogueField(field) ? (field.catalogue_type as CatalogueType) : null;
 }
-
-/**
- * The items one catalogue question offers. When the question names a catalogue
- * instance, only that instance's items are offered; with no instance chosen it
- * offers every active item of its type, exactly as before instances existed.
- */
-export function itemsForField(
-  field: FieldSourceConfig,
-  itemsByType: Partial<Record<CatalogueType, CatalogueItem[]>>,
-): CatalogueItem[] {
-  const type = fieldCatalogueType(field);
-  if (!type) return [];
-  const all = itemsByType[type] ?? [];
-  const catalogueId = field.catalogue_id ?? null;
-  if (!catalogueId) return all;
-  return all.filter((i) => i.catalogue_id === catalogueId);
-}
-
 
 /**
  * Extra pricing variable exposed for a catalogue field: `<variable>_price`.
@@ -138,7 +114,7 @@ export function resolveCatalogueSelections(
   for (const field of fields) {
     const type = fieldCatalogueType(field);
     if (!type) continue;
-    const available = itemsForField(field, itemsByType);
+    const available = itemsByType[type] ?? [];
     for (const id of selectedIds(answers[field.variable_name])) {
       const item = available.find((i) => i.id === id);
       if (!item) {
@@ -168,7 +144,7 @@ export function stripInvalidCatalogueAnswers(
   for (const field of fields) {
     const type = fieldCatalogueType(field);
     if (!type) continue;
-    const ids = new Set(itemsForField(field, itemsByType).map((i) => i.id));
+    const ids = new Set((itemsByType[type] ?? []).map((i) => i.id));
     const raw = next[field.variable_name];
     if (Array.isArray(raw)) next[field.variable_name] = raw.map(String).filter((v) => ids.has(v));
     else if (raw != null && raw !== "" && !ids.has(String(raw))) next[field.variable_name] = "";
