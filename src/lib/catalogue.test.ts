@@ -5,6 +5,7 @@ import {
   cataloguePublicName,
   cataloguesForType,
   isCatalogueTemplate,
+  resolveCatalogueOwner,
   TEMPLATE_CATALOGUE_TYPE,
   templateForCatalogueType,
   validateCatalogue,
