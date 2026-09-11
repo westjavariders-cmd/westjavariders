@@ -16,9 +16,8 @@ import {
 } from "@/lib/catalog";
 import { formatIdr } from "@/lib/public-catalog";
 import {
-  fieldCatalogueType,
-  type CatalogueItem,
-  type CatalogueType,
+  fieldCatalogueKey,
+  type CatalogueItemsByKey,
 } from "@/lib/catalogue-bridge";
 import { completePackage, savePackageConfiguration } from "@/lib/cart.functions";
 import { PUBLIC_CART_KEY } from "@/components/public/SiteHeader";
@@ -77,8 +76,8 @@ export function ConfiguratorForm({
   packageId: string;
   savedAnswers: PreviewValues | null;
   savedPromo: string | null;
-  /** Active catalogue items per type, resolved server-side. */
-  catalogue?: Partial<Record<CatalogueType, CatalogueItem[]>>;
+  /** Active catalogue items per catalogue, resolved server-side. */
+  catalogue?: CatalogueItemsByKey;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -185,9 +184,9 @@ export function ConfiguratorForm({
           {stepFields.map((f) => {
             const e = evaluated.fields[f.id]!;
             const value = e.forcedValue ?? values[f.variable_name] ?? "";
-            const catalogueType = fieldCatalogueType(f as never);
-            const catalogueItems = catalogueType ? (catalogue[catalogueType] ?? []) : [];
-            const options = catalogueType
+            const catalogueKeyOfField = fieldCatalogueKey(f as never);
+            const catalogueItems = catalogueKeyOfField ? (catalogue[catalogueKeyOfField] ?? []) : [];
+            const options = catalogueKeyOfField
               ? catalogueItems.map((item) => ({
                   id: item.id,
                   internal_value: item.id,
@@ -238,12 +237,12 @@ export function ConfiguratorForm({
                   </div>
                 )}
 
-                {catalogueType && options.length === 0 && (
+                {catalogueKeyOfField && options.length === 0 && (
                   <p className="text-xs text-muted-foreground">
                     No choices are available right now.
                   </p>
                 )}
-                {catalogueType &&
+                {catalogueKeyOfField &&
                   (() => {
                     const chosen = options.find((o) => o.internal_value === value) as
                       | { description?: string | null }

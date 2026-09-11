@@ -136,7 +136,7 @@ async function assertActivatable(supabase: any, productId: string) {
     supabase.from("config_flows").select("id").eq("product_id", productId).maybeSingle(),
     supabase
       .from("fields")
-      .select("id, step_id, variable_name, field_type, is_active, internal_name, option_source, catalogue_type")
+      .select("id, step_id, variable_name, field_type, is_active, internal_name, option_source, catalogue_type, catalogue_id")
       .eq("product_id", productId),
   ]);
 
@@ -172,23 +172,21 @@ async function assertActivatable(supabase: any, productId: string) {
 
     // Catalogue-backed questions take their choices from the existing
     // Catalogue Bridge, so they are validated against live active items.
-    const { fieldCatalogueType } = await import("@/lib/catalogue-bridge");
-    const types = selectFields
-      .map((f: any) => fieldCatalogueType(f))
-      .filter((t: any): t is string => !!t);
+    const { fieldCatalogueKey, fieldCatalogueRefs } = await import("@/lib/catalogue-bridge");
+    const refs = fieldCatalogueRefs(selectFields as never);
     let items: Record<string, unknown[]> = {};
-    if (types.length) {
+    if (refs.length) {
       const { resolveCatalogues } = await import("@/lib/catalogue-bridge.server");
-      items = (await resolveCatalogues(types as never)) as never;
+      items = (await resolveCatalogues(refs)) as never;
     }
 
     const { selectFieldActivationError } = await import("@/lib/catalog");
     for (const f of selectFields) {
-      const type = fieldCatalogueType(f);
+      const key = fieldCatalogueKey(f);
       const problem = selectFieldActivationError(f, {
         activeManualOptions: (options ?? []).filter((o: any) => o.field_id === f.id && o.is_active)
           .length,
-        catalogueItems: type ? (items[type]?.length ?? 0) : 0,
+        catalogueItems: key ? (items[key]?.length ?? 0) : 0,
       });
       if (problem) fail(problem);
     }
@@ -282,9 +280,18 @@ export const addComponentFromTemplate = createServerFn({ method: "POST" })
 export const previewCatalogue = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
-    z.object({ types: z.array(z.enum(["accommodation_room", "transport", "motorbike"])) }).parse(data),
+    z
+      .object({
+        refs: z.array(
+          z.object({
+            catalogue_type: z.enum(["accommodation_room", "transport", "motorbike"]),
+            catalogue_id: z.string().uuid().nullable(),
+          }),
+        ),
+      })
+      .parse(data),
   )
   .handler(async ({ data }) => {
     const { resolveCatalogues } = await import("@/lib/catalogue-bridge.server");
-    return await resolveCatalogues(data.types);
+    return await resolveCatalogues(data.refs);
   });

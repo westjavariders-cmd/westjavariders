@@ -24,12 +24,35 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { selectClass } from "./ui";
 import { CATALOGUE_TYPES, type CatalogueType } from "@/lib/catalogue-bridge";
+import {
+  CATALOGUE_TEMPLATE_SHORT,
+  CATALOGUE_TYPE_OF_TEMPLATE,
+  catalogueLabel,
+  type CatalogueTemplate,
+} from "@/lib/catalogues";
 
 const CATALOGUE_TYPE_LABELS: Record<CatalogueType, string> = {
-  accommodation_room: "Accommodation rooms",
-  transport: "Transport",
-  motorbike: "Motorbikes",
+  accommodation_room: "Every accommodation catalogue",
+  transport: "Every transport catalogue",
+  motorbike: "Every simple-item catalogue",
 };
+
+/** Active catalogues a question can read from. */
+function useCatalogueChoices() {
+  return useQuery({
+    queryKey: ["active-catalogues"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("catalogues")
+        .select("id, internal_name, public_name, template, active")
+        .eq("active", true)
+        .order("sort_order")
+        .order("internal_name");
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    },
+  });
+}
 
 type Props = { bundle: ProductBundle; canEdit: boolean; reload: () => void };
 
@@ -251,7 +274,9 @@ function FieldEditor({
     display_order: String(field.display_order),
     option_source: ((field as any).option_source as string) || "manual",
     catalogue_type: ((field as any).catalogue_type as string) || "",
+    catalogue_id: ((field as any).catalogue_id as string | null) ?? "",
   });
+  const catalogues = useCatalogueChoices();
   const options = bundle.options.filter((o) => o.field_id === field.id);
   const isSelect = SELECT_FIELD_TYPES.includes(draft.field_type);
   const usesCatalogue = isSelect && draft.option_source === "catalogue";
@@ -285,6 +310,7 @@ function FieldEditor({
         display_order: Number(draft.display_order || 0),
         option_source: usesCatalogue ? "catalogue" : "manual",
         catalogue_type: usesCatalogue ? (draft.catalogue_type as never) : null,
+        catalogue_id: usesCatalogue && draft.catalogue_id ? draft.catalogue_id : null,
       })
       .eq("id", field.id);
     if (error) { toast.error(error.message); return; }
@@ -379,13 +405,35 @@ function FieldEditor({
                 <Label className="text-xs">Catalogue</Label>
                 <select
                   className={selectClass}
-                  value={draft.catalogue_type}
+                  value={draft.catalogue_id ? `id:${draft.catalogue_id}` : draft.catalogue_type ? `type:${draft.catalogue_type}` : ""}
                   disabled={!canEdit}
-                  onChange={(e) => setDraft({ ...draft, catalogue_type: e.target.value })}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw.startsWith("id:")) {
+                      const id = raw.slice(3);
+                      const chosen = (catalogues.data ?? []).find((c) => c.id === id);
+                      setDraft({
+                        ...draft,
+                        catalogue_id: id,
+                        catalogue_type: chosen
+                          ? CATALOGUE_TYPE_OF_TEMPLATE[chosen.template as CatalogueTemplate]
+                          : "",
+                      });
+                    } else if (raw.startsWith("type:")) {
+                      setDraft({ ...draft, catalogue_id: "", catalogue_type: raw.slice(5) });
+                    } else {
+                      setDraft({ ...draft, catalogue_id: "", catalogue_type: "" });
+                    }
+                  }}
                 >
                   <option value="">Choose a catalogue…</option>
+                  {(catalogues.data ?? []).map((c) => (
+                    <option key={c.id} value={`id:${c.id}`}>
+                      {catalogueLabel(c as never)} ({CATALOGUE_TEMPLATE_SHORT[c.template as CatalogueTemplate]})
+                    </option>
+                  ))}
                   {CATALOGUE_TYPES.map((t) => (
-                    <option key={t} value={t}>
+                    <option key={t} value={`type:${t}`}>
                       {CATALOGUE_TYPE_LABELS[t]}
                     </option>
                   ))}

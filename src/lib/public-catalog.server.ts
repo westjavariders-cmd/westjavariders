@@ -7,9 +7,9 @@
  */
 import { MASTER_LANGUAGE, type ProductBundle } from "@/lib/catalog";
 import {
-  fieldCatalogueType,
+  fieldCatalogueRefs,
   type CatalogueItem,
-  type CatalogueType,
+  type CatalogueItemsByKey,
 } from "@/lib/catalogue-bridge";
 import { resolveCatalogues } from "@/lib/catalogue-bridge.server";
 import { isPurchasable } from "@/lib/pricing";
@@ -70,7 +70,7 @@ export type PublicBundle = {
   product: { id: string; title: string; summary: string | null; body: string | null };
   bundle: ProductBundle;
   /** Active, customer-safe catalogue items per catalogue type used by the fields. */
-  catalogue: Partial<Record<CatalogueType, CatalogueItem[]>>;
+  catalogue: CatalogueItemsByKey;
 };
 
 /** The saved Phase 3 configuration of one purchasable product, without internal data. */
@@ -112,11 +112,9 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
     ? ((await db.from("field_options").select("*").in("field_id", fieldIds).order("display_order")).data ?? [])
     : [];
 
-  const catalogueTypes = (fields.data ?? [])
-    .filter((f: any) => f.is_active)
-    .map((f: any) => fieldCatalogueType(f))
-    .filter((t: CatalogueType | null): t is CatalogueType => t != null);
-  const catalogue = await resolveCatalogues(catalogueTypes);
+  const catalogue = await resolveCatalogues(
+    fieldCatalogueRefs((fields.data ?? []).filter((f: any) => f.is_active) as never),
+  );
 
   return {
     catalogue,

@@ -70,18 +70,27 @@ const accommodationInput = z.object({
 
 export const createAccommodation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => accommodationInput.parse(data))
+  .inputValidator((data) =>
+    accommodationInput.extend({ catalogue_id: z.string().uuid().nullable().optional() }).parse(data),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = ctx(context);
     await assertAdmin(supabase);
+
+    const { catalogue_id, ...fields } = data;
+    const { resolveCatalogueId } = await import("@/lib/catalogues");
+    const catalogueId = await resolveCatalogueId(supabase, "accommodation", catalogue_id);
+    if (!catalogueId) fail("Choose a valid accommodation catalogue for this item.");
+
     const { data: row, error } = await supabase
       .from("accommodations")
-      .insert({ ...data, internal_name: data.internal_name.trim() })
+      .insert({ ...fields, internal_name: fields.internal_name.trim(), catalogue_id: catalogueId })
       .select("id")
       .single();
     if (error || !row) fail(SAFE_ERROR);
-    await audit(supabase, userId, "accommodation.created", "accommodations", row.id, data.internal_name, {
-      accommodation_type: data.accommodation_type,
+    await audit(supabase, userId, "accommodation.created", "accommodations", row.id, fields.internal_name, {
+      accommodation_type: fields.accommodation_type,
+      catalogue_id: catalogueId,
     });
     return { id: row.id as string };
   });

@@ -27,6 +27,7 @@ Phase 2 — Admin foundation: DONE (auth, first-admin setup, shell, settings/cur
 - [ ] Phase 10 — SEO, analytics, QA, launch
 
 - [x] Option → Component links in the Configurator Option editor (reuse existing component_quantity pricing rules; extend atomic duplication)
+- [x] Unlimited catalogues from the three existing templates (Admin Catalogues, per-catalogue items, configurator selects one concrete catalogue, legacy template-only fields keep working)
 
 ## Open decisions
 - [ ] FX source, refresh frequency, safety margin (Phase 4)

@@ -17,6 +17,10 @@ import {
 } from "@/lib/motorbike.functions";
 import { formatIdr, moveItem } from "@/lib/transport";
 import { selectClass } from "@/components/admin/configurator/ui";
+import {
+  CatalogueScopeBanner,
+  catalogueSearchSchema,
+} from "@/components/admin/catalogue/CatalogueScope";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const Route = createFileRoute("/admin/_app/motorbikes/")({
+  validateSearch: catalogueSearchSchema,
   component: MotorbikeListPage,
 });
 
@@ -43,6 +48,7 @@ function MotorbikeListPage() {
   const { adminSession } = Route.useRouteContext();
   const canEdit = adminSession.isAdmin;
   const navigate = useNavigate();
+  const { catalogue: catalogueId } = Route.useSearch();
 
   const create = useServerFn(createMotorbike);
   const setActive = useServerFn(setMotorbikeActive);
@@ -56,15 +62,15 @@ function MotorbikeListPage() {
   const [busy, setBusy] = useState(false);
 
   const list = useQuery({
-    queryKey: ["motorbikes"],
+    queryKey: ["motorbikes", catalogueId ?? null],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("motorbikes")
         .select(
           "id, internal_name, public_name, internal_reference, customer_price_idr, supplier_cost_idr, active, sort_order",
-        )
-        .order("sort_order")
-        .order("internal_name");
+        );
+      if (catalogueId) query = query.eq("catalogue_id", catalogueId);
+      const { data, error } = await query.order("sort_order").order("internal_name");
       if (error) throw new Error(error.message);
       return data as Row[];
     },
@@ -90,6 +96,7 @@ function MotorbikeListPage() {
           supplier_cost_idr: 0,
           customer_price_idr: 0,
           active: false,
+          catalogue_id: catalogueId ?? null,
         },
       });
       toast.success("Motorbike created.");
@@ -128,6 +135,10 @@ function MotorbikeListPage() {
           ) : undefined
         }
       />
+
+      <CatalogueScopeBanner catalogueId={catalogueId} />
+
+
 
       {!canEdit && (
         <p className="mb-4 text-sm text-muted-foreground">

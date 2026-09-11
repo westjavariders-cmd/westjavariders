@@ -58,6 +58,7 @@ describe("customer-safe projection", () => {
     });
     expect(item).toEqual({
       catalogue_type: "motorbike",
+      catalogue_id: null,
       id: "m1",
       name: "Scooter",
       reference: null,
@@ -83,6 +84,7 @@ describe("selection resolution", () => {
       {
         variable_name: "room",
         catalogue_type: "accommodation_room",
+        catalogue_id: null,
         item_id: "a",
         name: "Room a",
         reference: null,
@@ -128,8 +130,8 @@ describe("pricing exposure", () => {
   it("sums multi-select prices and skips priceless items", () => {
     expect(
       cataloguePriceVariables([
-        { variable_name: "room", catalogue_type: "accommodation_room", item_id: "a", name: "a", reference: null, customer_price_idr: 500000 },
-        { variable_name: "room", catalogue_type: "accommodation_room", item_id: "b", name: "b", reference: null, customer_price_idr: 250000 },
+        { variable_name: "room", catalogue_type: "accommodation_room", catalogue_id: null, item_id: "a", name: "a", reference: null, customer_price_idr: 500000 },
+        { variable_name: "room", catalogue_type: "accommodation_room", catalogue_id: null, item_id: "b", name: "b", reference: null, customer_price_idr: 250000 },
         { variable_name: "ride", catalogue_type: "transport", item_id: "t", name: "t", reference: null, customer_price_idr: null },
       ]),
     ).toEqual({ room_price: 750000 });
@@ -156,6 +158,7 @@ describe("catalogue-backed accommodation question", () => {
     expect(selections[0]).toEqual({
       variable_name: "hotelroom",
       catalogue_type: "accommodation_room",
+      catalogue_id: null,
       item_id: "active-room",
       name: "Room active-room",
       reference: null,

@@ -79,25 +79,33 @@ function normalise(fields: z.infer<typeof transportInput>) {
 
 export const createTransport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => transportInput.parse(data))
+  .inputValidator((data) =>
+    transportInput.extend({ catalogue_id: z.string().uuid().nullable().optional() }).parse(data),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = ctx(context);
     await assertAdmin(supabase);
 
-    const fields = normalise(data);
+    const { catalogue_id, ...input } = data;
+    const fields = normalise(input as never);
     const issues = validateTransport(fields);
     if (issues.length > 0) fail(issues[0]!);
+
+    const { resolveCatalogueId } = await import("@/lib/catalogues");
+    const catalogueId = await resolveCatalogueId(supabase, "transport", catalogue_id);
+    if (!catalogueId) fail("Choose a valid transport catalogue for this item.");
 
     const { count } = await supabase.from("transports").select("id", { count: "exact", head: true });
     const { data: row, error } = await supabase
       .from("transports")
-      .insert({ ...fields, sort_order: count ?? 0 })
+      .insert({ ...fields, sort_order: count ?? 0, catalogue_id: catalogueId })
       .select("id")
       .single();
     if (error || !row) fail(SAFE_ERROR);
 
     await audit(supabase, userId, "transport.created", "transports", row.id, fields.internal_name, {
       transport_type: fields.transport_type,
+      catalogue_id: catalogueId,
     });
     return { id: row.id as string };
   });
