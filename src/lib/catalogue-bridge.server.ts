@@ -38,18 +38,17 @@ async function accommodationRooms(db: any): Promise<CatalogueItem[]> {
       )
       .eq("active", true)
       .order("sort_order"),
-    db.from("accommodations").select("id, active"),
+    db.from("accommodations").select("id, active, catalogue_id"),
     db.from("accommodation_photos").select("room_id, storage_path, is_primary, sort_order").order("sort_order"),
   ]);
 
-  const activeParents = new Set(
-    (parents.data ?? []).filter((a: any) => a.active).map((a: any) => a.id),
-  );
+  const parentById = new Map<string, any>((parents.data ?? []).map((a: any) => [a.id, a]));
 
   const items: CatalogueItem[] = [];
   for (const room of rooms.data ?? []) {
     // A room is only offerable while its accommodation is active too.
-    if (!activeParents.has(room.accommodation_id)) continue;
+    const parent = parentById.get(room.accommodation_id);
+    if (!parent?.active) continue;
     const photo =
       (photos.data ?? []).find((p: any) => p.room_id === room.id && p.is_primary) ??
       (photos.data ?? []).find((p: any) => p.room_id === room.id);
@@ -61,6 +60,7 @@ async function accommodationRooms(db: any): Promise<CatalogueItem[]> {
         description: room.description,
         photo_url: await signed(db, PHOTO_BUCKET, photo?.storage_path ?? null),
         customer_price_idr: room.customer_price_per_night_idr,
+        catalogue_id: parent.catalogue_id ?? null,
       }),
     );
   }
@@ -71,7 +71,9 @@ async function transports(db: any): Promise<CatalogueItem[]> {
   const [rows, peoplePrices] = await Promise.all([
     db
       .from("transports")
-      .select("id, internal_name, public_name, internal_reference, description, active")
+      .select(
+        "id, internal_name, public_name, internal_reference, description, active, catalogue_id",
+      )
       .eq("active", true)
       .order("sort_order"),
     db.from("transport_people_prices").select("transport_id, customer_price_idr"),
@@ -89,6 +91,7 @@ async function transports(db: any): Promise<CatalogueItem[]> {
       description: t.description,
       photo_url: null,
       customer_price_idr: prices.length === 1 ? prices[0].customer_price_idr : null,
+      catalogue_id: t.catalogue_id ?? null,
     });
   });
 }
@@ -96,7 +99,7 @@ async function transports(db: any): Promise<CatalogueItem[]> {
 async function motorbikes(db: any): Promise<CatalogueItem[]> {
   const { data } = await db
     .from("motorbikes")
-    .select("id, internal_name, public_name, internal_reference, description, photo_path, customer_price_idr, active")
+    .select("id, internal_name, public_name, internal_reference, description, photo_path, customer_price_idr, active, catalogue_id")
     .eq("active", true)
     .order("sort_order");
 
@@ -110,26 +113,45 @@ async function motorbikes(db: any): Promise<CatalogueItem[]> {
         description: m.description,
         photo_url: await signed(db, MOTORBIKE_PHOTO_BUCKET, m.photo_path ?? null),
         customer_price_idr: m.customer_price_idr,
+        catalogue_id: m.catalogue_id ?? null,
       }),
     );
   }
   return items;
 }
 
+
+/** Items whose catalogue instance has been switched off are not offerable. */
+async function dropInactiveCatalogues(db: any, items: CatalogueItem[]): Promise<CatalogueItem[]> {
+  if (items.every((i) => i.catalogue_id == null)) return items;
+  const { data } = await db.from("catalogues").select("id, active");
+  const inactive = new Set(
+    (data ?? []).filter((c: any) => !c.active).map((c: any) => c.id as string),
+  );
+  if (inactive.size === 0) return items;
+  return items.filter((i) => i.catalogue_id == null || !inactive.has(i.catalogue_id));
+}
+
 /** One catalogue type → its active, customer-safe items. */
 export async function resolveCatalogue(type: CatalogueType): Promise<CatalogueItem[]> {
   const db = await admin();
+  let items: CatalogueItem[] = [];
   switch (type) {
     case "accommodation_room":
-      return accommodationRooms(db);
+      items = await accommodationRooms(db);
+      break;
     case "transport":
-      return transports(db);
+      items = await transports(db);
+      break;
     case "motorbike":
-      return motorbikes(db);
+      items = await motorbikes(db);
+      break;
     default:
       return [];
   }
+  return dropInactiveCatalogues(db, items);
 }
+
 
 /** Resolves every catalogue type used by a product's fields, once each. */
 export async function resolveCatalogues(

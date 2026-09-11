@@ -24,6 +24,7 @@ import { Route as PagesSlugRouteImport } from './routes/pages.$slug'
 import { Route as PurchasePurchaseIdRouteImport } from './routes/purchase.$purchaseId'
 import { Route as AdminAppIndexRouteImport } from './routes/admin/_app/index'
 import { Route as AdminAppCatalogTaxonomyRouteImport } from './routes/admin/_app/catalog-taxonomy'
+import { Route as AdminAppCataloguesRouteImport } from './routes/admin/_app/catalogues'
 import { Route as AdminAppComponentTemplatesRouteImport } from './routes/admin/_app/component-templates'
 import { Route as AdminAppCustomersRouteImport } from './routes/admin/_app/customers'
 import { Route as AdminAppExperiencesRouteImport } from './routes/admin/_app/experiences'
@@ -128,6 +129,11 @@ const AdminAppIndexRoute = AdminAppIndexRouteImport.update({
 const AdminAppCatalogTaxonomyRoute = AdminAppCatalogTaxonomyRouteImport.update({
   id: '/catalog-taxonomy',
   path: '/catalog-taxonomy',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppCataloguesRoute = AdminAppCataloguesRouteImport.update({
+  id: '/catalogues',
+  path: '/catalogues',
   getParentRoute: () => AdminAppRouteRoute,
 } as any)
 const AdminAppComponentTemplatesRoute =
@@ -310,6 +316,7 @@ export interface FileRoutesByFullPath {
   '/purchase/$purchaseId': typeof PurchasePurchaseIdRoute
   '/build-your-trip/': typeof BuildYourTripIndexRoute
   '/admin/catalog-taxonomy': typeof AdminAppCatalogTaxonomyRoute
+  '/admin/catalogues': typeof AdminAppCataloguesRoute
   '/admin/component-templates': typeof AdminAppComponentTemplatesRoute
   '/admin/customers': typeof AdminAppCustomersRoute
   '/admin/experiences': typeof AdminAppExperiencesRoute
@@ -357,6 +364,7 @@ export interface FileRoutesByTo {
   '/purchase/$purchaseId': typeof PurchasePurchaseIdRoute
   '/build-your-trip': typeof BuildYourTripIndexRoute
   '/admin/catalog-taxonomy': typeof AdminAppCatalogTaxonomyRoute
+  '/admin/catalogues': typeof AdminAppCataloguesRoute
   '/admin/component-templates': typeof AdminAppComponentTemplatesRoute
   '/admin/customers': typeof AdminAppCustomersRoute
   '/admin/experiences': typeof AdminAppExperiencesRoute
@@ -405,6 +413,7 @@ export interface FileRoutesById {
   '/purchase/$purchaseId': typeof PurchasePurchaseIdRoute
   '/build-your-trip/': typeof BuildYourTripIndexRoute
   '/admin/_app/catalog-taxonomy': typeof AdminAppCatalogTaxonomyRoute
+  '/admin/_app/catalogues': typeof AdminAppCataloguesRoute
   '/admin/_app/component-templates': typeof AdminAppComponentTemplatesRoute
   '/admin/_app/customers': typeof AdminAppCustomersRoute
   '/admin/_app/experiences': typeof AdminAppExperiencesRoute
@@ -454,6 +463,7 @@ export interface FileRouteTypes {
     | '/purchase/$purchaseId'
     | '/build-your-trip/'
     | '/admin/catalog-taxonomy'
+    | '/admin/catalogues'
     | '/admin/component-templates'
     | '/admin/customers'
     | '/admin/experiences'
@@ -501,6 +511,7 @@ export interface FileRouteTypes {
     | '/purchase/$purchaseId'
     | '/build-your-trip'
     | '/admin/catalog-taxonomy'
+    | '/admin/catalogues'
     | '/admin/component-templates'
     | '/admin/customers'
     | '/admin/experiences'
@@ -548,6 +559,7 @@ export interface FileRouteTypes {
     | '/purchase/$purchaseId'
     | '/build-your-trip/'
     | '/admin/_app/catalog-taxonomy'
+    | '/admin/_app/catalogues'
     | '/admin/_app/component-templates'
     | '/admin/_app/customers'
     | '/admin/_app/experiences'
@@ -700,6 +712,13 @@ declare module '@tanstack/react-router' {
       path: '/catalog-taxonomy'
       fullPath: '/admin/catalog-taxonomy'
       preLoaderRoute: typeof AdminAppCatalogTaxonomyRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/catalogues': {
+      id: '/admin/_app/catalogues'
+      path: '/catalogues'
+      fullPath: '/admin/catalogues'
+      preLoaderRoute: typeof AdminAppCataloguesRouteImport
       parentRoute: typeof AdminAppRouteRoute
     }
     '/admin/_app/component-templates': {
@@ -924,6 +943,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminAppRouteRouteChildren {
   AdminAppCatalogTaxonomyRoute: typeof AdminAppCatalogTaxonomyRoute
+  AdminAppCataloguesRoute: typeof AdminAppCataloguesRoute
   AdminAppComponentTemplatesRoute: typeof AdminAppComponentTemplatesRoute
   AdminAppCustomersRoute: typeof AdminAppCustomersRoute
   AdminAppExperiencesRoute: typeof AdminAppExperiencesRoute
@@ -959,6 +979,7 @@ interface AdminAppRouteRouteChildren {
 
 const AdminAppRouteRouteChildren: AdminAppRouteRouteChildren = {
   AdminAppCatalogTaxonomyRoute: AdminAppCatalogTaxonomyRoute,
+  AdminAppCataloguesRoute: AdminAppCataloguesRoute,
   AdminAppComponentTemplatesRoute: AdminAppComponentTemplatesRoute,
   AdminAppCustomersRoute: AdminAppCustomersRoute,
   AdminAppExperiencesRoute: AdminAppExperiencesRoute,

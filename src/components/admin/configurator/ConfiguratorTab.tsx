@@ -23,13 +23,9 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { selectClass } from "./ui";
-import { CATALOGUE_TYPES, type CatalogueType } from "@/lib/catalogue-bridge";
+import { CATALOGUE_TYPES, CATALOGUE_TYPE_LABELS } from "@/lib/catalogue-bridge";
+import { type Catalogue, cataloguesForType } from "@/lib/catalogue";
 
-const CATALOGUE_TYPE_LABELS: Record<CatalogueType, string> = {
-  accommodation_room: "Accommodation rooms",
-  transport: "Transport",
-  motorbike: "Motorbikes",
-};
 
 type Props = { bundle: ProductBundle; canEdit: boolean; reload: () => void };
 
@@ -251,10 +247,29 @@ function FieldEditor({
     display_order: String(field.display_order),
     option_source: ((field as any).option_source as string) || "manual",
     catalogue_type: ((field as any).catalogue_type as string) || "",
+    catalogue_id: ((field as any).catalogue_id as string) || "",
   });
   const options = bundle.options.filter((o) => o.field_id === field.id);
   const isSelect = SELECT_FIELD_TYPES.includes(draft.field_type);
   const usesCatalogue = isSelect && draft.option_source === "catalogue";
+
+  // Catalogue instances of the behaviour this question reads.
+  const catalogues = useQuery({
+    queryKey: ["catalogues", "picker"],
+    enabled: usesCatalogue,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("catalogues")
+        .select("id, template, internal_name, public_name, description, active, sort_order")
+        .order("sort_order");
+      if (error) throw new Error(error.message);
+      return data as Catalogue[];
+    },
+  });
+  const catalogueChoices = CATALOGUE_TYPES.includes(draft.catalogue_type as never)
+    ? cataloguesForType(catalogues.data ?? [], draft.catalogue_type as never)
+    : [];
+
 
   async function save() {
     if (usesCatalogue && !CATALOGUE_TYPES.includes(draft.catalogue_type as never)) {
@@ -285,6 +300,8 @@ function FieldEditor({
         display_order: Number(draft.display_order || 0),
         option_source: usesCatalogue ? "catalogue" : "manual",
         catalogue_type: usesCatalogue ? (draft.catalogue_type as never) : null,
+        catalogue_id: usesCatalogue && draft.catalogue_id ? draft.catalogue_id : null,
+
       })
       .eq("id", field.id);
     if (error) { toast.error(error.message); return; }
@@ -375,28 +392,55 @@ function FieldEditor({
               </select>
             </div>
             {draft.option_source === "catalogue" && (
-              <div>
-                <Label className="text-xs">Catalogue</Label>
-                <select
-                  className={selectClass}
-                  value={draft.catalogue_type}
-                  disabled={!canEdit}
-                  onChange={(e) => setDraft({ ...draft, catalogue_type: e.target.value })}
-                >
-                  <option value="">Choose a catalogue…</option>
-                  {CATALOGUE_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {CATALOGUE_TYPE_LABELS[t]}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Customers see the active items of this catalogue. The price of the chosen item is
-                  available to pricing as{" "}
-                  <span className="font-mono">{draft.variable_name}_price</span>.
-                </p>
-              </div>
+              <>
+                <div>
+                  <Label className="text-xs">Kind of catalogue</Label>
+                  <select
+                    className={selectClass}
+                    value={draft.catalogue_type}
+                    disabled={!canEdit}
+                    onChange={(e) =>
+                      setDraft({ ...draft, catalogue_type: e.target.value, catalogue_id: "" })
+                    }
+                  >
+                    <option value="">Choose a catalogue…</option>
+                    {CATALOGUE_TYPES.map((t) => (
+                      <option key={t} value={t}>
+                        {CATALOGUE_TYPE_LABELS[t]}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Customers see the active items of this catalogue. The price of the chosen item is
+                    available to pricing as{" "}
+                    <span className="font-mono">{draft.variable_name}_price</span>.
+                  </p>
+                </div>
+                {catalogueChoices.length > 0 && (
+                  <div>
+                    <Label className="text-xs">Limit to one catalogue (optional)</Label>
+                    <select
+                      className={selectClass}
+                      value={draft.catalogue_id}
+                      disabled={!canEdit}
+                      onChange={(e) => setDraft({ ...draft, catalogue_id: e.target.value })}
+                    >
+                      <option value="">All of them</option>
+                      {catalogueChoices.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.internal_name}
+                          {c.active ? "" : " (inactive)"}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Leave as “All of them” to keep showing every active item of this kind.
+                    </p>
+                  </div>
+                )}
+              </>
             )}
+
           </>
         )}
         <div className="sm:col-span-2">
