@@ -66,6 +66,7 @@ export function toCatalogueItem(type: CatalogueType, row: Record<string, unknown
   const price = row["customer_price_idr"];
   return {
     catalogue_type: type,
+    catalogue_id: (row["catalogue_id"] as string | null) ?? null,
     id: String(row["id"]),
     name: String(row["name"] ?? ""),
     reference: (row["reference"] as string | null) ?? null,
@@ -81,6 +82,7 @@ export type FieldSourceConfig = {
   field_type: string;
   option_source?: string | null;
   catalogue_type?: string | null;
+  catalogue_id?: string | null;
 };
 
 export function isCatalogueField(field: FieldSourceConfig): boolean {
@@ -89,6 +91,34 @@ export function isCatalogueField(field: FieldSourceConfig): boolean {
 
 export function fieldCatalogueType(field: FieldSourceConfig): CatalogueType | null {
   return isCatalogueField(field) ? (field.catalogue_type as CatalogueType) : null;
+}
+
+/** The catalogue one field reads from, or null when it uses manual options. */
+export function fieldCatalogueRef(field: FieldSourceConfig): CatalogueRef | null {
+  const type = fieldCatalogueType(field);
+  if (!type) return null;
+  return { catalogue_type: type, catalogue_id: field.catalogue_id ?? null };
+}
+
+/** Lookup key for one field's resolved items. */
+export function fieldCatalogueKey(field: FieldSourceConfig): string | null {
+  const ref = fieldCatalogueRef(field);
+  return ref ? catalogueKey(ref) : null;
+}
+
+/** Every catalogue the given fields read from, once each. */
+export function fieldCatalogueRefs(fields: FieldSourceConfig[]): CatalogueRef[] {
+  const out: CatalogueRef[] = [];
+  const seen = new Set<string>();
+  for (const field of fields) {
+    const ref = fieldCatalogueRef(field);
+    if (!ref) continue;
+    const key = catalogueKey(ref);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(ref);
+  }
+  return out;
 }
 
 /**
@@ -104,6 +134,8 @@ export function cataloguePriceVariable(variableName: string): string {
 export type CatalogueSelection = {
   variable_name: string;
   catalogue_type: CatalogueType;
+  /** The catalogue the item came from, when the field names one. */
+  catalogue_id?: string | null;
   item_id: string;
   name: string;
   reference: string | null;
