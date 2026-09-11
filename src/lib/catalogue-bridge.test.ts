@@ -84,6 +84,7 @@ describe("selection resolution", () => {
       {
         variable_name: "room",
         catalogue_type: "accommodation_room",
+        catalogue_id: null,
         item_id: "a",
         name: "Room a",
         reference: null,
