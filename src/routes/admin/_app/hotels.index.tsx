@@ -23,8 +23,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  CatalogueScopeNote,
+  catalogueSearch,
+  useCatalogueScope,
+} from "@/components/admin/catalogue/scope";
 
 export const Route = createFileRoute("/admin/_app/hotels/")({
+  validateSearch: catalogueSearch,
   component: AccommodationListPage,
 });
 
@@ -32,6 +38,8 @@ function AccommodationListPage() {
   const { adminSession } = Route.useRouteContext();
   const canEdit = adminSession.isAdmin;
   const navigate = useNavigate();
+  const { catalogue: catalogueId } = Route.useSearch();
+  const scope = useCatalogueScope(catalogueId);
 
   const create = useServerFn(createAccommodation);
   const setActive = useServerFn(setAccommodationActive);
