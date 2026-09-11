@@ -1,61 +1,62 @@
-# Investigación READ-ONLY — Precio de un Component dependiente de DOS variables
+# Catálogos ilimitados a partir de 3 plantillas
 
-Caso: SURF LESSON, tarifa determinada por (People × Sessions per Day) y luego multiplicada por Number of Days. No se ha modificado nada.
+Sí, es sencillo: la base de datos ya está preparada. Existe una tabla de catálogos con
+plantilla (alojamiento / transporte / motos), y hoteles, transportes y motos ya tienen un
+campo que dice a qué catálogo pertenecen. Lo que falta es la parte visible: crear catálogos
+desde Admin, separar sus artículos y poder elegir un catálogo concreto en el configurador.
 
-## 1. Cómo funcionan hoy los tiers
+## Qué vas a poder hacer
 
-Tabla `pricing_tiers` (migración `20260907190520...`): `rule_id`, `from_value`, `to_value` (null = abierto), `amount_idr`, `display_order`.
+1. En Admin, una sección **Catálogos** con la lista de todos tus catálogos.
+2. Botón **Nuevo catálogo**: pones nombre interno, nombre público, descripción y eliges una
+   de las 3 plantillas existentes:
+   - Alojamiento (con habitaciones, características y fotos)
+   - Transporte (precios por personas y por horas)
+   - Motos (precio simple con foto)
+3. Al abrir un catálogo, ves y gestionas **solo sus artículos**, con exactamente las mismas
+   pantallas que usas hoy en Hoteles, Transporte y Motos. Ejemplo: un catálogo "Clases de
+   surf iniciación" con plantilla de transporte usa el mismo editor de precios por personas
+   y horas, pero sus artículos no se mezclan con los del catálogo Transporte.
+4. Activar / desactivar un catálogo completo. Un catálogo desactivado no ofrece nada al
+   cliente, aunque sus artículos estén activos.
+5. En una pregunta del configurador de tipo elección, en lugar de elegir solo "Alojamiento /
+   Transporte / Motos", eliges **el catálogo concreto** de la lista. La pregunta muestra solo
+   los artículos activos de ese catálogo.
+6. Todo lo demás sigue igual: precios, `${variable}_price` en las fórmulas, dependencias,
+   validación de activación, carrito, checkout, pago, vouchers e histórico de compras.
 
-En `src/lib/pricing.ts`, caso `"tier"` de `priceProduct`:
-- lee **una sola** variable: `numberInput(inputs, rule.variable_name)`
-- busca el primer tramo de `pricing_tiers` cuyo rango `from_value`/`to_value` contiene ese valor
-- aporta `match.amount_idr` como importe total del tramo (no por unidad, no marginal)
+## Compatibilidad
 
-## 2. Cuántas variables determinan un tier
+- Los 3 catálogos actuales se mantienen tal cual, como catálogos normales de la lista.
+- Las preguntas ya configuradas hoy (que apuntan a un tipo, no a un catálogo) seguirán
+  funcionando: se resolverán contra el catálogo original de ese tipo.
+- Ningún artículo, precio ni configuración existente se borra ni se mueve.
 
-Exactamente **una**: `pricing_rules.variable_name`. No hay segunda columna de variable ni segundo rango en `pricing_tiers`.
+## Detalle técnico
 
-## 3. ¿Puede un tier depender de dos variables?
+- `catalogues` (ya existe: `template`, `internal_name`, `public_name`, `description`,
+  `active`, `sort_order`) pasa a ser la entidad gestionable. Se añade panel Admin + funciones
+  de servidor (crear, editar, activar, reordenar) con escritura solo Admin, lectura Staff,
+  RLS y auditoría como el resto de módulos.
+- Migración mínima de datos: asignar `catalogue_id` a los artículos existentes que no lo
+  tengan (1 transporte suelto) y hacer `catalogue_id` obligatorio en `accommodations`,
+  `transports`, `motorbikes` una vez saneado.
+- `catalogue-bridge.ts`: el campo pasa a resolverse por `fields.catalogue_id` (columna ya
+  existente) con fallback al `catalogue_type` actual. `CatalogueItem` gana `catalogue_id`;
+  `CATALOGUE_TYPES` se conserva como conjunto de plantillas.
+- `catalogue-bridge.server.ts`: los 3 resolvers reciben un `catalogue_id` opcional y filtran
+  por él, además de exigir `catalogues.active`. Sin `catalogue_id` se comportan como hoy.
+- `catalog.functions.ts` (`previewCatalogue`, validación de activación) y `cart.server.ts` /
+  `pricing.functions.ts` resuelven por catálogo; `packages.catalogue_selections` guarda
+  también el catálogo de origen para el histórico.
+- Admin: nuevas rutas `/admin/catalogues` y `/admin/catalogues/$catalogueId`, reutilizando
+  los paneles existentes de rooms/transport/motorbike filtrados por catálogo. Hoteles,
+  Transporte y Motos siguen accesibles.
+- `ConfiguratorTab.tsx`: el desplegable "Catalogue" lista catálogos activos por nombre.
+- Tests: filtrado por catálogo, catálogo inactivo no ofrece artículos, fallback de preguntas
+  antiguas, activación de producto con catálogo vacío, y regresión de precios/fórmulas.
 
-No directamente. Lo más cercano hoy: `pricing_rules.condition_variable` / `condition_operator` / `condition_value` (evaluado por `conditionHolds`), que existe en los tipos de regla `component_quantity` y `conditional`, **pero el caso `tier` no evalúa la condición** — el `switch` de `tier` va directo a `variable_name`. Así que una regla de tier no se puede restringir por una segunda variable.
+## Fuera de alcance
 
-## 4. ¿Existe estructura multidimensional?
-
-No. No hay matriz de precios, ni tabla de combinaciones, ni clave compuesta. Tipos de regla existentes (`PRICING_RULE_TYPES`): `fixed`, `variable_times_amount`, `component_quantity`, `conditional`, `tier`.
-
-## 5. ¿Se puede conseguir con `pricing_rules` / `variable_times_amount` sin tocar el Pricing Core?
-
-Sí, por combinatoria, sin cambios de código:
-- `conditional`: importe fijo cuando una variable cumple una condición → una regla por combinación (People=1 & Sessions=1, etc.). Limitación: `conditionHolds` compara **una** variable por regla, así que una combinación de dos variables necesita el patrón de abajo.
-- Patrón viable hoy: una regla `tier` sobre People **por cada** valor de Sessions per Day, y como el tier no admite condición, la separación por sesiones debe hacerse con **fórmula** (punto 6) o con `variable_times_amount` cuando la tarifa sea lineal (`tarifa = sessions × importe × ...`).
-- `component_quantity` multiplica el `customer_price` del componente por **una** cantidad: `unit_basis` (mapeada a `people_variable` / `days_variable` / `nights_variable` / `sessions_variable` en `product_pricing`) o el override `pricing_rules.quantity_variable`. Nunca por dos a la vez.
-
-## 6. ¿Puede una fórmula seleccionar tarifa según People + Sessions?
-
-Sí. El evaluador (`evaluateFormula`, tokenizer + parser propio) soporta `IF(cond, a, b)` anidado, `MIN`, `MAX`, `CONTAINS`, comparaciones y `+ - * /`. Por tanto:
-
-```text
-IF(people <= 1, IF(sessions == 1, A, B),
-IF(people <= 2, IF(sessions == 1, C, D), IF(sessions == 1, E, F))) * days
-```
-
-es una fórmula válida hoy: una tabla de tarifas expresada como `IF` anidados. Las fórmulas no son solo aritmética; sí son solo expresiones (sin tablas, sin lookups, sin bucles).
-
-## 7. ¿(tarifa por People + Sessions) × Days?
-
-Sí, **en modo fórmula**, con la expresión anterior. Límites conocidos: `MAX_EXPRESSION_LENGTH = 2000` caracteres y `MAX_DEPTH = 32` de anidamiento.
-
-En modo `structured` no es posible en una sola regla: ninguna regla multiplica una tarifa seleccionada por una tercera variable.
-
-## 8. Limitación concreta
-
-- `mode = "formula"` es **excluyente**: `priceProduct` devuelve solo el resultado de la fórmula e **ignora** `base_amount_idr`, todas las `pricing_rules` y las entradas de componentes. Si el producto ya usa reglas estructuradas (componentes de Media, Accommodation, etc.), pasarlo a fórmula obliga a reescribir todo el precio dentro de la fórmula.
-- El precio del componente SURF LESSON (`product_components.customer_price`) no se usaría: las tarifas irían escritas como números dentro de la fórmula, y editarlas exige crear una nueva `formula_versions` (la versión activa es inmutable).
-- Mantenimiento: con 8 personas × 3 opciones de sesiones son 24 ramas `IF` a mano.
-- `tier` no acepta condición, así que la vía estructurada "una tabla de tiers por número de sesiones" no está disponible sin cambios de código.
-
-## Qué se puede hacer HOY
-
-1. Modo fórmula con `IF` anidados × `days` — funciona ya, sin migración; coste: reescribir el precio completo del producto en la fórmula.
-2. Modo estructurado, si la tarifa es descomponible (p. ej. precio por persona-sesión constante): `component_quantity` con `quantity_variable`, o `variable_times_amount`, y `days` como base multiplicadora mediante `unit_basis = per_day`.
-3. Modo estructurado con matriz real de tarifas People × Sessions: **no soportado hoy**.
+Disponibilidad, reservas, nuevas plantillas distintas de las 3 actuales, plantillas
+personalizables campo a campo, y cambios en pricing, carrito, checkout, pagos, vouchers o FX.
