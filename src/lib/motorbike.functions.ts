@@ -64,24 +64,33 @@ const motorbikeInput = z.object({
 
 export const createMotorbike = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => motorbikeInput.parse(data))
+  .inputValidator((data) =>
+    motorbikeInput.extend({ catalogue_id: z.string().uuid().nullable().optional() }).parse(data),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = ctx(context);
     await assertAdmin(supabase);
 
-    const fields = { ...data, internal_name: data.internal_name.trim() };
+    const { catalogue_id, ...rest } = data;
+    const fields = { ...rest, internal_name: rest.internal_name.trim() };
     const issues = validateMotorbike(fields);
     if (issues.length > 0) fail(issues[0]!);
+
+    const { resolveCatalogueId } = await import("@/lib/catalogues");
+    const catalogueId = await resolveCatalogueId(supabase, "motorbike", catalogue_id);
+    if (!catalogueId) fail("Choose a valid catalogue for this item.");
 
     const { count } = await supabase.from("motorbikes").select("id", { count: "exact", head: true });
     const { data: row, error } = await supabase
       .from("motorbikes")
-      .insert({ ...fields, sort_order: count ?? 0 })
+      .insert({ ...fields, sort_order: count ?? 0, catalogue_id: catalogueId })
       .select("id")
       .single();
     if (error || !row) fail(SAFE_ERROR);
 
-    await audit(supabase, userId, "motorbike.created", row.id, fields.internal_name);
+    await audit(supabase, userId, "motorbike.created", row.id, fields.internal_name, {
+      catalogue_id: catalogueId,
+    });
     return { id: row.id as string };
   });
 
