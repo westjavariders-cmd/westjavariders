@@ -111,6 +111,7 @@ function TransportListPage() {
           internal_name: draft.internal_name.trim(),
           transport_type: draft.transport_type,
           active: false,
+          catalogue_id: catalogueId ?? null,
         },
       });
       toast.success("Transport created.");
@@ -137,9 +138,9 @@ function TransportListPage() {
   return (
     <div>
       <PageHeader
-        breadcrumb={["Transport"]}
-        title="Transport"
-        description="Internal transport catalogue: predefined routes and other locations."
+        breadcrumb={scope.data ? ["Catalogues", scope.data.internal_name] : ["Transport"]}
+        title={scope.data ? scope.data.internal_name : "Transport"}
+        description="Items priced by people and travel time."
         actions={
           canEdit ? (
             <Button size="sm" onClick={() => setDraft({ internal_name: "", transport_type: "predefined_route" })}>
