@@ -9,11 +9,12 @@ import { catalogueLabel } from "@/lib/catalogues";
  * `?catalogue=<id>` narrows a list to a single catalogue and makes new items
  * land in it. Without it, the list behaves exactly as before.
  */
-export const catalogueSearchSchema = (search: Record<string, unknown>) => ({
-  catalogue: typeof search["catalogue"] === "string" ? (search["catalogue"] as string) : undefined,
-});
+export const catalogueSearchSchema = (search: Record<string, unknown>): { catalogue?: string } =>
+  typeof search["catalogue"] === "string" && search["catalogue"] !== ""
+    ? { catalogue: search["catalogue"] as string }
+    : {};
 
-export function useCatalogueScope(catalogueId?: string) {
+export function useCatalogueScope(catalogueId: string | undefined) {
   return useQuery({
     queryKey: ["catalogue", catalogueId],
     enabled: !!catalogueId,
@@ -29,7 +30,7 @@ export function useCatalogueScope(catalogueId?: string) {
   });
 }
 
-export function CatalogueScopeBanner({ catalogueId }: { catalogueId?: string }) {
+export function CatalogueScopeBanner({ catalogueId }: { catalogueId: string | undefined }) {
   const { data } = useCatalogueScope(catalogueId);
   if (!catalogueId) return null;
   return (
