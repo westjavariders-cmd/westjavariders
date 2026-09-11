@@ -99,6 +99,7 @@ function MotorbikeListPage() {
           supplier_cost_idr: 0,
           customer_price_idr: 0,
           active: false,
+          catalogue_id: catalogueId ?? null,
         },
       });
       toast.success("Motorbike created.");
@@ -125,9 +126,9 @@ function MotorbikeListPage() {
   return (
     <div>
       <PageHeader
-        breadcrumb={["Motorbikes"]}
-        title="Motorbikes"
-        description="Internal catalogue of the motorbikes available for rental."
+        breadcrumb={scope.data ? ["Catalogues", scope.data.internal_name] : ["Motorbikes"]}
+        title={scope.data ? scope.data.internal_name : "Motorbikes"}
+        description="Items priced one price per item."
         actions={
           canEdit ? (
             <Button size="sm" onClick={() => setDraft("")}>
@@ -138,9 +139,11 @@ function MotorbikeListPage() {
         }
       />
 
+      <CatalogueScopeNote catalogue={scope.data} />
+
       {!canEdit && (
         <p className="mb-4 text-sm text-muted-foreground">
-          You are signed in as STAFF: the motorbike catalogue is read-only.
+          You are signed in as STAFF: this catalogue is read-only.
         </p>
       )}
 
