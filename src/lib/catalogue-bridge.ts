@@ -155,16 +155,16 @@ function selectedIds(raw: unknown): string[] {
 export function resolveCatalogueSelections(
   fields: FieldSourceConfig[],
   answers: Record<string, unknown>,
-  itemsByType: Partial<Record<CatalogueType, CatalogueItem[]>>,
+  itemsByKey: CatalogueItemsByKey,
   labelOf: (field: FieldSourceConfig) => string = (f) => f.variable_name,
 ): { selections: CatalogueSelection[]; invalid: string[] } {
   const selections: CatalogueSelection[] = [];
   const invalid: string[] = [];
 
   for (const field of fields) {
-    const type = fieldCatalogueType(field);
-    if (!type) continue;
-    const available = itemsByType[type] ?? [];
+    const ref = fieldCatalogueRef(field);
+    if (!ref) continue;
+    const available = itemsByKey[catalogueKey(ref)] ?? [];
     for (const id of selectedIds(answers[field.variable_name])) {
       const item = available.find((i) => i.id === id);
       if (!item) {
@@ -173,7 +173,8 @@ export function resolveCatalogueSelections(
       }
       selections.push({
         variable_name: field.variable_name,
-        catalogue_type: type,
+        catalogue_type: ref.catalogue_type,
+        catalogue_id: item.catalogue_id ?? ref.catalogue_id ?? null,
         item_id: item.id,
         name: item.name,
         reference: item.reference,
@@ -188,13 +189,13 @@ export function resolveCatalogueSelections(
 export function stripInvalidCatalogueAnswers(
   fields: FieldSourceConfig[],
   answers: Record<string, unknown>,
-  itemsByType: Partial<Record<CatalogueType, CatalogueItem[]>>,
+  itemsByKey: CatalogueItemsByKey,
 ): Record<string, unknown> {
   const next = { ...answers };
   for (const field of fields) {
-    const type = fieldCatalogueType(field);
-    if (!type) continue;
-    const ids = new Set((itemsByType[type] ?? []).map((i) => i.id));
+    const key = fieldCatalogueKey(field);
+    if (!key) continue;
+    const ids = new Set((itemsByKey[key] ?? []).map((i) => i.id));
     const raw = next[field.variable_name];
     if (Array.isArray(raw)) next[field.variable_name] = raw.map(String).filter((v) => ids.has(v));
     else if (raw != null && raw !== "" && !ids.has(String(raw))) next[field.variable_name] = "";
