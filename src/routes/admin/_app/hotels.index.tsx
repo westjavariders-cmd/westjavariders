@@ -54,12 +54,14 @@ function AccommodationListPage() {
   const [busy, setBusy] = useState(false);
 
   const list = useQuery({
-    queryKey: ["accommodations"],
+    queryKey: ["accommodations", catalogueId ?? null],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("accommodations")
-        .select("id, accommodation_type, internal_name, public_name, internal_reference, location, active, accommodation_rooms(id, active)")
-        .order("internal_name");
+        .select("id, accommodation_type, internal_name, public_name, internal_reference, location, active, accommodation_rooms(id, active)");
+      // Only this catalogue's own accommodations, when opened for one.
+      if (catalogueId) query = query.eq("catalogue_id", catalogueId);
+      const { data, error } = await query.order("internal_name");
       if (error) throw new Error(error.message);
       return data;
     },
@@ -88,6 +90,7 @@ function AccommodationListPage() {
           internal_name: draft.internal_name.trim(),
           accommodation_type: draft.accommodation_type,
           active: false,
+          catalogue_id: catalogueId ?? null,
         },
       });
       toast.success("Accommodation created.");
@@ -103,9 +106,9 @@ function AccommodationListPage() {
   return (
     <div>
       <PageHeader
-        breadcrumb={["Hotels / Rooms"]}
-        title="Hotels / Rooms"
-        description="Internal accommodation catalogue: hotels, rooms and beach camping."
+        breadcrumb={scope.data ? ["Catalogues", scope.data.internal_name] : ["Hotels / Rooms"]}
+        title={scope.data ? scope.data.internal_name : "Hotels / Rooms"}
+        description="Accommodations and rooms priced per night."
         actions={
           canEdit ? (
             <Button size="sm" onClick={() => setDraft({ internal_name: "", accommodation_type: "hotel" })}>
@@ -116,9 +119,11 @@ function AccommodationListPage() {
         }
       />
 
+      <CatalogueScopeNote catalogue={scope.data} />
+
       {!canEdit && (
         <p className="mb-4 text-sm text-muted-foreground">
-          You are signed in as STAFF: the accommodation catalogue is read-only.
+          You are signed in as STAFF: this catalogue is read-only.
         </p>
       )}
 
