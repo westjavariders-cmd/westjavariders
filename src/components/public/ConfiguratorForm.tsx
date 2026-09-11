@@ -17,9 +17,11 @@ import {
 import { formatIdr } from "@/lib/public-catalog";
 import {
   fieldCatalogueType,
+  itemsForField,
   type CatalogueItem,
   type CatalogueType,
 } from "@/lib/catalogue-bridge";
+
 import { completePackage, savePackageConfiguration } from "@/lib/cart.functions";
 import { PUBLIC_CART_KEY } from "@/components/public/SiteHeader";
 import { Button } from "@/components/ui/button";
@@ -186,7 +188,7 @@ export function ConfiguratorForm({
             const e = evaluated.fields[f.id]!;
             const value = e.forcedValue ?? values[f.variable_name] ?? "";
             const catalogueType = fieldCatalogueType(f as never);
-            const catalogueItems = catalogueType ? (catalogue[catalogueType] ?? []) : [];
+            const catalogueItems: CatalogueItem[] = itemsForField(f as never, catalogue as never);
             const options = catalogueType
               ? catalogueItems.map((item) => ({
                   id: item.id,

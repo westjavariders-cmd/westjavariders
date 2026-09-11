@@ -9,9 +9,11 @@ import {
 } from "@/lib/catalog";
 import {
   fieldCatalogueType,
+  itemsForField,
   type CatalogueItem,
   type CatalogueType,
 } from "@/lib/catalogue-bridge";
+
 import { previewCatalogue } from "@/lib/catalog.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -121,11 +123,12 @@ export function PreviewTab({ bundle }: { bundle: ProductBundle }) {
             const value = e.forcedValue ?? values[f.variable_name] ?? "";
             const catalogueType = fieldCatalogueType(f as never);
             const options = catalogueType
-              ? (catalogueItems[catalogueType] ?? []).map((item) => ({
+              ? itemsForField(f as never, catalogueItems).map((item) => ({
                   id: item.id,
                   internal_value: item.id,
                   customer_label: item.name,
                 }))
+
               : bundle.options
                   .filter((o) => o.field_id === f.id && o.is_active)
                   .filter((o) => !evaluated.hiddenOptionIds.has(o.id));

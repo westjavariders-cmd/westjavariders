@@ -166,6 +166,7 @@ export type Database = {
         Row: {
           accommodation_type: Database["public"]["Enums"]["accommodation_type"]
           active: boolean
+          catalogue_id: string | null
           created_at: string
           description: string | null
           id: string
@@ -181,6 +182,7 @@ export type Database = {
         Insert: {
           accommodation_type?: Database["public"]["Enums"]["accommodation_type"]
           active?: boolean
+          catalogue_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -196,6 +198,7 @@ export type Database = {
         Update: {
           accommodation_type?: Database["public"]["Enums"]["accommodation_type"]
           active?: boolean
+          catalogue_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -208,7 +211,15 @@ export type Database = {
           supplier_contact?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "accommodations_catalogue_id_fkey"
+            columns: ["catalogue_id"]
+            isOneToOne: false
+            referencedRelation: "catalogues"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       admin_audit_log: {
         Row: {
@@ -329,6 +340,42 @@ export type Database = {
             referencedColumns: ["code"]
           },
         ]
+      }
+      catalogues: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: string
+          internal_name: string
+          public_name: string | null
+          sort_order: number
+          template: Database["public"]["Enums"]["catalogue_template"]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          internal_name: string
+          public_name?: string | null
+          sort_order?: number
+          template: Database["public"]["Enums"]["catalogue_template"]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          internal_name?: string
+          public_name?: string | null
+          sort_order?: number
+          template?: Database["public"]["Enums"]["catalogue_template"]
+          updated_at?: string
+        }
+        Relationships: []
       }
       categories: {
         Row: {
@@ -659,6 +706,7 @@ export type Database = {
       }
       fields: {
         Row: {
+          catalogue_id: string | null
           catalogue_type:
             | Database["public"]["Enums"]["catalogue_source_type"]
             | null
@@ -681,6 +729,7 @@ export type Database = {
           variable_name: string
         }
         Insert: {
+          catalogue_id?: string | null
           catalogue_type?:
             | Database["public"]["Enums"]["catalogue_source_type"]
             | null
@@ -703,6 +752,7 @@ export type Database = {
           variable_name: string
         }
         Update: {
+          catalogue_id?: string | null
           catalogue_type?:
             | Database["public"]["Enums"]["catalogue_source_type"]
             | null
@@ -725,6 +775,13 @@ export type Database = {
           variable_name?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fields_catalogue_id_fkey"
+            columns: ["catalogue_id"]
+            isOneToOne: false
+            referencedRelation: "catalogues"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fields_product_id_fkey"
             columns: ["product_id"]
@@ -920,6 +977,7 @@ export type Database = {
       motorbikes: {
         Row: {
           active: boolean
+          catalogue_id: string | null
           created_at: string
           customer_price_idr: number
           description: string | null
@@ -935,6 +993,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          catalogue_id?: string | null
           created_at?: string
           customer_price_idr?: number
           description?: string | null
@@ -950,6 +1009,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          catalogue_id?: string | null
           created_at?: string
           customer_price_idr?: number
           description?: string | null
@@ -963,7 +1023,15 @@ export type Database = {
           supplier_cost_idr?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "motorbikes_catalogue_id_fkey"
+            columns: ["catalogue_id"]
+            isOneToOne: false
+            referencedRelation: "catalogues"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       packages: {
         Row: {
@@ -2137,6 +2205,7 @@ export type Database = {
       transports: {
         Row: {
           active: boolean
+          catalogue_id: string | null
           created_at: string
           description: string | null
           destination: string | null
@@ -2154,6 +2223,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          catalogue_id?: string | null
           created_at?: string
           description?: string | null
           destination?: string | null
@@ -2171,6 +2241,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          catalogue_id?: string | null
           created_at?: string
           description?: string | null
           destination?: string | null
@@ -2186,7 +2257,15 @@ export type Database = {
           transport_type?: Database["public"]["Enums"]["transport_type"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "transports_catalogue_id_fkey"
+            columns: ["catalogue_id"]
+            isOneToOne: false
+            referencedRelation: "catalogues"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -2936,6 +3015,7 @@ export type Database = {
     Enums: {
       accommodation_type: "hotel" | "beach_camping"
       catalogue_source_type: "accommodation_room" | "transport" | "motorbike"
+      catalogue_template: "accommodation" | "transport" | "motorbike"
       dependency_action:
         | "show"
         | "hide"
@@ -3141,6 +3221,7 @@ export const Constants = {
     Enums: {
       accommodation_type: ["hotel", "beach_camping"],
       catalogue_source_type: ["accommodation_room", "transport", "motorbike"],
+      catalogue_template: ["accommodation", "transport", "motorbike"],
       dependency_action: [
         "show",
         "hide",
