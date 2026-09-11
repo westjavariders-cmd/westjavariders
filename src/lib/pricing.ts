@@ -780,6 +780,11 @@ export function validatePricing(args: {
           if (!rule.variable_name || !numericVariables.has(rule.variable_name)) {
             err(`Tier rule "${rule.label}" needs an active number question.`);
           }
+          if (rule.quantity_variable && !numericVariables.has(rule.quantity_variable)) {
+            err(
+              `Tier rule "${rule.label}" multiplies by "${rule.quantity_variable}", which is not an active number question.`,
+            );
+          }
           const own = tiers
             .filter((t) => t.rule_id === rule.id)
             .sort((a, b) => Number(a.from_value) - Number(b.from_value));
