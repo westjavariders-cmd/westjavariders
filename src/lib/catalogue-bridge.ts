@@ -6,10 +6,12 @@
  * file owns the small shared contract only: it never reads the database and it
  * never calculates a price. Pricing stays in the existing pricing engine.
  *
- * Adding a future catalogue type means adding one value here plus one query in
- * `catalogue-bridge.server.ts`. Nothing else in the configurator changes.
+ * There can be many catalogues per template (`catalogues.template`), so a
+ * catalogue-backed field points at ONE catalogue id. Older fields that only
+ * name a template keep working: the template itself is then the key.
  */
 
+/** Structural templates a catalogue can be built from. */
 export const CATALOGUE_TYPES = ["accommodation_room", "transport", "motorbike"] as const;
 export type CatalogueType = (typeof CATALOGUE_TYPES)[number];
 
@@ -25,6 +27,8 @@ export type OptionSource = (typeof OPTION_SOURCES)[number];
 /** The only shape the configurator ever sees. Customer-safe by construction. */
 export type CatalogueItem = {
   catalogue_type: CatalogueType;
+  /** The catalogue this item belongs to, when the catalogue is known. */
+  catalogue_id?: string | null;
   id: string;
   name: string;
   reference: string | null;
@@ -33,6 +37,20 @@ export type CatalogueItem = {
   /** Customer-facing price in whole IDR, when the catalogue defines one. */
   customer_price_idr: number | null;
 };
+
+/** One catalogue a field reads from: a template, optionally a single catalogue. */
+export type CatalogueRef = { catalogue_type: CatalogueType; catalogue_id: string | null };
+
+/**
+ * Stable lookup key for resolved items. A specific catalogue keys by its id;
+ * a legacy template-only field keys by the template name.
+ */
+export function catalogueKey(ref: CatalogueRef): string {
+  return ref.catalogue_id ?? ref.catalogue_type;
+}
+
+/** Resolved items grouped by `catalogueKey`. */
+export type CatalogueItemsByKey = Partial<Record<string, CatalogueItem[]>>;
 
 /** Keys that must never cross the bridge, whatever a catalogue table holds. */
 export const FORBIDDEN_CATALOGUE_KEYS = [
