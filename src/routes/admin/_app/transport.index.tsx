@@ -148,6 +148,10 @@ function TransportListPage() {
         }
       />
 
+      <CatalogueScopeBanner catalogueId={catalogueId} />
+
+
+
       {!canEdit && (
         <p className="mb-4 text-sm text-muted-foreground">
           You are signed in as STAFF: the transport catalogue is read-only.
