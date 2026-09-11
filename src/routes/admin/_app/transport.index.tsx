@@ -151,9 +151,11 @@ function TransportListPage() {
         }
       />
 
+      <CatalogueScopeNote catalogue={scope.data} />
+
       {!canEdit && (
         <p className="mb-4 text-sm text-muted-foreground">
-          You are signed in as STAFF: the transport catalogue is read-only.
+          You are signed in as STAFF: this catalogue is read-only.
         </p>
       )}
 
