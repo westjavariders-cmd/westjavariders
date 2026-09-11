@@ -30,7 +30,6 @@ import {
   resolveCatalogueSelections,
   stripInvalidCatalogueAnswers,
   type CatalogueSelection,
-  type CatalogueType,
 } from "@/lib/catalogue-bridge";
 import { resolveCatalogues } from "@/lib/catalogue-bridge.server";
 
