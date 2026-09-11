@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { TRANSPORT_TYPES, validatePeoplePrices, validateTimePrices, validateTransport } from "@/lib/transport";
+import { resolveCatalogueOwner } from "@/lib/catalogue";
 
 /**
  * Transport catalogue writes. Every mutation is Admin-only, validated

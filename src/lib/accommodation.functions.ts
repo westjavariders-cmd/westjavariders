@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { ACCOMMODATION_TYPES, isRoomSelectable, validateRoom } from "@/lib/accommodation";
+import { resolveCatalogueOwner } from "@/lib/catalogue";
 
 /**
  * Accommodation catalogue writes. Every mutation is Admin-only, validated
