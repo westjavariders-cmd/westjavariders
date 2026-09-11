@@ -64,6 +64,8 @@ describe("customer-safe projection", () => {
       description: null,
       photo_url: null,
       customer_price_idr: 90000,
+      catalogue_id: null,
+
     });
     expect(JSON.stringify(item)).not.toContain("secret");
   });
