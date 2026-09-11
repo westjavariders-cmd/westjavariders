@@ -18,9 +18,8 @@ import {
 } from "@/lib/pricing";
 import {
   cataloguePriceVariables,
-  fieldCatalogueType,
+  fieldCatalogueRefs,
   resolveCatalogueSelections,
-  type CatalogueType,
 } from "@/lib/catalogue-bridge";
 
 /**
@@ -35,12 +34,10 @@ async function withCataloguePrices(
 ): Promise<PricingInputs> {
   const out: PricingInputs = { ...inputs };
   const fields = (bundle.fields as any[]).filter((f) => f.is_active);
-  const types = fields
-    .map((f) => fieldCatalogueType(f as never))
-    .filter((t): t is CatalogueType => t != null);
-  if (types.length > 0) {
+  const refs = fieldCatalogueRefs(fields as never);
+  if (refs.length > 0) {
     const { resolveCatalogues } = await import("@/lib/catalogue-bridge.server");
-    const items = await resolveCatalogues(types);
+    const items = await resolveCatalogues(refs);
     const { selections } = resolveCatalogueSelections(fields as never, values, items);
     for (const [name, amount] of Object.entries(cataloguePriceVariables(selections))) {
       out[name] = { type: "number", value: fromNumberLike(amount) };

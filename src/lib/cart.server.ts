@@ -26,7 +26,7 @@ import {
 import { priceCommercial, type CommercialResult, type SeasonConfig } from "@/lib/commercial";
 import {
   cataloguePriceVariables,
-  fieldCatalogueType,
+  fieldCatalogueRefs,
   resolveCatalogueSelections,
   stripInvalidCatalogueAnswers,
   type CatalogueSelection,
@@ -304,11 +304,7 @@ export async function quotePackage(args: {
   // expose each selected catalogue price to the existing pricing engine as
   // `<variable>_price`. The bridge never decides how that value is used.
   const catalogueFields = loaded.bundle.fields.filter((f: any) => f.is_active);
-  const catalogue = await resolveCatalogues(
-    catalogueFields
-      .map((f: any) => fieldCatalogueType(f))
-      .filter((t: CatalogueType | null): t is CatalogueType => t != null),
-  );
+  const catalogue = await resolveCatalogues(fieldCatalogueRefs(catalogueFields as never));
   // Answers for fields the saved dependencies currently hide or reset are
   // dropped first, so they never price, validate or persist.
   const visibleAnswers = stripInactiveAnswers(loaded.bundle, args.answers as never) as PreviewValues;
