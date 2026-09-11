@@ -10,9 +10,9 @@ import { supabase } from "@/integrations/supabase/client";
  * `?catalogue=` search value. Without it the editor lists every item of its
  * behaviour, exactly as it did before catalogue instances existed.
  */
-export function catalogueSearch(search: Record<string, unknown>) {
+export function catalogueSearch(search: Record<string, unknown>): { catalogue?: string } {
   const value = search["catalogue"];
-  return { catalogue: typeof value === "string" && value ? value : undefined };
+  return typeof value === "string" && value ? { catalogue: value } : {};
 }
 
 export type ScopedCatalogue = {
