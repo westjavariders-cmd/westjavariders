@@ -166,7 +166,7 @@ export type Database = {
         Row: {
           accommodation_type: Database["public"]["Enums"]["accommodation_type"]
           active: boolean
-          catalogue_id: string | null
+          catalogue_id: string
           created_at: string
           description: string | null
           id: string
@@ -182,7 +182,7 @@ export type Database = {
         Insert: {
           accommodation_type?: Database["public"]["Enums"]["accommodation_type"]
           active?: boolean
-          catalogue_id?: string | null
+          catalogue_id: string
           created_at?: string
           description?: string | null
           id?: string
@@ -198,7 +198,7 @@ export type Database = {
         Update: {
           accommodation_type?: Database["public"]["Enums"]["accommodation_type"]
           active?: boolean
-          catalogue_id?: string | null
+          catalogue_id?: string
           created_at?: string
           description?: string | null
           id?: string
@@ -977,7 +977,7 @@ export type Database = {
       motorbikes: {
         Row: {
           active: boolean
-          catalogue_id: string | null
+          catalogue_id: string
           created_at: string
           customer_price_idr: number
           description: string | null
@@ -993,7 +993,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
-          catalogue_id?: string | null
+          catalogue_id: string
           created_at?: string
           customer_price_idr?: number
           description?: string | null
@@ -1009,7 +1009,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
-          catalogue_id?: string | null
+          catalogue_id?: string
           created_at?: string
           customer_price_idr?: number
           description?: string | null
@@ -2205,7 +2205,7 @@ export type Database = {
       transports: {
         Row: {
           active: boolean
-          catalogue_id: string | null
+          catalogue_id: string
           created_at: string
           description: string | null
           destination: string | null
@@ -2223,7 +2223,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
-          catalogue_id?: string | null
+          catalogue_id: string
           created_at?: string
           description?: string | null
           destination?: string | null
@@ -2241,7 +2241,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
-          catalogue_id?: string | null
+          catalogue_id?: string
           created_at?: string
           description?: string | null
           destination?: string | null
