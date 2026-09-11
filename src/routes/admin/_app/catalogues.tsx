@@ -203,7 +203,11 @@ function CataloguesPage() {
                       size="sm"
                       variant="outline"
                       onClick={() =>
-                        navigate({ to: CATALOGUE_TEMPLATE_ROUTES[c.template] as never })
+                        // The item editor opens scoped to THIS catalogue only.
+                        navigate({
+                          to: CATALOGUE_TEMPLATE_ROUTES[c.template] as never,
+                          search: { catalogue: c.id } as never,
+                        })
                       }
                     >
                       Manage items

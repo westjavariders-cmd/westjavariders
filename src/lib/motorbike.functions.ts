@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { MOTORBIKE_PHOTO_BUCKET, validateMotorbike } from "@/lib/motorbike";
+import { resolveCatalogueOwner } from "@/lib/catalogue";
 
 /**
  * Motorbike catalogue writes. Every mutation is Admin-only, validated
@@ -64,19 +65,25 @@ const motorbikeInput = z.object({
 
 export const createMotorbike = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => motorbikeInput.parse(data))
+  .inputValidator((data) =>
+    motorbikeInput.extend({ catalogue_id: z.string().uuid().nullable().optional() }).parse(data),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = ctx(context);
     await assertAdmin(supabase);
 
-    const fields = { ...data, internal_name: data.internal_name.trim() };
+    const { catalogue_id, ...rest } = data;
+    const fields = { ...rest, internal_name: rest.internal_name.trim() };
     const issues = validateMotorbike(fields);
     if (issues.length > 0) fail(issues[0]!);
+
+    // The item is owned by the catalogue instance it was created in.
+    const owner = await resolveCatalogueOwner(supabase, catalogue_id, "motorbike");
 
     const { count } = await supabase.from("motorbikes").select("id", { count: "exact", head: true });
     const { data: row, error } = await supabase
       .from("motorbikes")
-      .insert({ ...fields, sort_order: count ?? 0 })
+      .insert({ ...fields, sort_order: count ?? 0, catalogue_id: owner })
       .select("id")
       .single();
     if (error || !row) fail(SAFE_ERROR);

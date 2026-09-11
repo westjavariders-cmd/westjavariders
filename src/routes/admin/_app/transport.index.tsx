@@ -27,8 +27,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  CatalogueScopeNote,
+  catalogueSearch,
+  useCatalogueScope,
+} from "@/components/admin/catalogue/scope";
 
 export const Route = createFileRoute("/admin/_app/transport/")({
+  validateSearch: catalogueSearch,
   component: TransportListPage,
 });
 
@@ -36,6 +42,8 @@ function TransportListPage() {
   const { adminSession } = Route.useRouteContext();
   const canEdit = adminSession.isAdmin;
   const navigate = useNavigate();
+  const { catalogue: catalogueId } = Route.useSearch();
+  const scope = useCatalogueScope(catalogueId);
 
   const create = useServerFn(createTransport);
   const setActive = useServerFn(setTransportActive);
@@ -50,15 +58,16 @@ function TransportListPage() {
   const [busy, setBusy] = useState(false);
 
   const list = useQuery({
-    queryKey: ["transports"],
+    queryKey: ["transports", catalogueId ?? null],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("transports")
         .select(
           "id, transport_type, internal_name, public_name, internal_reference, origin, destination, min_travel_hours, max_travel_hours, active, sort_order",
-        )
-        .order("sort_order")
-        .order("internal_name");
+        );
+      // Only this catalogue's own items, when opened for one.
+      if (catalogueId) query = query.eq("catalogue_id", catalogueId);
+      const { data, error } = await query.order("sort_order").order("internal_name");
       if (error) throw new Error(error.message);
       return data as Pick<
         Transport,
@@ -102,6 +111,7 @@ function TransportListPage() {
           internal_name: draft.internal_name.trim(),
           transport_type: draft.transport_type,
           active: false,
+          catalogue_id: catalogueId ?? null,
         },
       });
       toast.success("Transport created.");
@@ -128,9 +138,9 @@ function TransportListPage() {
   return (
     <div>
       <PageHeader
-        breadcrumb={["Transport"]}
-        title="Transport"
-        description="Internal transport catalogue: predefined routes and other locations."
+        breadcrumb={scope.data ? ["Catalogues", scope.data.internal_name] : ["Transport"]}
+        title={scope.data ? scope.data.internal_name : "Transport"}
+        description="Items priced by people and travel time."
         actions={
           canEdit ? (
             <Button size="sm" onClick={() => setDraft({ internal_name: "", transport_type: "predefined_route" })}>
@@ -141,9 +151,11 @@ function TransportListPage() {
         }
       />
 
+      <CatalogueScopeNote catalogue={scope.data} />
+
       {!canEdit && (
         <p className="mb-4 text-sm text-muted-foreground">
-          You are signed in as STAFF: the transport catalogue is read-only.
+          You are signed in as STAFF: this catalogue is read-only.
         </p>
       )}
 

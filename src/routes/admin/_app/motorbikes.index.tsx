@@ -22,8 +22,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  CatalogueScopeNote,
+  catalogueSearch,
+  useCatalogueScope,
+} from "@/components/admin/catalogue/scope";
 
 export const Route = createFileRoute("/admin/_app/motorbikes/")({
+  validateSearch: catalogueSearch,
   component: MotorbikeListPage,
 });
 
@@ -43,6 +49,8 @@ function MotorbikeListPage() {
   const { adminSession } = Route.useRouteContext();
   const canEdit = adminSession.isAdmin;
   const navigate = useNavigate();
+  const { catalogue: catalogueId } = Route.useSearch();
+  const scope = useCatalogueScope(catalogueId);
 
   const create = useServerFn(createMotorbike);
   const setActive = useServerFn(setMotorbikeActive);
@@ -56,15 +64,16 @@ function MotorbikeListPage() {
   const [busy, setBusy] = useState(false);
 
   const list = useQuery({
-    queryKey: ["motorbikes"],
+    queryKey: ["motorbikes", catalogueId ?? null],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("motorbikes")
         .select(
           "id, internal_name, public_name, internal_reference, customer_price_idr, supplier_cost_idr, active, sort_order",
-        )
-        .order("sort_order")
-        .order("internal_name");
+        );
+      // Only this catalogue's own items, when the editor was opened for one.
+      if (catalogueId) query = query.eq("catalogue_id", catalogueId);
+      const { data, error } = await query.order("sort_order").order("internal_name");
       if (error) throw new Error(error.message);
       return data as Row[];
     },
@@ -90,6 +99,7 @@ function MotorbikeListPage() {
           supplier_cost_idr: 0,
           customer_price_idr: 0,
           active: false,
+          catalogue_id: catalogueId ?? null,
         },
       });
       toast.success("Motorbike created.");
@@ -116,9 +126,9 @@ function MotorbikeListPage() {
   return (
     <div>
       <PageHeader
-        breadcrumb={["Motorbikes"]}
-        title="Motorbikes"
-        description="Internal catalogue of the motorbikes available for rental."
+        breadcrumb={scope.data ? ["Catalogues", scope.data.internal_name] : ["Motorbikes"]}
+        title={scope.data ? scope.data.internal_name : "Motorbikes"}
+        description="Items priced one price per item."
         actions={
           canEdit ? (
             <Button size="sm" onClick={() => setDraft("")}>
@@ -129,9 +139,11 @@ function MotorbikeListPage() {
         }
       />
 
+      <CatalogueScopeNote catalogue={scope.data} />
+
       {!canEdit && (
         <p className="mb-4 text-sm text-muted-foreground">
-          You are signed in as STAFF: the motorbike catalogue is read-only.
+          You are signed in as STAFF: this catalogue is read-only.
         </p>
       )}
 

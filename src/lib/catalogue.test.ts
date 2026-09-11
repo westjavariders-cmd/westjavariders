@@ -5,6 +5,7 @@ import {
   cataloguePublicName,
   cataloguesForType,
   isCatalogueTemplate,
+  resolveCatalogueOwner,
   TEMPLATE_CATALOGUE_TYPE,
   templateForCatalogueType,
   validateCatalogue,
@@ -90,6 +91,41 @@ describe("catalogue instance scoping of a question", () => {
   it("offers nothing for a manual question", () => {
     expect(itemsForField({ ...base, option_source: "manual", catalogue_type: null }, items)).toEqual(
       [],
+    );
+  });
+});
+
+describe("resolveCatalogueOwner", () => {
+  function db(row: unknown) {
+    return {
+      from: () => ({
+        select: () => ({
+          eq: () => ({ maybeSingle: async () => ({ data: row, error: null }) }),
+        }),
+      }),
+    } as never;
+  }
+
+  it("keeps items unassigned when no catalogue is chosen", async () => {
+    await expect(resolveCatalogueOwner(db(null), null, "motorbike")).resolves.toBeNull();
+    await expect(resolveCatalogueOwner(db(null), undefined, "accommodation")).resolves.toBeNull();
+  });
+
+  it("assigns the item to the chosen catalogue", async () => {
+    await expect(
+      resolveCatalogueOwner(db({ id: "c1", template: "motorbike" }), "c1", "motorbike"),
+    ).resolves.toBe("c1");
+  });
+
+  it("refuses a catalogue of another behaviour", async () => {
+    await expect(
+      resolveCatalogueOwner(db({ id: "c1", template: "accommodation" }), "c1", "motorbike"),
+    ).rejects.toThrow(/does not accept/);
+  });
+
+  it("refuses a catalogue that does not exist", async () => {
+    await expect(resolveCatalogueOwner(db(null), "missing", "transport")).rejects.toThrow(
+      /could not be found/,
     );
   });
 });
