@@ -44,8 +44,51 @@ function CartPage() {
   const queryClient = useQueryClient();
   const remove = useServerFn(removeCartPackage);
   const discard = useServerFn(discardDraftPackage);
+  const summaryFn = useServerFn(getCheckoutSummary);
+  const pay = useServerFn(confirmCheckout);
   const [busy, setBusy] = useState<string | null>(null);
   const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [contact, setContact] = useState({ full_name: "", email: "", phone: "", country: "" });
+  const [isGift, setIsGift] = useState(false);
+  const [gift, setGift] = useState({ recipient: "", message: "" });
+  const [riskAccepted, setRiskAccepted] = useState(false);
+
+  // Server-authoritative amounts: what would be charged right now.
+  const summary = useQuery({
+    queryKey: ["cart-payment-summary"],
+    queryFn: () => summaryFn({ data: undefined as never }),
+    refetchOnWindowFocus: false,
+  });
+  const money = summary.data;
+  const blockers = money?.blockers ?? [];
+
+  async function payNow() {
+    setBusy("pay");
+    try {
+      const result = await pay({
+        data: {
+          ...contact,
+          is_gift: isGift,
+          gift_recipient_name: isGift ? gift.recipient : undefined,
+          gift_message: isGift ? gift.message : undefined,
+          risk_accepted: riskAccepted,
+        },
+      });
+      await queryClient.invalidateQueries({ queryKey: PUBLIC_CART_KEY });
+      const id = result.purchase?.id;
+      if (!id) throw new Error("This booking could not be created.");
+      if (result.payment_url) {
+        window.location.assign(result.payment_url);
+        return;
+      }
+      navigate({ to: "/purchase/$purchaseId", params: { purchaseId: id } });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "This payment could not be started.");
+      await summary.refetch();
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function run(key: string, fn: () => Promise<unknown>, failure: string) {
     setBusy(key);
