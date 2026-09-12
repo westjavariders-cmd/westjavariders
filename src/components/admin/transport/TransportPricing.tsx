@@ -163,6 +163,14 @@ export function TransportPricing({
     },
   });
 
+  const multipliedQuote = otherLocationQuoteMultiplied({
+    timePrice: {
+      supplier_cost_idr: parseIdr(time[calcHours]!.supplier) ?? 0,
+      customer_price_idr: parseIdr(time[calcHours]!.customer) ?? 0,
+    },
+    people: calcPeople,
+  });
+
   return (
     <div className="space-y-4">
       <Card>
