@@ -2998,6 +2998,7 @@ export type Database = {
         Args: { _source: string }
         Returns: string
       }
+      duplicate_catalogue: { Args: { _source: string }; Returns: string }
       duplicate_motorbike: { Args: { _source: string }; Returns: string }
       duplicate_product: { Args: { _source: string }; Returns: string }
       duplicate_transport: { Args: { _source: string }; Returns: string }
