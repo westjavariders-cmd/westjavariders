@@ -94,10 +94,13 @@ function CataloguesPage() {
           internal_name: draft.internal_name.trim(),
           public_name: draft.public_name,
           description: draft.description,
+          people_label: "",
+          hours_label: "",
           template: draft.template,
           active: false,
         },
       });
+
       toast.success("Catalogue created.");
       setDraft(null);
       void list.refetch();
@@ -118,9 +121,12 @@ function CataloguesPage() {
           internal_name: editing.internal_name,
           public_name: editing.public_name ?? "",
           description: editing.description ?? "",
+          people_label: (editing as any).people_label ?? "",
+          hours_label: (editing as any).hours_label ?? "",
           active: editing.active,
         },
       });
+
       toast.success("Catalogue saved.");
       setEditing(null);
       void list.refetch();
