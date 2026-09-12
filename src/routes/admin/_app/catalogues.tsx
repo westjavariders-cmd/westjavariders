@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Copy, Plus, Trash2 } from "lucide-react";
 
 import { PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +18,7 @@ import {
 import {
   createCatalogue,
   deleteCatalogue,
+  duplicateCatalogue,
   reorderCatalogues,
   setCatalogueActive,
   updateCatalogue,
@@ -45,6 +46,7 @@ function CataloguesPage() {
   const update = useServerFn(updateCatalogue);
   const setActive = useServerFn(setCatalogueActive);
   const remove = useServerFn(deleteCatalogue);
+  const duplicate = useServerFn(duplicateCatalogue);
   const reorder = useServerFn(reorderCatalogues);
 
   const [draft, setDraft] = useState<{
@@ -370,6 +372,27 @@ function CataloguesPage() {
                         }}
                       >
                         {c.active ? "Deactivate" : "Activate"}
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        title="Duplicate"
+                        onClick={async () => {
+                          try {
+                            await duplicate({ data: { id: c.id } });
+                            toast.success(
+                              "Catalogue duplicated as an inactive copy. Its items were not copied.",
+                            );
+                            void list.refetch();
+                          } catch (e) {
+                            toast.error(
+                              e instanceof Error ? e.message : "This catalogue could not be duplicated.",
+                            );
+                          }
+                        }}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         size="icon"
