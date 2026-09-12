@@ -109,9 +109,11 @@ export const updateCatalogue = createServerFn({ method: "POST" })
   });
 
 /**
- * Copies a catalogue's configuration (structure, names, labels) into a new
- * inactive catalogue. Items are NOT copied: the duplicate starts empty so it
- * can hold its own items.
+ * Copies a catalogue with its whole content into a new inactive catalogue:
+ * configuration (structure, names, labels) plus every item it holds
+ * (accommodations with rooms, characteristics and photos; transports with
+ * their people and time prices and calculation mode; simple items). One
+ * database transaction does the copy, so a failure leaves nothing behind.
  */
 export const duplicateCatalogue = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -122,32 +124,20 @@ export const duplicateCatalogue = createServerFn({ method: "POST" })
 
     const { data: source, error: readError } = await supabase
       .from("catalogues")
-      .select("*")
+      .select("internal_name")
       .eq("id", data.id)
       .maybeSingle();
     if (readError || !source) fail("This catalogue could not be found.");
 
-    const { count } = await supabase.from("catalogues").select("id", { count: "exact", head: true });
-    const { data: row, error } = await supabase
-      .from("catalogues")
-      .insert({
-        template: source.template,
-        internal_name: `${source.internal_name} (copy)`.slice(0, 200),
-        public_name: source.public_name ? `${source.public_name} (copy)`.slice(0, 200) : null,
-        description: source.description,
-        people_label: source.people_label,
-        hours_label: source.hours_label,
-        active: false,
-        sort_order: count ?? 0,
-      })
-      .select("id")
-      .single();
-    if (error || !row) fail(SAFE_ERROR);
+    const { data: newId, error } = await supabase.rpc("duplicate_catalogue", {
+      _source: data.id,
+    });
+    if (error || !newId) fail(SAFE_ERROR);
 
-    await audit(supabase, userId, "catalogue.duplicated", row.id, source.internal_name, {
+    await audit(supabase, userId, "catalogue.duplicated", newId as string, source.internal_name, {
       source_id: data.id,
     });
-    return { id: row.id as string };
+    return { id: newId as string };
   });
 
 export const setCatalogueActive = createServerFn({ method: "POST" })
