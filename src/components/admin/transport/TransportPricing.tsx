@@ -308,8 +308,46 @@ export function TransportPricing({
                     ))}
                   </select>
                 </div>
+                </div>
+                <div>
+                  <Label className="text-xs">Calculation</Label>
+                  <select
+                    className={selectClass}
+                    value={calcMode}
+                    onChange={(e) => setCalcMode(e.target.value as "sum" | "multiply")}
+                  >
+                    <option value="sum">Time price + people price</option>
+                    <option value="multiply">Time price x number of people</option>
+                  </select>
+                </div>
               </div>
-              {quote && (
+              {calcMode === "multiply" && multipliedQuote && (
+                <dl className="grid gap-1 text-xs sm:grid-cols-2">
+                  <div className="flex justify-between gap-4 sm:col-span-2">
+                    <dt>Time price</dt>
+                    <dd>{formatIdr(multipliedQuote.timeCustomerIdr)}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4 sm:col-span-2">
+                    <dt>People</dt>
+                    <dd>x {multipliedQuote.people}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4 border-t pt-1 font-medium sm:col-span-2">
+                    <dt>Final price</dt>
+                    <dd>{formatIdr(multipliedQuote.finalPriceIdr)}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4 sm:col-span-2">
+                    <dt>Internal cost</dt>
+                    <dd>{formatIdr(multipliedQuote.internalCostIdr)}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4 sm:col-span-2">
+                    <dt>Margin</dt>
+                    <dd>
+                      {formatIdr(multipliedQuote.amount)} ({multipliedQuote.percentage.toFixed(1)}%)
+                    </dd>
+                  </div>
+                </dl>
+              )}
+              {calcMode === "sum" && quote && (
                 <dl className="grid gap-1 text-xs sm:grid-cols-2">
                   <div className="flex justify-between gap-4 sm:col-span-2">
                     <dt>Time price</dt>
