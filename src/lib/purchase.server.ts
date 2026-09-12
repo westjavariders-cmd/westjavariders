@@ -307,6 +307,8 @@ function buildSnapshot(
       recipient_name: gift.gift_recipient_name,
       message: gift.gift_message,
     },
+    // The conditions the customer accepted before paying, kept historically.
+    risk: { accepted: true, accepted_at: riskAcceptedAt },
   };
 }
 
