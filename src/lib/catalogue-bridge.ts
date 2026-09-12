@@ -75,8 +75,9 @@ function toNumberOrNull(raw: unknown): number | null {
 }
 
 /**
- * Customer price of one item given its extra choices. Transport adds the
- * people price and the travel-time price, exactly like the Admin calculator.
+ * Customer price of one item given its extra choices. Transport combines the
+ * people price and the travel-time price exactly like the Admin calculator:
+ * added together, or multiplied when the item is configured that way.
  * A missing required choice has no price at all — it is never guessed.
  */
 export function catalogueItemPriceIdr(
@@ -90,8 +91,10 @@ export function catalogueItemPriceIdr(
   const h = hours == null ? undefined : v.hours.find((x) => x.value === hours);
   if (v.people.length > 0 && !p) return null;
   if (v.hours.length > 0 && !h) return null;
+  if (v.calc_mode === "multiply" && p && h) return p.price_idr * h.price_idr;
   return (p?.price_idr ?? 0) + (h?.price_idr ?? 0);
 }
+
 
 
 
