@@ -390,8 +390,20 @@ export function formulaScope(
   bundle.components.forEach((c, i) => {
     scope[`component_${i + 1}`] = { type: "number", value: fromNumberLike(c.customer_price) };
   });
+  // A question the customer has not reached (or that a dependency hides) has no
+  // value yet. Numeric answers and catalogue prices then count as zero, so one
+  // unanswered part never breaks the whole formula.
+  for (const name of cataloguePriceVariableNames(bundle)) {
+    if (!(name in scope)) scope[name] = { type: "number", value: 0n };
+  }
+  for (const f of bundle.fields) {
+    if (!f.is_active || f.field_type === "info_block") continue;
+    if (!NUMERIC_FIELD_TYPES.includes(f.field_type)) continue;
+    if (!(f.variable_name in scope)) scope[f.variable_name] = { type: "number", value: 0n };
+  }
   return scope;
 }
+
 
 /**
  * The `<variable>_price` inputs the Catalogue Bridge injects at quote time, one
