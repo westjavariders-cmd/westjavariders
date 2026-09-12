@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   moveItem,
   otherLocationQuote,
+  otherLocationQuoteMultiplied,
   parseIdr,
   transportMargin,
   validatePeoplePrices,
@@ -118,5 +119,26 @@ describe("ordering", () => {
   it("moves an item up and down", () => {
     expect(moveItem(["a", "b", "c"], 2, -1)).toEqual(["a", "c", "b"]);
     expect(moveItem(["a", "b", "c"], 0, -1)).toEqual(["a", "b", "c"]);
+  });
+});
+
+describe("otherLocationQuoteMultiplied", () => {
+  it("multiplies the time price by the price of the selected people count", () => {
+    const quote = otherLocationQuoteMultiplied({
+      timePrice: { supplier_cost_idr: 100000, customer_price_idr: 200000 },
+      peoplePrice: { supplier_cost_idr: 50000, customer_price_idr: 80000 },
+    });
+    expect(quote?.finalPriceIdr).toBe(16000000000);
+    expect(quote?.internalCostIdr).toBe(5000000000);
+    expect(quote?.peopleCustomerIdr).toBe(80000);
+  });
+
+  it("returns null when a price is missing", () => {
+    expect(
+      otherLocationQuoteMultiplied({
+        timePrice: undefined,
+        peoplePrice: { supplier_cost_idr: 1, customer_price_idr: 1 },
+      }),
+    ).toBeNull();
   });
 });

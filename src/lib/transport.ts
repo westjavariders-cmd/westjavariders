@@ -168,21 +168,22 @@ export function otherLocationQuote(input: {
 
 /**
  * Additional Admin-only calculator mode for "other location" transport:
- * customer price = time price x number of people. Exact whole Rupiah.
+ * customer price = time price x people price (the price configured for the
+ * selected number of people). Exact whole Rupiah.
  * The existing sum mode is unchanged; this is an extra option.
  */
 export function otherLocationQuoteMultiplied(input: {
   timePrice: { supplier_cost_idr: number; customer_price_idr: number } | undefined;
-  people: number;
+  peoplePrice: { supplier_cost_idr: number; customer_price_idr: number } | undefined;
 }) {
-  if (!input.timePrice) return null;
-  if (!Number.isInteger(input.people) || input.people < 1) return null;
+  if (!input.timePrice || !input.peoplePrice) return null;
   const timeCustomerIdr = input.timePrice.customer_price_idr;
-  const finalPriceIdr = timeCustomerIdr * input.people;
-  const internalCostIdr = input.timePrice.supplier_cost_idr * input.people;
+  const peopleCustomerIdr = input.peoplePrice.customer_price_idr;
+  const finalPriceIdr = timeCustomerIdr * peopleCustomerIdr;
+  const internalCostIdr = input.timePrice.supplier_cost_idr * input.peoplePrice.supplier_cost_idr;
   return {
     timeCustomerIdr,
-    people: input.people,
+    peopleCustomerIdr,
     finalPriceIdr,
     internalCostIdr,
     ...transportMargin(internalCostIdr, finalPriceIdr),
