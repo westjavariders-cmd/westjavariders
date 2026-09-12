@@ -308,7 +308,6 @@ export function TransportPricing({
                     ))}
                   </select>
                 </div>
-                </div>
                 <div>
                   <Label className="text-xs">Calculation</Label>
                   <select
