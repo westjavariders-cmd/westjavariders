@@ -57,6 +57,7 @@ export function TransportPricing({
   const [busy, setBusy] = useState(false);
   const [calcHours, setCalcHours] = useState(1);
   const [calcPeople, setCalcPeople] = useState(1);
+  const [calcMode, setCalcMode] = useState<"sum" | "multiply">("sum");
 
   const prices = useQuery({
     queryKey: ["transport-prices", transportId],
