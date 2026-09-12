@@ -16,9 +16,12 @@ import {
 } from "@/lib/catalog";
 import { formatIdr } from "@/lib/public-catalog";
 import {
+  catalogueHoursVariable,
+  cataloguePeopleVariable,
   fieldCatalogueKey,
   type CatalogueItemsByKey,
 } from "@/lib/catalogue-bridge";
+
 import { completePackage, savePackageConfiguration } from "@/lib/cart.functions";
 import { PUBLIC_CART_KEY } from "@/components/public/SiteHeader";
 import { Button } from "@/components/ui/button";
@@ -137,6 +140,12 @@ export function ConfiguratorForm({
     setValues((v) => ({ ...v, [f.variable_name]: value }));
   }
 
+  /** Extra catalogue choices (people, hours) live under their own answer keys. */
+  function setVar(name: string, value: PreviewValues[string]) {
+    setValues((v) => ({ ...v, [name]: value }));
+  }
+
+
   const stepFields = step ? visibleStepFields(bundle, step.id, evaluated) : [];
 
   const ready =
@@ -251,6 +260,57 @@ export function ConfiguratorForm({
                       <p className="text-xs text-muted-foreground">{chosen.description}</p>
                     ) : null;
                   })()}
+
+                {catalogueKeyOfField &&
+                  (() => {
+                    const chosen = catalogueItems.find((i) => i.id === String(value));
+                    const variants = chosen?.variants ?? null;
+                    if (!variants) return null;
+                    const groups = [
+                      {
+                        name: cataloguePeopleVariable(f.variable_name),
+                        label: variants.people_label,
+                        choices: variants.people,
+                      },
+                      {
+                        name: catalogueHoursVariable(f.variable_name),
+                        label: variants.hours_label,
+                        choices: variants.hours,
+                      },
+                    ].filter((g) => g.choices.length > 0);
+
+                    return (
+                      <div className="space-y-3 rounded-md border p-3">
+                        {groups.map((g) => {
+                          const current = String(values[g.name] ?? "");
+                          return (
+                            <div key={g.name} className="space-y-1.5">
+                              <Label className="text-sm">
+                                {g.label}
+                                <span className="ml-1 text-destructive">*</span>
+                              </Label>
+                              <div className="flex flex-wrap gap-2">
+                                {g.choices.map((c) => (
+                                  <Button
+                                    key={c.value}
+                                    type="button"
+                                    size="sm"
+                                    disabled={e.disabled}
+                                    variant={current === String(c.value) ? "default" : "outline"}
+                                    onClick={() => setVar(g.name, String(c.value))}
+                                  >
+                                    {c.value}
+                                  </Button>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+
+
 
 
                 {f.field_type === "multi_select" && (
