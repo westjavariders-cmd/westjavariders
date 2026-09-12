@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as CartRouteImport } from './routes/cart'
-import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as AdminAppRouteRouteImport } from './routes/admin/_app/route'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
@@ -70,11 +69,6 @@ const AdminRouteRoute = AdminRouteRouteImport.update({
 const CartRoute = CartRouteImport.update({
   id: '/cart',
   path: '/cart',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CheckoutRoute = CheckoutRouteImport.update({
-  id: '/checkout',
-  path: '/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeRoute = HomeRouteImport.update({
@@ -306,7 +300,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
   '/cart': typeof CartRoute
-  '/checkout': typeof CheckoutRoute
   '/home': typeof HomeRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/no-access': typeof AdminNoAccessRoute
@@ -354,7 +347,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminAppIndexRoute
   '/cart': typeof CartRoute
-  '/checkout': typeof CheckoutRoute
   '/home': typeof HomeRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/no-access': typeof AdminNoAccessRoute
@@ -402,7 +394,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
   '/cart': typeof CartRoute
-  '/checkout': typeof CheckoutRoute
   '/home': typeof HomeRoute
   '/admin/_app': typeof AdminAppRouteRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
@@ -453,7 +444,6 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/cart'
-    | '/checkout'
     | '/home'
     | '/admin/login'
     | '/admin/no-access'
@@ -501,7 +491,6 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/cart'
-    | '/checkout'
     | '/home'
     | '/admin/login'
     | '/admin/no-access'
@@ -548,7 +537,6 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/cart'
-    | '/checkout'
     | '/home'
     | '/admin/_app'
     | '/admin/login'
@@ -598,7 +586,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   CartRoute: typeof CartRoute
-  CheckoutRoute: typeof CheckoutRoute
   HomeRoute: typeof HomeRoute
   BuildYourTripProductIdRoute: typeof BuildYourTripProductIdRoute
   PagesSlugRoute: typeof PagesSlugRoute
@@ -628,13 +615,6 @@ declare module '@tanstack/react-router' {
       path: '/cart'
       fullPath: '/cart'
       preLoaderRoute: typeof CartRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/checkout': {
-      id: '/checkout'
-      path: '/checkout'
-      fullPath: '/checkout'
-      preLoaderRoute: typeof CheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/home': {
@@ -1039,7 +1019,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRouteRoute: AdminRouteRouteWithChildren,
   CartRoute: CartRoute,
-  CheckoutRoute: CheckoutRoute,
   HomeRoute: HomeRoute,
   BuildYourTripProductIdRoute: BuildYourTripProductIdRoute,
   PagesSlugRoute: PagesSlugRoute,

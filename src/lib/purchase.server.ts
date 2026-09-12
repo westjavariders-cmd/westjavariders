@@ -253,6 +253,7 @@ function buildSnapshot(
   customer: CustomerContact,
   gift: GiftData,
   frozen: ReturnType<typeof freezeFx>,
+  riskAcceptedAt: string,
 ) {
   return {
     snapshot_version: 1,
@@ -306,6 +307,8 @@ function buildSnapshot(
       recipient_name: gift.gift_recipient_name,
       message: gift.gift_message,
     },
+    // The conditions the customer accepted before paying, kept historically.
+    risk: { accepted: true, accepted_at: riskAcceptedAt },
   };
 }
 
@@ -466,18 +469,27 @@ export async function createPurchaseFromCart(
   contactInput: CustomerContactInput,
   giftInput?: GiftInput,
   token?: string,
+  options?: { risk_accepted?: boolean },
 ) {
   const db = await admin();
   const revalidation = await revalidateCart(token);
   if (!revalidation.cart_id) fail("Your cart could not be found.");
 
   if (revalidation.existing_purchase_id) {
+    // Returning or refreshing never creates a second purchase; the same
+    // pending payment link is reused.
+    await ensurePaymentLink(revalidation.existing_purchase_id, "first_payment").catch(
+      () => undefined,
+    );
     return {
       purchase: await loadPurchase(revalidation.existing_purchase_id),
       revalidation,
       reused: true,
     };
   }
+
+  // The conditions must be accepted before any money is requested.
+  if (options?.risk_accepted !== true) fail("Please accept the booking conditions to continue.");
 
   const hard = revalidation.blockers;
   if (hard.length > 0) fail(hard[0]!);
@@ -500,7 +512,13 @@ export async function createPurchaseFromCart(
     _percentage: revalidation.first_payment_percentage,
     _first_payment_idr: revalidation.first_payment_idr,
     _outstanding_idr: revalidation.outstanding_idr,
-    _snapshot: buildSnapshot(revalidation, contact, gift, frozen) as never,
+    _snapshot: buildSnapshot(
+      revalidation,
+      contact,
+      gift,
+      frozen,
+      new Date().toISOString(),
+    ) as never,
     _is_gift: gift.is_gift,
     _gift_recipient_name: gift.gift_recipient_name,
     _gift_message: gift.gift_message,

@@ -45,6 +45,8 @@ const contactSchema = z.object({
   is_gift: z.boolean().optional(),
   gift_recipient_name: z.string().max(200).optional(),
   gift_message: z.string().max(400).optional(),
+  // Required acceptance of the booking conditions; re-checked server-side.
+  risk_accepted: z.boolean().optional(),
 });
 
 /**
@@ -56,12 +58,22 @@ export const confirmCheckout = createServerFn({ method: "POST" })
   .inputValidator((data) => contactSchema.parse(data))
   .handler(async ({ data }) => {
     const { createPurchaseFromCart } = await import("@/lib/purchase.server");
-    const { purchase, reused } = await createPurchaseFromCart(data, {
-      is_gift: data.is_gift,
-      gift_recipient_name: data.gift_recipient_name,
-      gift_message: data.gift_message,
-    });
-    return { purchase, reused };
+    const { purchase, reused } = await createPurchaseFromCart(
+      data,
+      {
+        is_gift: data.is_gift,
+        gift_recipient_name: data.gift_recipient_name,
+        gift_message: data.gift_message,
+      },
+      undefined,
+      { risk_accepted: data.risk_accepted === true },
+    );
+    return {
+      purchase,
+      reused,
+      // Where the customer must be sent to pay; null when no provider is live.
+      payment_url: purchase?.payment?.payment_url ?? null,
+    };
   });
 
 /** Customer-safe view of one purchase (no internal costs, no contact list). */
