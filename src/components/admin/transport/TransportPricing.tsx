@@ -101,6 +101,7 @@ export function TransportPricing({
         prices.data.time.map((r) => ({ key: r.travel_hours, ...r })),
       ),
     );
+    setCalcMode(prices.data.calcMode);
   }, [prices.data, people]);
 
   if (prices.isLoading || !people || !time) {
@@ -149,6 +150,7 @@ export function TransportPricing({
             })),
           },
         });
+        await saveCalcMode({ data: { id: transportId, calc_mode: calcMode } });
       }
       toast.success("Prices saved.");
       void prices.refetch();
