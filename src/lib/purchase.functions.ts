@@ -45,6 +45,8 @@ const contactSchema = z.object({
   is_gift: z.boolean().optional(),
   gift_recipient_name: z.string().max(200).optional(),
   gift_message: z.string().max(400).optional(),
+  // Required acceptance of the booking conditions; re-checked server-side.
+  risk_accepted: z.boolean().optional(),
 });
 
 /**
