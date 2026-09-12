@@ -253,6 +253,7 @@ function buildSnapshot(
   customer: CustomerContact,
   gift: GiftData,
   frozen: ReturnType<typeof freezeFx>,
+  riskAcceptedAt: string,
 ) {
   return {
     snapshot_version: 1,
