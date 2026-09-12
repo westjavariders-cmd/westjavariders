@@ -147,6 +147,26 @@ export const setTransportActive = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Which internal-calculator mode this transport uses. Admin reference only. */
+export const setTransportCalcMode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({ id: z.string().uuid(), calc_mode: z.enum(["sum", "multiply"]) }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = ctx(context);
+    await assertAdmin(supabase);
+    const { error } = await supabase
+      .from("transports")
+      .update({ calc_mode: data.calc_mode })
+      .eq("id", data.id);
+    if (error) fail(SAFE_ERROR);
+    await audit(supabase, userId, "transport.calc_mode_changed", "transports", data.id, null, {
+      calc_mode: data.calc_mode,
+    });
+    return { ok: true };
+  });
+
 export const deleteTransport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))

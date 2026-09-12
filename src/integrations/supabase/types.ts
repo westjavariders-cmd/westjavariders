@@ -2211,6 +2211,7 @@ export type Database = {
       transports: {
         Row: {
           active: boolean
+          calc_mode: string
           catalogue_id: string
           created_at: string
           description: string | null
@@ -2229,6 +2230,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          calc_mode?: string
           catalogue_id: string
           created_at?: string
           description?: string | null
@@ -2247,6 +2249,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          calc_mode?: string
           catalogue_id?: string
           created_at?: string
           description?: string | null

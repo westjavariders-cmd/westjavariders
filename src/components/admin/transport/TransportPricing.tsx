@@ -14,7 +14,7 @@ import {
   transportMargin,
   type TransportType,
 } from "@/lib/transport";
-import { savePeoplePrices, saveTimePrices } from "@/lib/transport.functions";
+import { savePeoplePrices, saveTimePrices, setTransportCalcMode } from "@/lib/transport.functions";
 import { selectClass } from "@/components/admin/configurator/ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +51,7 @@ export function TransportPricing({
 }) {
   const savePeople = useServerFn(savePeoplePrices);
   const saveTime = useServerFn(saveTimePrices);
+  const saveCalcMode = useServerFn(setTransportCalcMode);
 
   const [people, setPeople] = useState<RowMap | null>(null);
   const [time, setTime] = useState<RowMap | null>(null);
@@ -62,7 +63,7 @@ export function TransportPricing({
   const prices = useQuery({
     queryKey: ["transport-prices", transportId],
     queryFn: async () => {
-      const [peopleRes, timeRes] = await Promise.all([
+      const [peopleRes, timeRes, transportRes] = await Promise.all([
         supabase
           .from("transport_people_prices")
           .select("people, supplier_cost_idr, customer_price_idr")
@@ -73,10 +74,16 @@ export function TransportPricing({
           .select("travel_hours, supplier_cost_idr, customer_price_idr")
           .eq("transport_id", transportId)
           .order("travel_hours"),
+        supabase.from("transports").select("calc_mode").eq("id", transportId).maybeSingle(),
       ]);
       if (peopleRes.error) throw new Error(peopleRes.error.message);
       if (timeRes.error) throw new Error(timeRes.error.message);
-      return { people: peopleRes.data, time: timeRes.data };
+      const mode = (transportRes.data as { calc_mode?: string } | null)?.calc_mode;
+      return {
+        people: peopleRes.data,
+        time: timeRes.data,
+        calcMode: mode === "multiply" ? ("multiply" as const) : ("sum" as const),
+      };
     },
   });
 
@@ -94,6 +101,7 @@ export function TransportPricing({
         prices.data.time.map((r) => ({ key: r.travel_hours, ...r })),
       ),
     );
+    setCalcMode(prices.data.calcMode);
   }, [prices.data, people]);
 
   if (prices.isLoading || !people || !time) {
@@ -142,6 +150,7 @@ export function TransportPricing({
             })),
           },
         });
+        await saveCalcMode({ data: { id: transportId, calc_mode: calcMode } });
       }
       toast.success("Prices saved.");
       void prices.refetch();
