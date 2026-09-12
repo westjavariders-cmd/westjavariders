@@ -30,12 +30,16 @@ export type OptionSource = (typeof OPTION_SOURCES)[number];
  * the catalogue's own customer-facing wording, never the template's.
  */
 export type CatalogueChoice = { value: number; price_idr: number };
+export type CatalogueCalcMode = "sum" | "multiply";
 export type CatalogueVariants = {
   people_label: string;
   hours_label: string;
   people: CatalogueChoice[];
   hours: CatalogueChoice[];
+  /** How both prices combine: added together, or multiplied. Defaults to sum. */
+  calc_mode?: CatalogueCalcMode;
 };
+
 
 export const DEFAULT_PEOPLE_LABEL = "Number of people";
 export const DEFAULT_HOURS_LABEL = "Travel time (hours)";
