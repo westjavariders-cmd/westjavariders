@@ -168,7 +168,10 @@ export function TransportPricing({
       supplier_cost_idr: parseIdr(time[calcHours]!.supplier) ?? 0,
       customer_price_idr: parseIdr(time[calcHours]!.customer) ?? 0,
     },
-    people: calcPeople,
+    peoplePrice: {
+      supplier_cost_idr: parseIdr(people[calcPeople]!.supplier) ?? 0,
+      customer_price_idr: parseIdr(people[calcPeople]!.customer) ?? 0,
+    },
   });
 
   return (
