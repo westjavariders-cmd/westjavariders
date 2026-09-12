@@ -108,6 +108,48 @@ export const updateCatalogue = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Copies a catalogue's configuration (structure, names, labels) into a new
+ * inactive catalogue. Items are NOT copied: the duplicate starts empty so it
+ * can hold its own items.
+ */
+export const duplicateCatalogue = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = ctx(context);
+    await assertAdmin(supabase);
+
+    const { data: source, error: readError } = await supabase
+      .from("catalogues")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (readError || !source) fail("This catalogue could not be found.");
+
+    const { count } = await supabase.from("catalogues").select("id", { count: "exact", head: true });
+    const { data: row, error } = await supabase
+      .from("catalogues")
+      .insert({
+        template: source.template,
+        internal_name: `${source.internal_name} (copy)`.slice(0, 200),
+        public_name: source.public_name ? `${source.public_name} (copy)`.slice(0, 200) : null,
+        description: source.description,
+        people_label: source.people_label,
+        hours_label: source.hours_label,
+        active: false,
+        sort_order: count ?? 0,
+      })
+      .select("id")
+      .single();
+    if (error || !row) fail(SAFE_ERROR);
+
+    await audit(supabase, userId, "catalogue.duplicated", row.id, source.internal_name, {
+      source_id: data.id,
+    });
+    return { id: row.id as string };
+  });
+
 export const setCatalogueActive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ id: z.string().uuid(), active: z.boolean() }).parse(data))
