@@ -346,8 +346,10 @@ export type Database = {
           active: boolean
           created_at: string
           description: string | null
+          hours_label: string | null
           id: string
           internal_name: string
+          people_label: string | null
           public_name: string | null
           sort_order: number
           template: Database["public"]["Enums"]["catalogue_template"]
@@ -357,8 +359,10 @@ export type Database = {
           active?: boolean
           created_at?: string
           description?: string | null
+          hours_label?: string | null
           id?: string
           internal_name: string
+          people_label?: string | null
           public_name?: string | null
           sort_order?: number
           template: Database["public"]["Enums"]["catalogue_template"]
@@ -368,8 +372,10 @@ export type Database = {
           active?: boolean
           created_at?: string
           description?: string | null
+          hours_label?: string | null
           id?: string
           internal_name?: string
+          people_label?: string | null
           public_name?: string | null
           sort_order?: number
           template?: Database["public"]["Enums"]["catalogue_template"]
