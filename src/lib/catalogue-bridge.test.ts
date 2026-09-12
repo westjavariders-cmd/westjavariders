@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  catalogueItemPriceIdr,
   cataloguePriceVariable,
+
   cataloguePriceVariables,
   fieldCatalogueType,
   isCatalogueField,
