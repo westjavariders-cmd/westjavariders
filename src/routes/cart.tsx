@@ -218,25 +218,173 @@ function CartPage() {
             </span>
             <span className="text-2xl font-semibold">
               {displayTotal(
-                cart.data?.payable_total_idr ?? 0,
-                cart.data?.fx,
-                cart.data?.payable_total_customer,
+                money?.total_idr ?? cart.data?.payable_total_idr ?? 0,
+                money?.fx ?? cart.data?.fx,
+                money?.customer_total ?? cart.data?.payable_total_customer,
               )}
             </span>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Indicative total. It is confirmed when you book.
-            {cart.data?.fx && cart.data.fx.currency_code !== "IDR"
-              ? ` Charged in Rupiah: ${formatIdr(cart.data.payable_total_idr)}.`
-              : ""}
-          </p>
-          <Button
-            className="w-full"
-            disabled={packages.length === 0}
-            onClick={() => navigate({ to: "/checkout" })}
-          >
-            Book now
-          </Button>
+
+          {money && (
+            <>
+              <div className="flex items-baseline justify-between">
+                <span className="text-sm">To pay now ({money.first_payment_percentage}%)</span>
+                <span className="text-xl font-semibold">
+                  {displayTotal(money.first_payment_idr, money.fx, money.customer_first_payment)}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <span className="text-sm text-muted-foreground">
+                  Balance, settled with us before your trip
+                </span>
+                <span className="text-base">
+                  {displayTotal(money.outstanding_idr, money.fx, money.customer_outstanding)}
+                </span>
+              </div>
+              {money.fx.currency_code !== "IDR" && (
+                <p className="text-xs text-muted-foreground">
+                  Fixed when you pay. Payment is taken in Rupiah:{" "}
+                  {formatIdr(money.first_payment_idr)} now, {formatIdr(money.outstanding_idr)} as the
+                  balance.
+                </p>
+              )}
+            </>
+          )}
+
+          {money?.existing_purchase_id && (
+            <Button
+              className="w-full"
+              onClick={() =>
+                navigate({
+                  to: "/purchase/$purchaseId",
+                  params: { purchaseId: money.existing_purchase_id! },
+                })
+              }
+            >
+              View your booking
+            </Button>
+          )}
+
+          {!money?.existing_purchase_id && (
+            <>
+              {blockers.length > 0 && (
+                <ul className="space-y-1 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
+                  {blockers.map((b) => (
+                    <li key={b}>{b}</li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="space-y-3 border-t border-border pt-4">
+                <h2 className="text-sm uppercase tracking-[0.14em] text-muted-foreground">
+                  Your contact details
+                </h2>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="space-y-1 text-sm">
+                    <span>Full name</span>
+                    <Input
+                      value={contact.full_name}
+                      autoComplete="name"
+                      onChange={(e) => setContact({ ...contact, full_name: e.target.value })}
+                    />
+                  </label>
+                  <label className="space-y-1 text-sm">
+                    <span>Email</span>
+                    <Input
+                      type="email"
+                      value={contact.email}
+                      autoComplete="email"
+                      onChange={(e) => setContact({ ...contact, email: e.target.value })}
+                    />
+                  </label>
+                  <label className="space-y-1 text-sm">
+                    <span>Phone / WhatsApp</span>
+                    <Input
+                      value={contact.phone}
+                      autoComplete="tel"
+                      onChange={(e) => setContact({ ...contact, phone: e.target.value })}
+                    />
+                  </label>
+                  <label className="space-y-1 text-sm">
+                    <span>Country (optional)</span>
+                    <Input
+                      value={contact.country}
+                      autoComplete="country-name"
+                      onChange={(e) => setContact({ ...contact, country: e.target.value })}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <label className="flex items-start gap-3 border-t border-border pt-4 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 accent-primary"
+                  checked={isGift}
+                  onChange={(e) => setIsGift(e.target.checked)}
+                />
+                <span>
+                  <span className="font-medium">This is a gift</span>
+                  <span className="block text-xs text-muted-foreground">
+                    We send everything to you, so you can give it yourself. The price is never
+                    shown on a gift.
+                  </span>
+                </span>
+              </label>
+
+              {isGift && (
+                <div className="space-y-3">
+                  <label className="block space-y-1 text-sm">
+                    <span>Who is it for? (optional)</span>
+                    <Input
+                      value={gift.recipient}
+                      onChange={(e) => setGift({ ...gift, recipient: e.target.value })}
+                    />
+                  </label>
+                  <label className="block space-y-1 text-sm">
+                    <span>Your message (optional)</span>
+                    <textarea
+                      className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      maxLength={200}
+                      value={gift.message}
+                      onChange={(e) => setGift({ ...gift, message: e.target.value })}
+                    />
+                    <span className="block text-xs text-muted-foreground">
+                      {gift.message.length}/200 characters
+                    </span>
+                  </label>
+                </div>
+              )}
+
+              <label className="flex items-start gap-3 border-t border-border pt-4 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 accent-primary"
+                  checked={riskAccepted}
+                  onChange={(e) => setRiskAccepted(e.target.checked)}
+                />
+                <span>
+                  I understand that surfing and travel activities carry risks, and I accept the
+                  booking conditions.
+                </span>
+              </label>
+
+              <Button
+                className="w-full"
+                disabled={
+                  packages.length === 0 ||
+                  busy === "pay" ||
+                  blockers.length > 0 ||
+                  !riskAccepted ||
+                  summary.isPending
+                }
+                onClick={payNow}
+              >
+                {busy === "pay" ? "Opening payment…" : "Pay now"}
+              </Button>
+            </>
+          )}
+
           <Link
             to="/build-your-trip"
             className="block text-center text-sm underline underline-offset-2"
