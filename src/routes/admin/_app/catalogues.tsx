@@ -266,7 +266,34 @@ function CataloguesPage() {
                   onChange={(e) => setEditing({ ...editing, description: e.target.value })}
                 />
               </div>
+              {editing.template === "transport" && (
+                <>
+                  <div>
+                    <Label className="text-xs">Name shown for the number of people</Label>
+                    <Input
+                      className="h-8 text-xs"
+                      placeholder="Number of people"
+                      value={(editing as any).people_label ?? ""}
+                      onChange={(e) =>
+                        setEditing({ ...editing, people_label: e.target.value } as Row)
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Name shown for the duration in hours</Label>
+                    <Input
+                      className="h-8 text-xs"
+                      placeholder="Travel time (hours)"
+                      value={(editing as any).hours_label ?? ""}
+                      onChange={(e) =>
+                        setEditing({ ...editing, hours_label: e.target.value } as Row)
+                      }
+                    />
+                  </div>
+                </>
+              )}
             </div>
+
             <div className="flex gap-2">
               <Button size="sm" disabled={busy} onClick={() => void saveEdit()}>
                 {busy ? "Saving..." : "Save"}
