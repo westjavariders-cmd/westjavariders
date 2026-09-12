@@ -319,7 +319,7 @@ export function TransportPricing({
                     onChange={(e) => setCalcMode(e.target.value as "sum" | "multiply")}
                   >
                     <option value="sum">Time price + people price</option>
-                    <option value="multiply">Time price x number of people</option>
+                    <option value="multiply">Time price x people price</option>
                   </select>
                 </div>
               </div>
@@ -330,8 +330,8 @@ export function TransportPricing({
                     <dd>{formatIdr(multipliedQuote.timeCustomerIdr)}</dd>
                   </div>
                   <div className="flex justify-between gap-4 sm:col-span-2">
-                    <dt>People</dt>
-                    <dd>x {multipliedQuote.people}</dd>
+                    <dt>People price ({calcPeople} {calcPeople === 1 ? "person" : "people"})</dt>
+                    <dd>x {formatIdr(multipliedQuote.peopleCustomerIdr)}</dd>
                   </div>
                   <div className="flex justify-between gap-4 border-t pt-1 font-medium sm:col-span-2">
                     <dt>Final price</dt>
