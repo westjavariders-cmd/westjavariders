@@ -16,12 +16,15 @@ import { PHOTO_BUCKET } from "@/lib/accommodation";
 import { MOTORBIKE_PHOTO_BUCKET } from "@/lib/motorbike";
 import {
   catalogueKey,
+  DEFAULT_HOURS_LABEL,
+  DEFAULT_PEOPLE_LABEL,
   type CatalogueItem,
   type CatalogueItemsByKey,
   type CatalogueRef,
   type CatalogueType,
   toCatalogueItem,
 } from "@/lib/catalogue-bridge";
+
 import { CATALOGUE_TEMPLATE_OF_TYPE } from "@/lib/catalogues";
 
 async function admin() {
@@ -93,21 +96,52 @@ async function accommodationRooms(db: any, catalogueIds: string[]): Promise<Cata
 }
 
 async function transports(db: any, catalogueIds: string[]): Promise<CatalogueItem[]> {
-  const [rows, peoplePrices] = await Promise.all([
+  const [rows, peoplePrices, timePrices, catalogueRows] = await Promise.all([
     db
       .from("transports")
-      .select("id, internal_name, public_name, internal_reference, description, active, catalogue_id")
+      .select(
+        "id, internal_name, public_name, internal_reference, description, active, catalogue_id, min_travel_hours, max_travel_hours",
+      )
       .eq("active", true)
       .in("catalogue_id", catalogueIds)
       .order("sort_order"),
-    db.from("transport_people_prices").select("transport_id, customer_price_idr"),
+    db.from("transport_people_prices").select("transport_id, people, customer_price_idr").order("people"),
+    db
+      .from("transport_time_prices")
+      .select("transport_id, travel_hours, customer_price_idr")
+      .order("travel_hours"),
+    db.from("catalogues").select("id, people_label, hours_label").in("id", catalogueIds),
   ]);
 
+  const labels = new Map<string, { people: string; hours: string }>();
+  for (const c of catalogueRows.data ?? []) {
+    labels.set(c.id, {
+      people: c.people_label?.trim() || DEFAULT_PEOPLE_LABEL,
+      hours: c.hours_label?.trim() || DEFAULT_HOURS_LABEL,
+    });
+  }
+
   return (rows.data ?? []).map((t: any) => {
-    // Transport prices depend on people/hours. Only a single unambiguous
-    // configured customer price is exposed; anything else stays null and is
-    // decided by the pricing engine, not by the bridge.
-    const prices = (peoplePrices.data ?? []).filter((p: any) => p.transport_id === t.id);
+    // Transport is priced by number of people plus travel time. Both choices
+    // travel with the item so the customer can answer them, and the pricing
+    // engine receives the resulting amount as usual.
+    const label = labels.get(t.catalogue_id) ?? {
+      people: DEFAULT_PEOPLE_LABEL,
+      hours: DEFAULT_HOURS_LABEL,
+    };
+    const people = (peoplePrices.data ?? [])
+      .filter((p: any) => p.transport_id === t.id)
+      .map((p: any) => ({ value: Number(p.people), price_idr: Number(p.customer_price_idr) }));
+    const hours = (timePrices.data ?? [])
+      .filter((p: any) => p.transport_id === t.id)
+      .filter(
+        (p: any) =>
+          (t.min_travel_hours == null || p.travel_hours >= t.min_travel_hours) &&
+          (t.max_travel_hours == null || p.travel_hours <= t.max_travel_hours),
+      )
+      .map((p: any) => ({ value: Number(p.travel_hours), price_idr: Number(p.customer_price_idr) }));
+
+    const hasChoices = people.length > 0 || hours.length > 0;
     return toCatalogueItem("transport", {
       id: t.id,
       catalogue_id: t.catalogue_id,
@@ -115,10 +149,14 @@ async function transports(db: any, catalogueIds: string[]): Promise<CatalogueIte
       reference: t.internal_reference,
       description: t.description,
       photo_url: null,
-      customer_price_idr: prices.length === 1 ? prices[0].customer_price_idr : null,
+      customer_price_idr: null,
+      variants: hasChoices
+        ? { people_label: label.people, hours_label: label.hours, people, hours }
+        : null,
     });
   });
 }
+
 
 async function motorbikes(db: any, catalogueIds: string[]): Promise<CatalogueItem[]> {
   const { data } = await db
