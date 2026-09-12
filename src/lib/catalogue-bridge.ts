@@ -30,12 +30,16 @@ export type OptionSource = (typeof OPTION_SOURCES)[number];
  * the catalogue's own customer-facing wording, never the template's.
  */
 export type CatalogueChoice = { value: number; price_idr: number };
+export type CatalogueCalcMode = "sum" | "multiply";
 export type CatalogueVariants = {
   people_label: string;
   hours_label: string;
   people: CatalogueChoice[];
   hours: CatalogueChoice[];
+  /** How both prices combine: added together, or multiplied. Defaults to sum. */
+  calc_mode?: CatalogueCalcMode;
 };
+
 
 export const DEFAULT_PEOPLE_LABEL = "Number of people";
 export const DEFAULT_HOURS_LABEL = "Travel time (hours)";
@@ -71,8 +75,9 @@ function toNumberOrNull(raw: unknown): number | null {
 }
 
 /**
- * Customer price of one item given its extra choices. Transport adds the
- * people price and the travel-time price, exactly like the Admin calculator.
+ * Customer price of one item given its extra choices. Transport combines the
+ * people price and the travel-time price exactly like the Admin calculator:
+ * added together, or multiplied when the item is configured that way.
  * A missing required choice has no price at all — it is never guessed.
  */
 export function catalogueItemPriceIdr(
@@ -86,8 +91,10 @@ export function catalogueItemPriceIdr(
   const h = hours == null ? undefined : v.hours.find((x) => x.value === hours);
   if (v.people.length > 0 && !p) return null;
   if (v.hours.length > 0 && !h) return null;
+  if (v.calc_mode === "multiply" && p && h) return p.price_idr * h.price_idr;
   return (p?.price_idr ?? 0) + (h?.price_idr ?? 0);
 }
+
 
 
 

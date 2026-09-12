@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  catalogueItemPriceIdr,
   cataloguePriceVariable,
+
   cataloguePriceVariables,
   fieldCatalogueType,
   isCatalogueField,
@@ -251,5 +253,37 @@ describe("transport catalogue extra choices", () => {
     );
     expect(next["transfer_people"]).toBe("2");
     expect(next["transfer_hours"]).toBe("");
+  });
+});
+
+describe("transport variant calculation mode", () => {
+  const item = {
+    catalogue_type: "transport" as const,
+    id: "t1",
+    name: "Sessions",
+    reference: null,
+    description: null,
+    photo_url: null,
+    customer_price_idr: null,
+    variants: {
+      people_label: "Number of people",
+      hours_label: "Number of days",
+      people: [{ value: 2, price_idr: 410000 }],
+      hours: [{ value: 3, price_idr: 3 }],
+    },
+  };
+
+  it("adds both prices by default", () => {
+    expect(catalogueItemPriceIdr(item, 2, 3)).toBe(410003);
+  });
+
+  it("multiplies both prices when the item is configured that way", () => {
+    const multiplied = { ...item, variants: { ...item.variants, calc_mode: "multiply" as const } };
+    expect(catalogueItemPriceIdr(multiplied, 2, 3)).toBe(1230000);
+  });
+
+  it("still has no price when a required choice is missing", () => {
+    const multiplied = { ...item, variants: { ...item.variants, calc_mode: "multiply" as const } };
+    expect(catalogueItemPriceIdr(multiplied, 2, null)).toBeNull();
   });
 });

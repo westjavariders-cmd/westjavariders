@@ -100,7 +100,7 @@ async function transports(db: any, catalogueIds: string[]): Promise<CatalogueIte
     db
       .from("transports")
       .select(
-        "id, internal_name, public_name, internal_reference, description, active, catalogue_id, min_travel_hours, max_travel_hours",
+        "id, internal_name, public_name, internal_reference, description, active, catalogue_id, min_travel_hours, max_travel_hours, calc_mode",
       )
       .eq("active", true)
       .in("catalogue_id", catalogueIds)
@@ -151,7 +151,13 @@ async function transports(db: any, catalogueIds: string[]): Promise<CatalogueIte
       photo_url: null,
       customer_price_idr: null,
       variants: hasChoices
-        ? { people_label: label.people, hours_label: label.hours, people, hours }
+        ? {
+            people_label: label.people,
+            hours_label: label.hours,
+            people,
+            hours,
+            calc_mode: t.calc_mode === "multiply" ? "multiply" : "sum",
+          }
         : null,
     });
   });
