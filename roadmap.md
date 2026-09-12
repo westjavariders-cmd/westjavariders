@@ -37,3 +37,5 @@ Phase 2 — Admin foundation: DONE (auth, first-admin setup, shell, settings/cur
 - [ ] Insurance voucher content (Phase 7/8)
 - [ ] Field marking "experience start" for balance collection (Phase 6/7)
 - [ ] Whether refund/cancellation records are required in V1
+
+- [x] Guardar el modo de la calculadora interna (suma / multiplicación) por transporte
