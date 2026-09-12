@@ -9,6 +9,7 @@ import {
   TRAVEL_HOUR_OPTIONS,
   formatIdr,
   otherLocationQuote,
+  otherLocationQuoteMultiplied,
   parseIdr,
   transportMargin,
   type TransportType,
@@ -56,6 +57,7 @@ export function TransportPricing({
   const [busy, setBusy] = useState(false);
   const [calcHours, setCalcHours] = useState(1);
   const [calcPeople, setCalcPeople] = useState(1);
+  const [calcMode, setCalcMode] = useState<"sum" | "multiply">("sum");
 
   const prices = useQuery({
     queryKey: ["transport-prices", transportId],
@@ -159,6 +161,14 @@ export function TransportPricing({
       supplier_cost_idr: parseIdr(people[calcPeople]!.supplier) ?? 0,
       customer_price_idr: parseIdr(people[calcPeople]!.customer) ?? 0,
     },
+  });
+
+  const multipliedQuote = otherLocationQuoteMultiplied({
+    timePrice: {
+      supplier_cost_idr: parseIdr(time[calcHours]!.supplier) ?? 0,
+      customer_price_idr: parseIdr(time[calcHours]!.customer) ?? 0,
+    },
+    people: calcPeople,
   });
 
   return (
@@ -298,8 +308,45 @@ export function TransportPricing({
                     ))}
                   </select>
                 </div>
+                <div>
+                  <Label className="text-xs">Calculation</Label>
+                  <select
+                    className={selectClass}
+                    value={calcMode}
+                    onChange={(e) => setCalcMode(e.target.value as "sum" | "multiply")}
+                  >
+                    <option value="sum">Time price + people price</option>
+                    <option value="multiply">Time price x number of people</option>
+                  </select>
+                </div>
               </div>
-              {quote && (
+              {calcMode === "multiply" && multipliedQuote && (
+                <dl className="grid gap-1 text-xs sm:grid-cols-2">
+                  <div className="flex justify-between gap-4 sm:col-span-2">
+                    <dt>Time price</dt>
+                    <dd>{formatIdr(multipliedQuote.timeCustomerIdr)}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4 sm:col-span-2">
+                    <dt>People</dt>
+                    <dd>x {multipliedQuote.people}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4 border-t pt-1 font-medium sm:col-span-2">
+                    <dt>Final price</dt>
+                    <dd>{formatIdr(multipliedQuote.finalPriceIdr)}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4 sm:col-span-2">
+                    <dt>Internal cost</dt>
+                    <dd>{formatIdr(multipliedQuote.internalCostIdr)}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4 sm:col-span-2">
+                    <dt>Margin</dt>
+                    <dd>
+                      {formatIdr(multipliedQuote.amount)} ({multipliedQuote.percentage.toFixed(1)}%)
+                    </dd>
+                  </div>
+                </dl>
+              )}
+              {calcMode === "sum" && quote && (
                 <dl className="grid gap-1 text-xs sm:grid-cols-2">
                   <div className="flex justify-between gap-4 sm:col-span-2">
                     <dt>Time price</dt>
