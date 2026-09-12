@@ -56,8 +56,12 @@ const catalogueInput = z.object({
   internal_name: z.string().min(1, "An internal name is required.").max(200),
   public_name: nullableText(200),
   description: nullableText(2000),
+  // Customer-facing wording for the extra choices a transport item is priced by.
+  people_label: nullableText(120),
+  hours_label: nullableText(120),
   active: z.boolean(),
 });
+
 
 export const createCatalogue = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

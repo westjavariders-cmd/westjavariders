@@ -24,6 +24,22 @@ export const CATALOGUE_TYPE_LABELS: Record<CatalogueType, string> = {
 export const OPTION_SOURCES = ["manual", "catalogue"] as const;
 export type OptionSource = (typeof OPTION_SOURCES)[number];
 
+/**
+ * Extra customer choices an item may require before it has a price, such as a
+ * transport item priced by number of people and by travel time. The labels are
+ * the catalogue's own customer-facing wording, never the template's.
+ */
+export type CatalogueChoice = { value: number; price_idr: number };
+export type CatalogueVariants = {
+  people_label: string;
+  hours_label: string;
+  people: CatalogueChoice[];
+  hours: CatalogueChoice[];
+};
+
+export const DEFAULT_PEOPLE_LABEL = "Number of people";
+export const DEFAULT_HOURS_LABEL = "Travel time (hours)";
+
 /** The only shape the configurator ever sees. Customer-safe by construction. */
 export type CatalogueItem = {
   catalogue_type: CatalogueType;
@@ -36,7 +52,44 @@ export type CatalogueItem = {
   photo_url: string | null;
   /** Customer-facing price in whole IDR, when the catalogue defines one. */
   customer_price_idr: number | null;
+  /** Present when the item is priced by additional customer choices. */
+  variants?: CatalogueVariants | null;
 };
+
+/** Answer keys the extra choices of one catalogue question are stored under. */
+export function cataloguePeopleVariable(variableName: string): string {
+  return `${variableName}_people`;
+}
+export function catalogueHoursVariable(variableName: string): string {
+  return `${variableName}_hours`;
+}
+
+function toNumberOrNull(raw: unknown): number | null {
+  if (raw == null || raw === "") return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Customer price of one item given its extra choices. Transport adds the
+ * people price and the travel-time price, exactly like the Admin calculator.
+ * A missing required choice has no price at all — it is never guessed.
+ */
+export function catalogueItemPriceIdr(
+  item: CatalogueItem,
+  people: number | null,
+  hours: number | null,
+): number | null {
+  const v = item.variants;
+  if (!v) return item.customer_price_idr;
+  const p = people == null ? undefined : v.people.find((x) => x.value === people);
+  const h = hours == null ? undefined : v.hours.find((x) => x.value === hours);
+  if (v.people.length > 0 && !p) return null;
+  if (v.hours.length > 0 && !h) return null;
+  return (p?.price_idr ?? 0) + (h?.price_idr ?? 0);
+}
+
+
 
 /** One catalogue a field reads from: a template, optionally a single catalogue. */
 export type CatalogueRef = { catalogue_type: CatalogueType; catalogue_id: string | null };
@@ -73,8 +126,10 @@ export function toCatalogueItem(type: CatalogueType, row: Record<string, unknown
     description: (row["description"] as string | null) ?? null,
     photo_url: (row["photo_url"] as string | null) ?? null,
     customer_price_idr: price == null ? null : Number(price),
+    variants: (row["variants"] as CatalogueVariants | null) ?? null,
   };
 }
+
 
 export type FieldSourceConfig = {
   id: string;
@@ -140,6 +195,9 @@ export type CatalogueSelection = {
   name: string;
   reference: string | null;
   customer_price_idr: number | null;
+  /** Extra choices the item is priced by, when it has any. */
+  people?: number | null;
+  travel_hours?: number | null;
 };
 
 function selectedIds(raw: unknown): string[] {
@@ -165,11 +223,25 @@ export function resolveCatalogueSelections(
     const ref = fieldCatalogueRef(field);
     if (!ref) continue;
     const available = itemsByKey[catalogueKey(ref)] ?? [];
+    const people = toNumberOrNull(answers[cataloguePeopleVariable(field.variable_name)]);
+    const hours = toNumberOrNull(answers[catalogueHoursVariable(field.variable_name)]);
     for (const id of selectedIds(answers[field.variable_name])) {
       const item = available.find((i) => i.id === id);
       if (!item) {
         invalid.push(`Your choice for ${labelOf(field)} is no longer available. Please choose again.`);
         continue;
+      }
+      const price = catalogueItemPriceIdr(item, people, hours);
+      if (item.variants && price == null) {
+        const missing = [
+          item.variants.people.length > 0 && people == null ? item.variants.people_label : null,
+          item.variants.hours.length > 0 && hours == null ? item.variants.hours_label : null,
+        ].filter(Boolean);
+        invalid.push(
+          missing.length > 0
+            ? `Please choose ${missing.join(" and ")} for ${labelOf(field)}.`
+            : `Your choice for ${labelOf(field)} is not available. Please choose again.`,
+        );
       }
       selections.push({
         variable_name: field.variable_name,
@@ -178,7 +250,8 @@ export function resolveCatalogueSelections(
         item_id: item.id,
         name: item.name,
         reference: item.reference,
-        customer_price_idr: item.customer_price_idr,
+        customer_price_idr: price,
+        ...(item.variants ? { people, travel_hours: hours } : {}),
       });
     }
   }
@@ -195,24 +268,42 @@ export function stripInvalidCatalogueAnswers(
   for (const field of fields) {
     const key = fieldCatalogueKey(field);
     if (!key) continue;
-    const ids = new Set((itemsByKey[key] ?? []).map((i) => i.id));
+    const items = itemsByKey[key] ?? [];
+    const ids = new Set(items.map((i) => i.id));
     const raw = next[field.variable_name];
     if (Array.isArray(raw)) next[field.variable_name] = raw.map(String).filter((v) => ids.has(v));
     else if (raw != null && raw !== "" && !ids.has(String(raw))) next[field.variable_name] = "";
+
+    // Extra choices only survive while they exist for the selected item.
+    const chosen = items.find((i) => i.id === String(next[field.variable_name] ?? ""));
+    const variants = chosen?.variants ?? null;
+    for (const [name, list] of [
+      [cataloguePeopleVariable(field.variable_name), variants?.people ?? []],
+      [catalogueHoursVariable(field.variable_name), variants?.hours ?? []],
+    ] as const) {
+      const value = toNumberOrNull(next[name]);
+      if (value == null) continue;
+      if (!list.some((c) => c.value === value)) next[name] = "";
+    }
   }
   return next;
 }
 
 /**
  * Numeric price variables derived from the selections, for the pricing engine.
- * Multiple selections on one field sum their catalogue prices.
+ * Multiple selections on one field sum their catalogue prices. The extra
+ * choices are exposed too, so a formula can use people or hours directly.
  */
 export function cataloguePriceVariables(selections: CatalogueSelection[]): Record<string, number> {
   const out: Record<string, number> = {};
   for (const s of selections) {
-    if (s.customer_price_idr == null) continue;
-    const key = cataloguePriceVariable(s.variable_name);
-    out[key] = (out[key] ?? 0) + s.customer_price_idr;
+    if (s.customer_price_idr != null) {
+      const key = cataloguePriceVariable(s.variable_name);
+      out[key] = (out[key] ?? 0) + s.customer_price_idr;
+    }
+    if (s.people != null) out[cataloguePeopleVariable(s.variable_name)] = s.people;
+    if (s.travel_hours != null) out[catalogueHoursVariable(s.variable_name)] = s.travel_hours;
   }
   return out;
+
 }

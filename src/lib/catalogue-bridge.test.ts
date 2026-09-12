@@ -65,7 +65,9 @@ describe("customer-safe projection", () => {
       description: null,
       photo_url: null,
       customer_price_idr: 90000,
+      variants: null,
     });
+
     expect(JSON.stringify(item)).not.toContain("secret");
   });
 });
@@ -182,5 +184,72 @@ describe("catalogue-backed accommodation question", () => {
     const bikeField = { ...roomField, id: "f5", variable_name: "bike", catalogue_type: "motorbike" };
     expect(fieldCatalogueType(transportField)).toBe("transport");
     expect(fieldCatalogueType(bikeField)).toBe("motorbike");
+  });
+});
+
+describe("transport catalogue extra choices", () => {
+  const item = {
+    catalogue_type: "transport" as const,
+    catalogue_id: "cat-t",
+    id: "t1",
+    name: "Airport transfer",
+    reference: null,
+    description: null,
+    photo_url: null,
+    customer_price_idr: null,
+    variants: {
+      people_label: "Surfers",
+      hours_label: "Hours in the van",
+      people: [
+        { value: 1, price_idr: 500_000 },
+        { value: 2, price_idr: 700_000 },
+      ],
+      hours: [
+        { value: 1, price_idr: 100_000 },
+        { value: 3, price_idr: 250_000 },
+      ],
+    },
+  };
+  const field = {
+    id: "f1",
+    variable_name: "transfer",
+    field_type: "single_select",
+    option_source: "catalogue",
+    catalogue_type: "transport",
+    catalogue_id: "cat-t",
+  };
+  const items = { "cat-t": [item] };
+
+  it("adds the people price and the hours price", () => {
+    const { selections, invalid } = resolveCatalogueSelections(
+      [field],
+      { transfer: "t1", transfer_people: "2", transfer_hours: "3" },
+      items,
+    );
+    expect(invalid).toEqual([]);
+    expect(selections[0]!.customer_price_idr).toBe(950_000);
+    expect(selections[0]!.people).toBe(2);
+    expect(selections[0]!.travel_hours).toBe(3);
+    expect(cataloguePriceVariables(selections)).toEqual({
+      transfer_price: 950_000,
+      transfer_people: 2,
+      transfer_hours: 3,
+    });
+  });
+
+  it("asks for the missing choices using the catalogue wording", () => {
+    const { selections, invalid } = resolveCatalogueSelections([field], { transfer: "t1" }, items, () => "Transfer");
+    expect(selections[0]!.customer_price_idr).toBeNull();
+    expect(invalid[0]).toBe("Please choose Surfers and Hours in the van for Transfer.");
+  });
+
+  it("drops a choice that the selected item does not offer", () => {
+    const next = stripInvalidCatalogueAnswers(
+      [field],
+      { transfer: "t1", transfer_people: "2", transfer_hours: "9" },
+      items,
+    );
+    expect(next["transfer_people"]).toBe("2");
+    expect(next["transfer_hours"]).toBe("");
   });
 });
