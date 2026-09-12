@@ -128,8 +128,8 @@ describe("otherLocationQuoteMultiplied", () => {
       timePrice: { supplier_cost_idr: 100000, customer_price_idr: 200000 },
       peoplePrice: { supplier_cost_idr: 50000, customer_price_idr: 80000 },
     });
-    expect(quote?.finalPriceIdr).toBe(16000000);
-    expect(quote?.internalCostIdr).toBe(5000000);
+    expect(quote?.finalPriceIdr).toBe(16000000000);
+    expect(quote?.internalCostIdr).toBe(5000000000);
     expect(quote?.peopleCustomerIdr).toBe(80000);
   });
 
