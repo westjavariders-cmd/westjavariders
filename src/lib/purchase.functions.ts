@@ -66,7 +66,7 @@ export const confirmCheckout = createServerFn({ method: "POST" })
         gift_message: data.gift_message,
       },
       undefined,
-      { risk_accepted: data.risk_accepted },
+      { risk_accepted: data.risk_accepted === true },
     );
     return {
       purchase,
