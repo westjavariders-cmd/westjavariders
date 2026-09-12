@@ -24,6 +24,22 @@ export const CATALOGUE_TYPE_LABELS: Record<CatalogueType, string> = {
 export const OPTION_SOURCES = ["manual", "catalogue"] as const;
 export type OptionSource = (typeof OPTION_SOURCES)[number];
 
+/**
+ * Extra customer choices an item may require before it has a price, such as a
+ * transport item priced by number of people and by travel time. The labels are
+ * the catalogue's own customer-facing wording, never the template's.
+ */
+export type CatalogueChoice = { value: number; price_idr: number };
+export type CatalogueVariants = {
+  people_label: string;
+  hours_label: string;
+  people: CatalogueChoice[];
+  hours: CatalogueChoice[];
+};
+
+export const DEFAULT_PEOPLE_LABEL = "Number of people";
+export const DEFAULT_HOURS_LABEL = "Travel time (hours)";
+
 /** The only shape the configurator ever sees. Customer-safe by construction. */
 export type CatalogueItem = {
   catalogue_type: CatalogueType;
@@ -36,7 +52,44 @@ export type CatalogueItem = {
   photo_url: string | null;
   /** Customer-facing price in whole IDR, when the catalogue defines one. */
   customer_price_idr: number | null;
+  /** Present when the item is priced by additional customer choices. */
+  variants?: CatalogueVariants | null;
 };
+
+/** Answer keys the extra choices of one catalogue question are stored under. */
+export function cataloguePeopleVariable(variableName: string): string {
+  return `${variableName}_people`;
+}
+export function catalogueHoursVariable(variableName: string): string {
+  return `${variableName}_hours`;
+}
+
+function toNumberOrNull(raw: unknown): number | null {
+  if (raw == null || raw === "") return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Customer price of one item given its extra choices. Transport adds the
+ * people price and the travel-time price, exactly like the Admin calculator.
+ * A missing required choice has no price at all — it is never guessed.
+ */
+export function catalogueItemPriceIdr(
+  item: CatalogueItem,
+  people: number | null,
+  hours: number | null,
+): number | null {
+  const v = item.variants;
+  if (!v) return item.customer_price_idr;
+  const p = people == null ? undefined : v.people.find((x) => x.value === people);
+  const h = hours == null ? undefined : v.hours.find((x) => x.value === hours);
+  if (v.people.length > 0 && !p) return null;
+  if (v.hours.length > 0 && !h) return null;
+  return (p?.price_idr ?? 0) + (h?.price_idr ?? 0);
+}
+
+
 
 /** One catalogue a field reads from: a template, optionally a single catalogue. */
 export type CatalogueRef = { catalogue_type: CatalogueType; catalogue_id: string | null };
