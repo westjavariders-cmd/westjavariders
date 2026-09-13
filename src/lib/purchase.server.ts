@@ -408,7 +408,25 @@ async function loadPurchase(purchaseId: string): Promise<PurchaseView | null> {
 }
 
 export async function getPurchase(purchaseId: string) {
-  return loadPurchase(purchaseId);
+  const purchase = await loadPurchase(purchaseId);
+
+  // If the purchase has an open, unpaid payment request with no provider link
+  // yet, try to generate one now. A link may be missing because the provider
+  // was not configured when the booking was made, or because a transient
+  // failure happened during checkout. Returning to the booking page is the
+  // natural place to recover; failures here never break the view.
+  if (
+    purchase?.payment &&
+    !purchase.payment.payment_url &&
+    purchase.payment.status !== "paid"
+  ) {
+    await ensurePaymentLink(purchaseId, purchase.payment.kind).catch(
+      () => undefined,
+    );
+    return loadPurchase(purchaseId);
+  }
+
+  return purchase;
 }
 
 /* ------------------------------------------------------------------ */
