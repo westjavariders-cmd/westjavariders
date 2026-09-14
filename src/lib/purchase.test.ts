@@ -5,6 +5,7 @@ import {
   depositFor,
   parseFirstPaymentPercentage,
   purchaseStatusFor,
+  sortFieldsByStepOrder,
 } from "@/lib/purchase";
 
 describe("first payment percentage", () => {
