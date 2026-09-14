@@ -75,12 +75,14 @@ export function ConfiguratorTab({ bundle, canEdit, reload }: Props) {
 
   return (
     <div className="space-y-4">
+      <VoucherNameCard bundle={bundle} canEdit={canEdit} reload={reload} />
       {canEdit && (
         <Button size="sm" variant="outline" onClick={addStep}>
           <Plus className="mr-1.5 h-3.5 w-3.5" />
           Add step
         </Button>
       )}
+
       {bundle.steps.length === 0 && (
         <p className="text-sm text-muted-foreground">No steps yet.</p>
       )}
