@@ -5,6 +5,10 @@
  * Snapshot. Nothing here prices, discounts or re-quotes anything: the
  * snapshot is the historical commercial source of truth.
  */
+import { QUANTITY_SUFFIXES, isEmptyAnswer } from "@/lib/public-catalog";
+
+const UUID_LIKE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 
 export const VOUCHER_TYPES = ["STANDARD", "GIFT"] as const;
 export type VoucherType = (typeof VOUCHER_TYPES)[number];
@@ -167,16 +171,45 @@ function optionLabels(pkg: any): { label: string; value: string }[] {
       .filter((o: any) => o && (o.label != null || o.value != null))
       .map((o: any) => ({ label: String(o.label ?? ""), value: String(o.value ?? "") }));
   }
+  // Older snapshots only kept raw answers: rebuild readable lines from them,
+  // resolving catalogue ids to names and hiding declined or empty answers.
   const answers = (pkg?.answers ?? {}) as Record<string, unknown>;
+  const names: Record<string, string> = {};
+  for (const sel of (pkg?.catalogue_selections ?? []) as any[]) {
+    if (sel?.item_id && sel?.name) names[String(sel.item_id)] = String(sel.name);
+  }
+  const suffixes = QUANTITY_SUFFIXES.map((q) => q.suffix);
   const out: { label: string; value: string }[] = [];
   for (const [key, raw] of Object.entries(answers)) {
-    if (raw == null || raw === "" || (Array.isArray(raw) && raw.length === 0)) continue;
+    if (isEmptyAnswer(raw)) continue;
+    if (suffixes.some((s) => key.endsWith(s))) continue; // listed under its choice
     const label = key.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
-    const value = Array.isArray(raw) ? raw.map(String).join(", ") : String(raw);
+    const resolve = (v: unknown): string | null => {
+      const s = String(v);
+      if (names[s]) return names[s];
+      return UUID_LIKE.test(s) ? null : s;
+    };
+
+    let value: string | null;
+    if (Array.isArray(raw)) {
+      const parts = raw.map(resolve).filter((v): v is string => !!v);
+      value = parts.length > 0 ? parts.join(", ") : null;
+    } else if (typeof raw === "boolean") value = "Yes";
+    else value = resolve(raw);
+    if (value == null || value === "") continue;
+
     out.push({ label, value });
+    for (const { suffix, label: qLabel } of QUANTITY_SUFFIXES) {
+      const q = answers[`${key}${suffix}`];
+      if (isEmptyAnswer(q)) continue;
+      const n = Number(q);
+      if (Number.isFinite(n) && n <= 0) continue;
+      out.push({ label: qLabel, value: String(q) });
+    }
   }
   return out;
 }
+
 
 /**
  * The partial amounts the package price is made of, taken from the frozen
