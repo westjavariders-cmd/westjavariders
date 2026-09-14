@@ -185,17 +185,19 @@ function CartPage() {
                 Not finished yet, so it is not part of your total.
               </p>
               <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    navigate({
-                      to: "/build-your-trip/$productId",
-                      params: { productId: draft.product_id },
-                    })
-                  }
-                >
-                  Continue current package
-                </Button>
+                {draft.product_id && (
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      navigate({
+                        to: "/build-your-trip/$productId",
+                        params: { productId: draft.product_id as string },
+                      })
+                    }
+                  >
+                    Continue current package
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="outline"
