@@ -89,8 +89,18 @@ export type DocumentModel = {
   validity: DocumentLine[];
   experience: {
     package_title: string;
-    items: { product_title: string; options: DocumentLine[]; people: number | null; quantity: number | null }[];
+    items: {
+      product_title: string;
+      options: DocumentLine[];
+      people: number | null;
+      quantity: number | null;
+      /** Money lines are always absent on a gift voucher. */
+      base_price: string | null;
+      breakdown: DocumentLine[];
+      total: string | null;
+    }[];
   };
+
   gift: { recipient_name: string | null; message: string | null } | null;
   holder_name: string | null;
   usage_instructions: string[];
