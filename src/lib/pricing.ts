@@ -696,9 +696,18 @@ export function validatePricing(args: {
   ];
   for (const [name, variable] of mappings) {
     if (variable && !numericVariables.has(variable)) {
-      err(`The ${name} quantity is mapped to "${variable}", which is not an active number question.`);
+      if (!allVariables.has(variable)) {
+        err(
+          `The ${name} quantity still points to "${variable}", a question that no longer exists in this product. Set it to "Not used" (or pick the right question) in Pricing settings.`,
+        );
+      } else {
+        err(
+          `The ${name} quantity is mapped to "${variable}", which is not an active number question.`,
+        );
+      }
     }
   }
+
 
   if (pricing.mode === "structured") {
     const activeRules = rules.filter((r) => r.is_active);

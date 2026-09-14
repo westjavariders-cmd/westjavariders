@@ -110,6 +110,19 @@ describe("pricing", () => {
     expect(isPurchasable("draft", "active")).toBe(false);
   });
 
+  it("an orphan quantity mapping is reported as a question that no longer exists", () => {
+    const stale: any = { ...pricing, people_variable: "choosenumberpeople" };
+    const issues = validatePricing({ bundle, pricing: stale, rules: [], tiers: [], versions: [] });
+    expect(issues.some((i) => /no longer exists/.test(i.message))).toBe(true);
+  });
+
+  it("a mapping to an existing non-numeric question keeps the old message", () => {
+    const wrong: any = { ...pricing, people_variable: "level" };
+    const issues = validatePricing({ bundle, pricing: wrong, rules: [], tiers: [], versions: [] });
+    expect(issues.some((i) => /not an active number question/.test(i.message))).toBe(true);
+  });
+
+
   it("validation reports overlapping tiers", () => {
     const rules: any = [{ id: "r3", pricing_id: "pr", label: "group", rule_type: "tier", variable_name: "people", sign: "add", is_active: true, display_order: 0, amount_idr: null, component_id: null, condition_variable: null }];
     const tiers: any = [

@@ -3036,6 +3036,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      clear_pricing_variable: {
+        Args: { _name: string; _product_id: string }
+        Returns: undefined
+      }
       create_purchase:
         | {
             Args: {
@@ -3091,6 +3095,10 @@ export type Database = {
         Returns: string
       }
       next_voucher_code: { Args: never; Returns: string }
+      rename_pricing_variable: {
+        Args: { _new: string; _old: string; _product_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       accommodation_type: "hotel" | "beach_camping"
