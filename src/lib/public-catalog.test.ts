@@ -76,6 +76,37 @@ describe("configuration summary", () => {
     ];
     expect(summarizeAnswers(fields, [], { note: "hi", extra: "x" })).toEqual([]);
   });
+
+  it("hides declined extras", () => {
+    const fields = [
+      field({ id: "f5", variable_name: "wantsbike", field_type: "boolean", customer_label: "Motorbike?" }),
+      field({ id: "f6", variable_name: "wantsboard", field_type: "boolean", customer_label: "Board?" }),
+    ];
+    expect(summarizeAnswers(fields, [], { wantsbike: true, wantsboard: false } as never)).toEqual([
+      { label: "Motorbike?", value: "Yes" },
+    ]);
+  });
+
+  it("shows catalogue names and their quantities, never raw ids", () => {
+    const id = "288bc324-a6fb-4723-90c4-2806478853f5";
+    const other = "c1f780d5-bcb1-44df-84db-ac2561f14f53";
+    const fields = [
+      field({ id: "f7", variable_name: "lessons", field_type: "single_select", customer_label: "Lessons" }),
+      field({ id: "f8", variable_name: "drone", field_type: "single_select", customer_label: "Drone" }),
+    ];
+    const lines = summarizeAnswers(
+      fields,
+      [],
+      { lessons: id, lessons_people: 2, lessons_hours: 3, drone: other } as never,
+      { [id]: "Price per people" },
+    );
+    expect(lines).toEqual([
+      { label: "Lessons", value: "Price per people" },
+      { label: "People", value: "2" },
+      { label: "Hours", value: "3" },
+    ]);
+  });
+
 });
 
 describe("configurator defaults", () => {
