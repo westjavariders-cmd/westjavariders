@@ -2439,6 +2439,48 @@ export type Database = {
           },
         ]
       }
+      website_block_catalogues: {
+        Row: {
+          block_id: string
+          catalogue_id: string
+          created_at: string
+          id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          block_id: string
+          catalogue_id: string
+          created_at?: string
+          id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          block_id?: string
+          catalogue_id?: string
+          created_at?: string
+          id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_block_catalogues_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "website_blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "website_block_catalogues_catalogue_id_fkey"
+            columns: ["catalogue_id"]
+            isOneToOne: false
+            referencedRelation: "catalogues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       website_block_products: {
         Row: {
           block_id: string
@@ -3095,6 +3137,7 @@ export type Database = {
         | "video"
         | "people"
         | "door"
+        | "catalogue"
       website_destination_kind:
         | "none"
         | "page"
@@ -3308,6 +3351,7 @@ export const Constants = {
         "video",
         "people",
         "door",
+        "catalogue",
       ],
       website_destination_kind: [
         "none",
