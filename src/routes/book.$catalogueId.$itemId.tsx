@@ -12,8 +12,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { PublicPage } from "@/components/public/PublicPage";
-import { PUBLIC_CART_KEY } from "@/components/public/SiteHeader";
+import { PUBLIC_CART_KEY, PublicPage } from "@/components/public/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

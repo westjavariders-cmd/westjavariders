@@ -84,6 +84,51 @@ function ProductList({ products }: { products: PublicBlock["products"] }) {
   );
 }
 
+function CatalogueList({ items }: { items: PublicBlock["catalogue_items"] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      {items.map((item) => (
+        <Link
+          key={`${item.catalogue_id}-${item.item_id}`}
+          to="/book/$catalogueId/$itemId"
+          params={{ catalogueId: item.catalogue_id, itemId: item.item_id }}
+          className="block"
+        >
+          <Card className="h-full transition-colors hover:border-primary">
+            <CardContent className="space-y-2 p-4">
+              {item.photo_url && (
+                <img
+                  src={item.photo_url}
+                  alt={item.name}
+                  loading="lazy"
+                  className="aspect-[16/9] w-full rounded-md object-cover"
+                />
+              )}
+              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                {item.catalogue_name}
+              </p>
+              <h3 className="text-base font-medium">{item.name}</h3>
+              {item.description && (
+                <p className="text-sm text-muted-foreground">{item.description}</p>
+              )}
+              {item.from_price_idr != null && (
+                <p className="text-sm font-semibold">
+                  From {new Intl.NumberFormat("id-ID", {
+                    style: "currency",
+                    currency: "IDR",
+                    maximumFractionDigits: 0,
+                  }).format(item.from_price_idr)}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 function Block({ block }: { block: PublicBlock }) {
   const heading =
     block.kind === "hero" ? (
@@ -126,6 +171,7 @@ function Block({ block }: { block: PublicBlock }) {
       {block.body && <p className="whitespace-pre-line text-sm text-muted-foreground">{block.body}</p>}
       {block.kind === "product_selection" && <ProductList products={block.products} />}
       {block.kind === "people" && block.products.length > 0 && <ProductList products={block.products} />}
+      {block.kind === "catalogue" && <CatalogueList items={block.catalogue_items} />}
       {block.cta && (
         <div>
           <Cta cta={block.cta} />
