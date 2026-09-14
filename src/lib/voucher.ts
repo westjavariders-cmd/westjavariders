@@ -5,6 +5,10 @@
  * Snapshot. Nothing here prices, discounts or re-quotes anything: the
  * snapshot is the historical commercial source of truth.
  */
+import { QUANTITY_SUFFIXES, isEmptyAnswer } from "@/lib/public-catalog";
+
+const UUID_LIKE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 
 export const VOUCHER_TYPES = ["STANDARD", "GIFT"] as const;
 export type VoucherType = (typeof VOUCHER_TYPES)[number];
