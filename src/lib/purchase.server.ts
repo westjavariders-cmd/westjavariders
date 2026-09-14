@@ -16,6 +16,7 @@ import {
   depositFor,
   parseFirstPaymentPercentage,
   purchaseStatusFor,
+  sortFieldsByStepOrder,
   type PaymentRequestKind,
 } from "@/lib/purchase";
 import {
