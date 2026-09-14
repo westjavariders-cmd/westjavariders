@@ -89,3 +89,27 @@ export const PAYMENT_STATUS_LABELS: Record<PaymentRequestStatus, string> = {
   expired: "Expired",
   cancelled: "Cancelled",
 };
+
+/**
+ * Sorts a product's questions the way the customer sees them: by step order
+ * first, then by question order inside each step. Questions without a step
+ * keep their existing relative order and go last.
+ */
+export function sortFieldsByStepOrder<
+  T extends { step_id?: string | null; display_order?: number | null },
+>(fields: T[], steps: { id: string; display_order?: number | null }[]): T[] {
+  const stepRank = new Map(steps.map((s, i) => [s.id, Number(s.display_order ?? i)]));
+  const last = Number.MAX_SAFE_INTEGER;
+  return fields
+    .map((f, index) => ({ f, index }))
+    .sort((a, b) => {
+      const ra = a.f.step_id ? (stepRank.get(a.f.step_id) ?? last) : last;
+      const rb = b.f.step_id ? (stepRank.get(b.f.step_id) ?? last) : last;
+      if (ra !== rb) return ra - rb;
+      const da = Number(a.f.display_order ?? 0);
+      const db = Number(b.f.display_order ?? 0);
+      if (da !== db) return da - db;
+      return a.index - b.index;
+    })
+    .map((x) => x.f);
+}
