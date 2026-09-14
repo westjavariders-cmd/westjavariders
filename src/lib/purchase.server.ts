@@ -260,7 +260,7 @@ export async function revalidateCart(token?: string): Promise<CheckoutRevalidati
       base_price_idr:
         pricing?.base_amount_idr == null ? null : Number(pricing.base_amount_idr),
       option_labels: summarizeAnswers(
-        (fieldRows ?? []) as never,
+        orderedFields as never,
         optionRows as never,
         (pkg.answers ?? {}) as PreviewValues,
         Object.fromEntries(
