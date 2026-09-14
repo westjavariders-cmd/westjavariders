@@ -35,7 +35,7 @@ export type PublicProduct = {
 export async function listPurchasableProducts(): Promise<PublicProduct[]> {
   const db = await admin();
   const [products, pricing, translations, links, categories] = await Promise.all([
-    db.from("products").select("id, internal_name, status, kind").order("sort_order"),
+    db.from("products").select("id, internal_name, voucher_name, status, kind").order("sort_order"),
     db.from("product_pricing").select("product_id, status"),
     db
       .from("product_translations")
@@ -57,7 +57,7 @@ export async function listPurchasableProducts(): Promise<PublicProduct[]> {
     .filter((p: any) => isPurchasable(p.status, pricingStatus.get(p.id)))
     .map((p: any) => ({
       id: p.id,
-      title: translation.get(p.id)?.title || p.internal_name,
+      title: p.voucher_name?.trim() || translation.get(p.id)?.title || p.internal_name,
       summary: translation.get(p.id)?.summary ?? null,
       categories: (links.data ?? [])
         .filter((l: any) => l.product_id === p.id)
@@ -78,7 +78,7 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
   const db = await admin();
   const { data: product } = await db
     .from("products")
-    .select("id, internal_name, status, kind")
+    .select("id, internal_name, voucher_name, status, kind")
     .eq("id", productId)
     .maybeSingle();
   if (!product) fail("This product could not be found.");
@@ -120,7 +120,7 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
     catalogue,
     product: {
       id: product.id,
-      title: translation.data?.title || product.internal_name,
+      title: (product as any).voucher_name?.trim() || translation.data?.title || product.internal_name,
       summary: translation.data?.summary ?? null,
       body: translation.data?.body ?? null,
     },
