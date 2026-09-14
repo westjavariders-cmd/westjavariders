@@ -275,6 +275,17 @@ export function buildEmailContent(args: {
   lines.push(`Experience: ${model.experience.package_title}`);
   for (const line of model.validity) lines.push(`${line.label}: ${line.value}`);
   if (!isGift) for (const line of model.commercial) lines.push(`${line.label}: ${line.value}`);
+  // What was booked, package by package: name, price and the customer's choices.
+  for (const item of model.experience.items) {
+    lines.push("");
+    lines.push(item.product_title);
+    if (item.base_price) lines.push(`  Base price: ${item.base_price}`);
+    for (const b of item.breakdown) lines.push(`  ${b.label}: ${b.value}`);
+    if (item.total) lines.push(`  Package total: ${item.total}`);
+    for (const o of item.options) lines.push(`  ${o.label}: ${o.value}`);
+    if (item.people != null) lines.push(`  People: ${item.people}`);
+    if (item.quantity != null) lines.push(`  Quantity: ${item.quantity}`);
+  }
   if (isGift && model.gift?.message) {
     lines.push("");
     lines.push(`Your message: ${model.gift.message}`);
@@ -283,6 +294,7 @@ export function buildEmailContent(args: {
   for (const step of model.usage_instructions) lines.push(`- ${step}`);
   lines.push("");
   for (const line of model.contact) lines.push(`${line.label}: ${line.value}`);
+
 
   const text = lines.join("\n");
 
