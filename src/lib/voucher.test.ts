@@ -152,7 +152,6 @@ describe("entitlement", () => {
     const built = buildEntitlement({ ...base, snapshot: legacy, voucherType: "STANDARD" });
     const options = built.items[0]!.options;
     expect(options).toEqual([
-      { label: "Lessonsyesno", value: "Yes" },
       { label: "Surflessonscatalogueprice", value: "Price per people" },
       { label: "People", value: "1" },
       { label: "Hours", value: "2" },
