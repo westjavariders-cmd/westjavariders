@@ -1042,10 +1042,17 @@ export type Database = {
       packages: {
         Row: {
           answers: Json
+          catalogue_id: string | null
+          catalogue_item_id: string | null
           catalogue_selections: Json
+          catalogue_type:
+            | Database["public"]["Enums"]["catalogue_source_type"]
+            | null
           created_at: string
           id: string
-          product_id: string
+          item_title: string | null
+          line_kind: string
+          product_id: string | null
           promo_code: string | null
           promo_code_id: string | null
           promo_discount_idr: number
@@ -1062,10 +1069,17 @@ export type Database = {
         }
         Insert: {
           answers?: Json
+          catalogue_id?: string | null
+          catalogue_item_id?: string | null
           catalogue_selections?: Json
+          catalogue_type?:
+            | Database["public"]["Enums"]["catalogue_source_type"]
+            | null
           created_at?: string
           id?: string
-          product_id: string
+          item_title?: string | null
+          line_kind?: string
+          product_id?: string | null
           promo_code?: string | null
           promo_code_id?: string | null
           promo_discount_idr?: number
@@ -1082,10 +1096,17 @@ export type Database = {
         }
         Update: {
           answers?: Json
+          catalogue_id?: string | null
+          catalogue_item_id?: string | null
           catalogue_selections?: Json
+          catalogue_type?:
+            | Database["public"]["Enums"]["catalogue_source_type"]
+            | null
           created_at?: string
           id?: string
-          product_id?: string
+          item_title?: string | null
+          line_kind?: string
+          product_id?: string | null
           promo_code?: string | null
           promo_code_id?: string | null
           promo_discount_idr?: number
@@ -1101,6 +1122,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "packages_catalogue_id_fkey"
+            columns: ["catalogue_id"]
+            isOneToOne: false
+            referencedRelation: "catalogues"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "packages_product_id_fkey"
             columns: ["product_id"]

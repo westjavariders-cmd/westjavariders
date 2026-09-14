@@ -142,7 +142,8 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
 
 export type PublicCartPackage = {
   id: string;
-  product_id: string;
+  /** Null on direct catalogue bookings, which have no product. */
+  product_id: string | null;
   product_title: string;
   status: string;
   total_idr: number;
@@ -179,7 +180,9 @@ export async function publicCart(token?: string): Promise<PublicCartView> {
   }
 
   const db = await admin();
-  const productIds = Array.from(new Set(rows.map((r) => r.product_id)));
+  const productIds = Array.from(
+    new Set(rows.map((r) => r.product_id).filter((id): id is string => Boolean(id))),
+  );
   const [products, translations, fields] = await Promise.all([
     db.from("products").select("id, internal_name").in("id", productIds),
     db
@@ -201,14 +204,20 @@ export async function publicCart(token?: string): Promise<PublicCartView> {
   const view = (row: any): PublicCartPackage => ({
     id: row.id,
     product_id: row.product_id,
-    product_title: titles.get(row.product_id) ?? "Package",
+    product_title:
+      row.line_kind === "catalogue_item"
+        ? (row.item_title ?? "Item")
+        : (titles.get(row.product_id) ?? "Package"),
     status: row.status,
     total_idr: Number(row.total_idr),
     subtotal_idr: Number(row.subtotal_idr),
     season_discount_idr: Number(row.season_discount_idr),
     promo_discount_idr: Number(row.promo_discount_idr),
     promo_code: row.promo_code ?? null,
-    summary: summarizeAnswers(
+    summary:
+      row.line_kind === "catalogue_item"
+        ? ((row.quote_lines ?? []) as AnswerSummaryLine[])
+        : summarizeAnswers(
       (fields.data ?? []).filter((f: any) => f.product_id === row.product_id),
       options,
       (row.answers ?? {}) as never,

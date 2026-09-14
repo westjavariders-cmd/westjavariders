@@ -48,6 +48,16 @@ export type PublicBlockProduct = {
   bookable: boolean;
 };
 
+export type PublicBlockCatalogueItem = {
+  catalogue_id: string;
+  catalogue_name: string;
+  item_id: string;
+  name: string;
+  description: string | null;
+  photo_url: string | null;
+  from_price_idr: number | null;
+};
+
 export type PublicBlock = {
   id: string;
   kind: BlockKind;
@@ -56,6 +66,8 @@ export type PublicBlock = {
   media: { kind: MediaKind; url: string } | null;
   cta: { label: string; href: string; external: boolean } | null;
   products: PublicBlockProduct[];
+  /** Active, bookable items of the catalogues this block lists. */
+  catalogue_items: PublicBlockCatalogueItem[];
 };
 
 export type PublicSection = {
@@ -222,7 +234,7 @@ export async function websitePage(
     new Set(activeBlocks.map((b: any) => b.cta_page_id).filter(Boolean)),
   ) as string[];
 
-  const [blockTx, blockProducts, ctaPages] = await Promise.all([
+  const [blockTx, blockProducts, blockCatalogues, ctaPages] = await Promise.all([
     blockIds.length
       ? db
           .from("website_block_translations")
@@ -234,6 +246,13 @@ export async function websitePage(
           .from("website_block_products")
           .select("block_id, product_id, sort_order")
           .in("block_id", blockIds)
+      : Promise.resolve({ data: [] }),
+    blockIds.length
+      ? db
+          .from("website_block_catalogues")
+          .select("block_id, catalogue_id, sort_order")
+          .in("block_id", blockIds)
+          .order("sort_order")
       : Promise.resolve({ data: [] }),
     ctaPageIds.length
       ? db.from("website_pages").select("id, slug, is_active").in("id", ctaPageIds)
@@ -251,6 +270,18 @@ export async function websitePage(
     db,
     Array.from(new Set(productRefs.map((r: any) => r.product_id))) as string[],
   );
+
+  // Catalogue blocks list the active, customer-safe items of each referenced
+  // catalogue, resolved through the same bridge the public booking uses.
+  const catalogueRefs = (blockCatalogues.data ?? []) as {
+    block_id: string;
+    catalogue_id: string;
+  }[];
+  const { bookableCatalogue } = await import("@/lib/direct-booking.server");
+  const catalogues = new Map<string, Awaited<ReturnType<typeof bookableCatalogue>>>();
+  for (const id of Array.from(new Set(catalogueRefs.map((r) => r.catalogue_id)))) {
+    catalogues.set(id, await bookableCatalogue(id));
+  }
 
   const pageText = pickTranslation<any>((pageTx.data ?? []) as any[], wanted, fallback);
 
@@ -295,6 +326,23 @@ export async function websitePage(
                 .filter((r: any) => r.block_id === block.id)
                 .map((r: any) => products.get(r.product_id))
                 .filter((p: unknown): p is PublicBlockProduct => Boolean(p)),
+              catalogue_items: catalogueRefs
+                .filter((r) => r.block_id === block.id)
+                .flatMap((r) => {
+                  const catalogue = catalogues.get(r.catalogue_id);
+                  if (!catalogue) return [];
+                  return catalogue.items.map(
+                    (item): PublicBlockCatalogueItem => ({
+                      catalogue_id: catalogue.id,
+                      catalogue_name: catalogue.name,
+                      item_id: item.id,
+                      name: item.name,
+                      description: item.description,
+                      photo_url: item.photo_url,
+                      from_price_idr: item.from_price_idr,
+                    }),
+                  );
+                }),
             };
           }),
       );
