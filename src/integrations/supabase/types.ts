@@ -1822,6 +1822,7 @@ export type Database = {
           sort_order: number
           status: string
           updated_at: string
+          voucher_name: string | null
         }
         Insert: {
           created_at?: string
@@ -1832,6 +1833,7 @@ export type Database = {
           sort_order?: number
           status?: string
           updated_at?: string
+          voucher_name?: string | null
         }
         Update: {
           created_at?: string
@@ -1842,6 +1844,7 @@ export type Database = {
           sort_order?: number
           status?: string
           updated_at?: string
+          voucher_name?: string | null
         }
         Relationships: []
       }

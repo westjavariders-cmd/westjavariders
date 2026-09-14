@@ -28,6 +28,8 @@ import { activePaymentProvider, providerByName } from "@/lib/payments/provider.s
 import { validateGift, type GiftData, type GiftInput } from "@/lib/voucher";
 import { fxContext, freezeFx, displayAmount } from "@/lib/fx.server";
 import { toPublicFx, type PublicFxContext } from "@/lib/fx.functions";
+import { summarizeAnswers } from "@/lib/public-catalog";
+
 
 export { CartError };
 
@@ -66,6 +68,11 @@ export type RevalidatedPackage = {
   /** Null on direct catalogue bookings, which have no product. */
   product_id: string | null;
   product_title: string;
+  /** Base amount configured in Pricing, before the customer's choices. */
+  base_price_idr: number | null;
+  /** The customer's choices with the real question labels they answered. */
+  option_labels: { label: string; value: string }[];
+
   pricing_mode: string;
   answers: Record<string, unknown>;
   resolved_inputs: Record<string, unknown>;
@@ -165,7 +172,10 @@ export async function revalidateCart(token?: string): Promise<CheckoutRevalidati
         line_kind: "catalogue_item",
         product_id: null,
         product_title: direct.title,
+        base_price_idr: null,
+        option_labels: (direct.summary ?? []) as { label: string; value: string }[],
         pricing_mode: "structured",
+
         answers: (pkg.answers ?? {}) as Record<string, unknown>,
         resolved_inputs: {},
         catalogue_selections: [],
@@ -185,16 +195,40 @@ export async function revalidateCart(token?: string): Promise<CheckoutRevalidati
       continue;
     }
 
-    const [{ data: product }, { data: translation }, { data: pricing }] = await Promise.all([
-      db.from("products").select("id, internal_name").eq("id", pkg.product_id).maybeSingle(),
-      db
-        .from("product_translations")
-        .select("title")
-        .eq("product_id", pkg.product_id)
-        .eq("language_code", "en")
-        .maybeSingle(),
-      db.from("product_pricing").select("mode").eq("product_id", pkg.product_id).maybeSingle(),
-    ]);
+    const [{ data: product }, { data: translation }, { data: pricing }, { data: fieldRows }] =
+      await Promise.all([
+        db
+          .from("products")
+          .select("id, internal_name, voucher_name")
+          .eq("id", pkg.product_id)
+          .maybeSingle(),
+        db
+          .from("product_translations")
+          .select("title")
+          .eq("product_id", pkg.product_id)
+          .eq("language_code", "en")
+          .maybeSingle(),
+        db
+          .from("product_pricing")
+          .select("mode, base_amount_idr")
+          .eq("product_id", pkg.product_id)
+          .maybeSingle(),
+        db.from("fields").select("*").eq("product_id", pkg.product_id).order("display_order"),
+      ]);
+
+    const optionRows = (fieldRows ?? []).length
+      ? ((
+          await db
+            .from("field_options")
+            .select("*")
+            .in(
+              "field_id",
+              (fieldRows ?? []).map((f: any) => f.id),
+            )
+            .order("display_order")
+        ).data ?? [])
+      : [];
+
 
     const quote = await quotePackage({
       productId: pkg.product_id,
@@ -204,7 +238,10 @@ export async function revalidateCart(token?: string): Promise<CheckoutRevalidati
       isGift: false,
     });
 
-    const title = translation?.title || product?.internal_name || "Package";
+    // The display name set on the product wins, so cart, order and voucher agree.
+    const title =
+      (product as any)?.voucher_name?.trim() || translation?.title || product?.internal_name || "Package";
+
     const own: string[] = [];
     if (!quote.purchasable) own.push(`${title} is no longer available to book.`);
     for (const issue of quote.configuration_issues) own.push(`${title}: ${issue}`);
@@ -217,7 +254,18 @@ export async function revalidateCart(token?: string): Promise<CheckoutRevalidati
       line_kind: "product",
       product_id: pkg.product_id,
       product_title: title,
+      base_price_idr:
+        pricing?.base_amount_idr == null ? null : Number(pricing.base_amount_idr),
+      option_labels: summarizeAnswers(
+        (fieldRows ?? []) as never,
+        optionRows as never,
+        (pkg.answers ?? {}) as PreviewValues,
+        Object.fromEntries(
+          ((quote.catalogue_selections ?? []) as any[]).map((c) => [c.item_id, c.name]),
+        ),
+      ),
       pricing_mode: pricing?.mode ?? "structured",
+
       answers: (pkg.answers ?? {}) as Record<string, unknown>,
       resolved_inputs: quote.resolved_inputs as Record<string, unknown>,
       catalogue_selections: quote.catalogue_selections,
@@ -315,6 +363,9 @@ function buildSnapshot(
       package_id: p.package_id,
       product_id: p.product_id,
       product_title: p.product_title,
+      base_price_idr: p.base_price_idr,
+      option_labels: p.option_labels,
+
       pricing_mode: p.pricing_mode,
       answers: p.answers,
       resolved_inputs: p.resolved_inputs,

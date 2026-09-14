@@ -89,8 +89,18 @@ export type DocumentModel = {
   validity: DocumentLine[];
   experience: {
     package_title: string;
-    items: { product_title: string; options: DocumentLine[]; people: number | null; quantity: number | null }[];
+    items: {
+      product_title: string;
+      options: DocumentLine[];
+      people: number | null;
+      quantity: number | null;
+      /** Money lines are always absent on a gift voucher. */
+      base_price: string | null;
+      breakdown: DocumentLine[];
+      total: string | null;
+    }[];
   };
+
   gift: { recipient_name: string | null; message: string | null } | null;
   holder_name: string | null;
   usage_instructions: string[];
@@ -171,7 +181,17 @@ export function buildDocumentModel(source: DocumentSource): DocumentModel {
         options: (item?.options ?? []).map((o: any) => ({ label: String(o?.label ?? ""), value: String(o?.value ?? "") })),
         people: item?.people ?? null,
         quantity: item?.quantity ?? null,
+        base_price:
+          isGift || item?.base_price_idr == null ? null : formatIdrPlain(Number(item.base_price_idr)),
+        breakdown: isGift
+          ? []
+          : ((item?.breakdown ?? []) as any[]).map((b) => ({
+              label: String(b?.label ?? "Option"),
+              value: formatIdrPlain(Number(b?.amount_idr ?? 0)),
+            })),
+        total: isGift || item?.total_idr == null ? null : formatIdrPlain(Number(item.total_idr)),
       })),
+
     },
     gift: isGift
       ? {
@@ -255,6 +275,17 @@ export function buildEmailContent(args: {
   lines.push(`Experience: ${model.experience.package_title}`);
   for (const line of model.validity) lines.push(`${line.label}: ${line.value}`);
   if (!isGift) for (const line of model.commercial) lines.push(`${line.label}: ${line.value}`);
+  // What was booked, package by package: name, price and the customer's choices.
+  for (const item of model.experience.items) {
+    lines.push("");
+    lines.push(item.product_title);
+    if (item.base_price) lines.push(`  Base price: ${item.base_price}`);
+    for (const b of item.breakdown) lines.push(`  ${b.label}: ${b.value}`);
+    if (item.total) lines.push(`  Package total: ${item.total}`);
+    for (const o of item.options) lines.push(`  ${o.label}: ${o.value}`);
+    if (item.people != null) lines.push(`  People: ${item.people}`);
+    if (item.quantity != null) lines.push(`  Quantity: ${item.quantity}`);
+  }
   if (isGift && model.gift?.message) {
     lines.push("");
     lines.push(`Your message: ${model.gift.message}`);
@@ -263,6 +294,7 @@ export function buildEmailContent(args: {
   for (const step of model.usage_instructions) lines.push(`- ${step}`);
   lines.push("");
   for (const line of model.contact) lines.push(`${line.label}: ${line.value}`);
+
 
   const text = lines.join("\n");
 
@@ -278,7 +310,22 @@ export function buildEmailContent(args: {
 ${model.validity.map((l) => `<tr><td style="padding:6px 0;color:#6b7280">${escape(l.label)}</td><td style="padding:6px 0;text-align:right">${escape(l.value)}</td></tr>`).join("")}
 ${isGift ? "" : model.commercial.map((l) => `<tr><td style="padding:6px 0;color:#6b7280">${escape(l.label)}</td><td style="padding:6px 0;text-align:right">${escape(l.value)}</td></tr>`).join("")}
 </table>
+${model.experience.items
+    .map(
+      (item) => `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin:0 0 12px">
+<p style="font-size:15px;font-weight:bold;margin:0 0 6px">${escape(item.product_title)}</p>
+<table role="presentation" style="width:100%;border-collapse:collapse;font-size:13px">
+${item.base_price ? `<tr><td style="padding:3px 0;color:#6b7280">Base price</td><td style="padding:3px 0;text-align:right">${escape(item.base_price)}</td></tr>` : ""}
+${item.breakdown.map((b) => `<tr><td style="padding:3px 0;color:#6b7280">${escape(b.label)}</td><td style="padding:3px 0;text-align:right">${escape(b.value)}</td></tr>`).join("")}
+${item.total ? `<tr><td style="padding:3px 0;font-weight:bold">Package total</td><td style="padding:3px 0;text-align:right;font-weight:bold">${escape(item.total)}</td></tr>` : ""}
+${item.options.map((o) => `<tr><td style="padding:3px 0;color:#6b7280">${escape(o.label)}</td><td style="padding:3px 0;text-align:right">${escape(o.value)}</td></tr>`).join("")}
+${item.people != null ? `<tr><td style="padding:3px 0;color:#6b7280">People</td><td style="padding:3px 0;text-align:right">${item.people}</td></tr>` : ""}
+${item.quantity != null ? `<tr><td style="padding:3px 0;color:#6b7280">Quantity</td><td style="padding:3px 0;text-align:right">${item.quantity}</td></tr>` : ""}
+</table></div>`,
+    )
+    .join("")}
 ${isGift && model.gift?.message ? `<p style="font-size:15px;line-height:1.6;font-style:italic;background:#f9fafb;padding:12px;border-radius:8px;margin:0 0 16px">${escape(model.gift.message)}</p>` : ""}
+
 <ul style="font-size:14px;line-height:1.6;padding-left:18px;margin:0 0 16px">${model.usage_instructions.map((s) => `<li>${escape(s)}</li>`).join("")}</ul>
 <p style="font-size:13px;color:#6b7280;line-height:1.6;margin:0">${model.contact.map((l) => `${escape(l.label)}: ${escape(l.value)}`).join("<br>")}</p>
 </div></body></html>`;

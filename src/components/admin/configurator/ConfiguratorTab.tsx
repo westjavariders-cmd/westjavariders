@@ -58,6 +58,57 @@ type Props = { bundle: ProductBundle; canEdit: boolean; reload: () => void };
 
 const numeric = (v: string) => (v.trim() === "" ? null : Number(v));
 
+/**
+ * The name the customer, the instructors and the admin all read: cart,
+ * order and voucher. Empty keeps the current product title, as before.
+ */
+function VoucherNameCard({ bundle, canEdit, reload }: Props) {
+  const [value, setValue] = useState((bundle.product as any).voucher_name ?? "");
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    setSaving(true);
+    const { error } = await supabase
+      .from("products")
+      .update({ voucher_name: value.trim() || null } as never)
+      .eq("id", bundle.product.id);
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    await recordAdminAction("product_voucher_name_updated", "products", bundle.product.internal_name, {
+      voucher_name: value.trim() || null,
+    });
+    toast.success("Display name saved.");
+    reload();
+  }
+
+  return (
+    <Card>
+      <CardContent className="space-y-2 p-4">
+        <Label className="text-xs">Display name (cart, order and voucher)</Label>
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            className="h-9 max-w-md"
+            value={value}
+            disabled={!canEdit}
+            placeholder="Leave empty to use the product title"
+            onChange={(e) => setValue(e.target.value)}
+          />
+          {canEdit && (
+            <Button size="sm" variant="outline" disabled={saving} onClick={save}>
+              Save
+            </Button>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          This is the name the customer sees in the cart and on the voucher, and the one you see on
+          the order.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+
 export function ConfiguratorTab({ bundle, canEdit, reload }: Props) {
   const [openStep, setOpenStep] = useState<string | null>(bundle.steps[0]?.id ?? null);
 
@@ -75,12 +126,14 @@ export function ConfiguratorTab({ bundle, canEdit, reload }: Props) {
 
   return (
     <div className="space-y-4">
+      <VoucherNameCard bundle={bundle} canEdit={canEdit} reload={reload} />
       {canEdit && (
         <Button size="sm" variant="outline" onClick={addStep}>
           <Plus className="mr-1.5 h-3.5 w-3.5" />
           Add step
         </Button>
       )}
+
       {bundle.steps.length === 0 && (
         <p className="text-sm text-muted-foreground">No steps yet.</p>
       )}

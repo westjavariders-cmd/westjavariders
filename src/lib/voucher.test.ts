@@ -94,7 +94,40 @@ describe("entitlement", () => {
     expect(built.items[0]!.people).toBe(2);
     expect(built.payment_state).toBe("partially_paid");
   });
+
+  it("shows the package name, base price, partial amounts and total", () => {
+    const detailed = {
+      packages: [
+        {
+          package_id: "pk1",
+          product_title: "Beginners week",
+          option_labels: [{ label: "Choose your level", value: "Beginner" }],
+          quote_lines: [
+            { source: "base", label: "Base", amount_idr: 1_000_000 },
+            { source: "rule", label: "Extra day", amount_idr: 500_000 },
+            { source: "rule", label: "Nothing", amount_idr: 0 },
+          ],
+          base_price_idr: 1_000_000,
+          total_idr: 1_500_000,
+        },
+      ],
+      customer: { full_name: "Ana Rivera" },
+    };
+    const built = buildEntitlement({ ...base, snapshot: detailed, voucherType: "STANDARD" });
+    const item = built.items[0]!;
+    expect(built.package_title).toBe("Beginners week");
+    expect(item.options).toEqual([{ label: "Choose your level", value: "Beginner" }]);
+    expect(item.base_price_idr).toBe(1_000_000);
+    expect(item.breakdown).toEqual([{ label: "Extra day", amount_idr: 500_000 }]);
+    expect(item.total_idr).toBe(1_500_000);
+
+    const gift = buildEntitlement({ ...base, snapshot: detailed, voucherType: "GIFT" });
+    expect(gift.items[0]!.base_price_idr).toBeNull();
+    expect(gift.items[0]!.breakdown).toEqual([]);
+    expect(gift.items[0]!.total_idr).toBeNull();
+  });
 });
+
 
 describe("redemption", () => {
   const voucher = {
