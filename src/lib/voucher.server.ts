@@ -46,10 +46,12 @@ async function purchaseWithSnapshot(db: any, purchaseId: string) {
   return { purchase, snapshot: snapshot?.data ?? null };
 }
 
-function entitlementFor(purchase: any, snapshot: any, packageId: string | null) {
+async function entitlementFor(db: any, purchase: any, snapshot: any, packageId: string | null) {
   const type: VoucherType = purchase.is_gift ? "GIFT" : "STANDARD";
+  const { withOrderedSnapshotAnswers } = await import("@/lib/answer-summary.server");
+  const orderedSnapshot = await withOrderedSnapshotAnswers(db, snapshot);
   return buildEntitlement({
-    snapshot,
+    snapshot: orderedSnapshot,
     voucherType: type,
     purchaseReference: purchase.reference ?? null,
     purchaseCreatedAt: purchase.created_at ?? null,
@@ -108,7 +110,7 @@ export async function issueVouchersForPurchase(
       _purchase_id: purchaseId,
       _package_id: packageId,
       _validity_months: months,
-      _entitlement: entitlementFor(purchase, snapshot, packageId) as never,
+      _entitlement: await entitlementFor(db, purchase, snapshot, packageId) as never,
     });
     if (error || !voucherId) return { vouchers: [], reason: "issue_failed", created };
     created += 1;
@@ -142,7 +144,7 @@ export async function regenerateRepresentation(voucherId: string) {
   const { error } = await db
     .from("vouchers")
     .update({
-      entitlement: entitlementFor(purchase, snapshot, voucher.package_id) as never,
+      entitlement: await entitlementFor(db, purchase, snapshot, voucher.package_id) as never,
       representation_version: Number(voucher.representation_version) + 1,
     })
     .eq("id", voucherId);

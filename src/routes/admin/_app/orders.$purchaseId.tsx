@@ -217,10 +217,10 @@ function PurchaseDetailPage() {
                     <p className="font-semibold">{formatIdr(Number(pkg.total_idr))}</p>
                   </div>
                   <dl className="mt-2 space-y-1">
-                    {Object.entries(pkg.answers ?? {}).map(([key, value]) => (
-                      <div key={key} className="flex justify-between gap-4">
-                        <dt className="text-muted-foreground">{key}</dt>
-                        <dd>{formatAnswer(value)}</dd>
+                    {(pkg.option_labels ?? []).map((option: any, index: number) => (
+                      <div key={`${option.label}-${index}`} className="flex justify-between gap-4">
+                        <dt className="text-muted-foreground">{option.label}</dt>
+                        <dd>{option.value}</dd>
                       </div>
                     ))}
                   </dl>

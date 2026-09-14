@@ -171,9 +171,12 @@ export const getPurchaseDetail = createServerFn({ method: "POST" })
           .order("code", { ascending: true }),
       ]);
 
+    const { withOrderedSnapshotAnswers } = await import("@/lib/answer-summary.server");
+    const orderedSnapshot = await withOrderedSnapshotAnswers(db, snapshot?.data ?? null);
+
     return {
       purchase,
-      snapshot: snapshot?.data ?? null,
+      snapshot: orderedSnapshot,
       snapshot_taken_at: snapshot?.created_at ?? null,
       payments: payments ?? [],
       other_purchases: siblings ?? [],
