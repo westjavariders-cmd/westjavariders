@@ -216,6 +216,9 @@ export async function revalidateCart(token?: string): Promise<CheckoutRevalidati
         db.from("fields").select("*").eq("product_id", pkg.product_id).order("display_order"),
       ]);
 
+    // The voucher lists the customer's choices in configurator order: step by step.
+    const orderedFields = await orderFieldsByStep(db, pkg.product_id, (fieldRows ?? []) as any[]);
+
     const optionRows = (fieldRows ?? []).length
       ? ((
           await db
