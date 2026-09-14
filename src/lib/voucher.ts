@@ -116,7 +116,14 @@ export type VoucherEntitlementItem = {
   options: { label: string; value: string }[];
   people: number | null;
   quantity: number | null;
+  /** Base amount of this package. Never present on a gift voucher. */
+  base_price_idr: number | null;
+  /** The partial amounts the price is made of. Empty on a gift voucher. */
+  breakdown: { label: string; amount_idr: number }[];
+  /** Final amount of this package. Never present on a gift voucher. */
+  total_idr: number | null;
 };
+
 
 export type VoucherEntitlement = {
   representation_version: 1;
