@@ -263,7 +263,11 @@ export function buildEntitlement(args: {
       options: optionLabels(p),
       people: numberFrom(p.resolved_inputs, ["people", "guests", "participants"]),
       quantity: numberFrom(p.resolved_inputs, ["quantity", "sessions", "days", "nights"]),
+      base_price_idr: isGift || p.base_price_idr == null ? null : Number(p.base_price_idr),
+      breakdown: isGift ? [] : breakdownOf(p),
+      total_idr: isGift || p.total_idr == null ? null : Number(p.total_idr),
     })),
+
     usage_instructions: VOUCHER_INSTRUCTIONS,
     contact: CIMAJA_CONTACT,
   };
