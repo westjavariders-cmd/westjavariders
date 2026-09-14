@@ -70,7 +70,7 @@ export const getVoucherDetail = createServerFn({ method: "POST" })
     if (!voucher) throw new Error("This voucher could not be found.");
 
     const [{ data: snapshot }, { data: payments }] = await Promise.all([
-      db.from("purchase_snapshots").select("id, created_at").eq("purchase_id", voucher.purchase_id).maybeSingle(),
+      db.from("purchase_snapshots").select("id, created_at, data").eq("purchase_id", voucher.purchase_id).maybeSingle(),
       db
         .from("payment_requests")
         .select("id, kind, status, amount_idr, paid_at, created_at")
@@ -85,8 +85,24 @@ export const getVoucherDetail = createServerFn({ method: "POST" })
     const { readContactSettings } = await import("@/lib/voucher-delivery");
     const contactCheck = readContactSettings(contactRows ?? []);
 
+    const { withOrderedSnapshotAnswers } = await import("@/lib/answer-summary.server");
+    const orderedSnapshot = await withOrderedSnapshotAnswers(db, snapshot?.data ?? null);
+    const { buildEntitlement } = await import("@/lib/voucher");
+    const purchase = voucher.purchases as any;
+    const orderedEntitlement = buildEntitlement({
+      snapshot: orderedSnapshot,
+      voucherType: voucher.voucher_type,
+      purchaseReference: purchase?.reference ?? null,
+      purchaseCreatedAt: purchase?.created_at ?? null,
+      packageId: voucher.package_id,
+      totalIdr: Number(purchase?.total_idr ?? 0),
+      paidIdr: Number(purchase?.paid_idr ?? 0),
+      recipientName: voucher.gift_recipient_name,
+      giftMessage: voucher.gift_message,
+    });
+
     return {
-      voucher,
+      voucher: { ...voucher, entitlement: orderedEntitlement },
       contact_ready: contactCheck.ok,
       contact_missing: contactCheck.ok ? [] : (contactCheck as any).missing,
       snapshot_reference: snapshot?.id ?? null,

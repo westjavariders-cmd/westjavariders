@@ -28,7 +28,6 @@ import { activePaymentProvider, providerByName } from "@/lib/payments/provider.s
 import { validateGift, type GiftData, type GiftInput } from "@/lib/voucher";
 import { fxContext, freezeFx, displayAmount } from "@/lib/fx.server";
 import { toPublicFx, type PublicFxContext } from "@/lib/fx.functions";
-import { summarizeAnswers } from "@/lib/public-catalog";
 import { orderedAnswerSummary, withOrderedSnapshotAnswers } from "@/lib/answer-summary.server";
 
 

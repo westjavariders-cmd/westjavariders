@@ -376,11 +376,3 @@ function PurchaseDetailPage() {
     </div>
   );
 }
-
-function formatAnswer(value: unknown): string {
-  if (Array.isArray(value)) return value.map((v) => String(v)).join(", ");
-  if (value === true) return "Yes";
-  if (value === false) return "No";
-  if (value == null || value === "") return "—";
-  return String(value);
-}
