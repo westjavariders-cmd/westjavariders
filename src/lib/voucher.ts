@@ -160,6 +160,13 @@ export const VOUCHER_INSTRUCTIONS = [
 ];
 
 function optionLabels(pkg: any): { label: string; value: string }[] {
+  // Newer snapshots carry the real question labels the customer answered.
+  const saved = pkg?.option_labels;
+  if (Array.isArray(saved) && saved.length > 0) {
+    return saved
+      .filter((o: any) => o && (o.label != null || o.value != null))
+      .map((o: any) => ({ label: String(o.label ?? ""), value: String(o.value ?? "") }));
+  }
   const answers = (pkg?.answers ?? {}) as Record<string, unknown>;
   const out: { label: string; value: string }[] = [];
   for (const [key, raw] of Object.entries(answers)) {
@@ -170,6 +177,24 @@ function optionLabels(pkg: any): { label: string; value: string }[] {
   }
   return out;
 }
+
+/**
+ * The partial amounts the package price is made of, taken from the frozen
+ * quote lines. The base amount is shown on its own line, so it is skipped
+ * here to avoid repeating it.
+ */
+function breakdownOf(pkg: any): { label: string; amount_idr: number }[] {
+  const lines = Array.isArray(pkg?.quote_lines) ? pkg.quote_lines : [];
+  const out: { label: string; amount_idr: number }[] = [];
+  for (const line of lines) {
+    if (line?.source === "base") continue;
+    const amount = Number(line?.amount_idr_exact ?? line?.amount_idr ?? 0);
+    if (!Number.isFinite(amount) || amount === 0) continue;
+    out.push({ label: String(line?.label ?? "Option"), amount_idr: Math.round(amount) });
+  }
+  return out;
+}
+
 
 function numberFrom(inputs: any, keys: string[]): number | null {
   for (const key of keys) {
