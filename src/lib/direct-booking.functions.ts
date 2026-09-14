@@ -39,6 +39,11 @@ export const bookCatalogueItem = createServerFn({ method: "POST" })
     return addDirectBookingToCart({
       catalogueId: data.catalogueId,
       itemId: data.itemId,
-      choices: data.choices,
+      choices: {
+        nights: data.nights ?? null,
+        days: data.days ?? null,
+        people: data.people ?? null,
+        hours: data.hours ?? null,
+      },
     });
   });
