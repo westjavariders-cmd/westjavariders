@@ -112,6 +112,46 @@ export type CheckoutRevalidation = {
 };
 
 /**
+ * Sorts a product's questions the way the customer sees them: by step order
+ * first, then by question order inside each step. Questions without a step
+ * keep their existing relative order and go last.
+ */
+export function sortFieldsByStepOrder<T extends { step_id?: string | null; display_order?: number | null }>(
+  fields: T[],
+  steps: { id: string; display_order?: number | null }[],
+): T[] {
+  const stepRank = new Map(steps.map((s, i) => [s.id, Number(s.display_order ?? i)]));
+  return fields
+    .map((f, index) => ({ f, index }))
+    .sort((a, b) => {
+      const ra = a.f.step_id ? (stepRank.get(a.f.step_id) ?? Number.MAX_SAFE_INTEGER) : Number.MAX_SAFE_INTEGER;
+      const rb = b.f.step_id ? (stepRank.get(b.f.step_id) ?? Number.MAX_SAFE_INTEGER) : Number.MAX_SAFE_INTEGER;
+      if (ra !== rb) return ra - rb;
+      const da = Number(a.f.display_order ?? 0);
+      const db2 = Number(b.f.display_order ?? 0);
+      if (da !== db2) return da - db2;
+      return a.index - b.index;
+    })
+    .map((x) => x.f);
+}
+
+async function orderFieldsByStep(db: any, productId: string, fields: any[]): Promise<any[]> {
+  if (fields.length === 0) return fields;
+  const { data: flow } = await db
+    .from("config_flows")
+    .select("id")
+    .eq("product_id", productId)
+    .maybeSingle();
+  if (!flow) return fields;
+  const { data: steps } = await db
+    .from("steps")
+    .select("id, display_order")
+    .eq("flow_id", flow.id)
+    .order("display_order");
+  return sortFieldsByStepOrder(fields, (steps ?? []) as any[]);
+}
+
+/**
  * Recomputes every complete package in the cart from live configuration and
  * pricing. The client total is never trusted.
  */
