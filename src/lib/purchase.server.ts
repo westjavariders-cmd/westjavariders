@@ -238,7 +238,10 @@ export async function revalidateCart(token?: string): Promise<CheckoutRevalidati
       isGift: false,
     });
 
-    const title = translation?.title || product?.internal_name || "Package";
+    // The display name set on the product wins, so cart, order and voucher agree.
+    const title =
+      (product as any)?.voucher_name?.trim() || translation?.title || product?.internal_name || "Package";
+
     const own: string[] = [];
     if (!quote.purchasable) own.push(`${title} is no longer available to book.`);
     for (const issue of quote.configuration_issues) own.push(`${title}: ${issue}`);
@@ -251,7 +254,18 @@ export async function revalidateCart(token?: string): Promise<CheckoutRevalidati
       line_kind: "product",
       product_id: pkg.product_id,
       product_title: title,
+      base_price_idr:
+        pricing?.base_amount_idr == null ? null : Number(pricing.base_amount_idr),
+      option_labels: summarizeAnswers(
+        (fieldRows ?? []) as never,
+        optionRows as never,
+        (pkg.answers ?? {}) as PreviewValues,
+        Object.fromEntries(
+          ((quote.catalogue_selections ?? []) as any[]).map((c) => [c.item_id, c.name]),
+        ),
+      ),
       pricing_mode: pricing?.mode ?? "structured",
+
       answers: (pkg.answers ?? {}) as Record<string, unknown>,
       resolved_inputs: quote.resolved_inputs as Record<string, unknown>,
       catalogue_selections: quote.catalogue_selections,
