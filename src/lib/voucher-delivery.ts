@@ -310,7 +310,22 @@ export function buildEmailContent(args: {
 ${model.validity.map((l) => `<tr><td style="padding:6px 0;color:#6b7280">${escape(l.label)}</td><td style="padding:6px 0;text-align:right">${escape(l.value)}</td></tr>`).join("")}
 ${isGift ? "" : model.commercial.map((l) => `<tr><td style="padding:6px 0;color:#6b7280">${escape(l.label)}</td><td style="padding:6px 0;text-align:right">${escape(l.value)}</td></tr>`).join("")}
 </table>
+${model.experience.items
+    .map(
+      (item) => `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin:0 0 12px">
+<p style="font-size:15px;font-weight:bold;margin:0 0 6px">${escape(item.product_title)}</p>
+<table role="presentation" style="width:100%;border-collapse:collapse;font-size:13px">
+${item.base_price ? `<tr><td style="padding:3px 0;color:#6b7280">Base price</td><td style="padding:3px 0;text-align:right">${escape(item.base_price)}</td></tr>` : ""}
+${item.breakdown.map((b) => `<tr><td style="padding:3px 0;color:#6b7280">${escape(b.label)}</td><td style="padding:3px 0;text-align:right">${escape(b.value)}</td></tr>`).join("")}
+${item.total ? `<tr><td style="padding:3px 0;font-weight:bold">Package total</td><td style="padding:3px 0;text-align:right;font-weight:bold">${escape(item.total)}</td></tr>` : ""}
+${item.options.map((o) => `<tr><td style="padding:3px 0;color:#6b7280">${escape(o.label)}</td><td style="padding:3px 0;text-align:right">${escape(o.value)}</td></tr>`).join("")}
+${item.people != null ? `<tr><td style="padding:3px 0;color:#6b7280">People</td><td style="padding:3px 0;text-align:right">${item.people}</td></tr>` : ""}
+${item.quantity != null ? `<tr><td style="padding:3px 0;color:#6b7280">Quantity</td><td style="padding:3px 0;text-align:right">${item.quantity}</td></tr>` : ""}
+</table></div>`,
+    )
+    .join("")}
 ${isGift && model.gift?.message ? `<p style="font-size:15px;line-height:1.6;font-style:italic;background:#f9fafb;padding:12px;border-radius:8px;margin:0 0 16px">${escape(model.gift.message)}</p>` : ""}
+
 <ul style="font-size:14px;line-height:1.6;padding-left:18px;margin:0 0 16px">${model.usage_instructions.map((s) => `<li>${escape(s)}</li>`).join("")}</ul>
 <p style="font-size:13px;color:#6b7280;line-height:1.6;margin:0">${model.contact.map((l) => `${escape(l.label)}: ${escape(l.value)}`).join("<br>")}</p>
 </div></body></html>`;
