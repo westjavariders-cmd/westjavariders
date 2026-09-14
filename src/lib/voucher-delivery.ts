@@ -181,7 +181,17 @@ export function buildDocumentModel(source: DocumentSource): DocumentModel {
         options: (item?.options ?? []).map((o: any) => ({ label: String(o?.label ?? ""), value: String(o?.value ?? "") })),
         people: item?.people ?? null,
         quantity: item?.quantity ?? null,
+        base_price:
+          isGift || item?.base_price_idr == null ? null : formatIdrPlain(Number(item.base_price_idr)),
+        breakdown: isGift
+          ? []
+          : ((item?.breakdown ?? []) as any[]).map((b) => ({
+              label: String(b?.label ?? "Option"),
+              value: formatIdrPlain(Number(b?.amount_idr ?? 0)),
+            })),
+        total: isGift || item?.total_idr == null ? null : formatIdrPlain(Number(item.total_idr)),
       })),
+
     },
     gift: isGift
       ? {
