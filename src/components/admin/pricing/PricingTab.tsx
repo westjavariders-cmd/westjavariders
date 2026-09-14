@@ -316,24 +316,36 @@ function PricingSettings({
   const mapping = (
     key: "people_variable" | "days_variable" | "nights_variable" | "sessions_variable",
     label: string,
-  ) => (
-    <div>
-      <Label className="text-[11px]">{label}</Label>
-      <select
-        className={selectClass}
-        value={draft[key]}
-        disabled={!canEdit}
-        onChange={(e) => setDraft({ ...draft, [key]: e.target.value })}
-      >
-        <option value="">Not used</option>
-        {numeric.map((f) => (
-          <option key={f.id} value={f.variable_name}>
-            {f.internal_name} ({f.variable_name})
-          </option>
-        ))}
-      </select>
-    </div>
-  );
+  ) => {
+    const value = draft[key];
+    const orphan = value !== "" && !numeric.some((f) => f.variable_name === value);
+    return (
+      <div>
+        <Label className="text-[11px]">{label}</Label>
+        <select
+          className={selectClass}
+          value={value}
+          disabled={!canEdit}
+          onChange={(e) => setDraft({ ...draft, [key]: e.target.value })}
+        >
+          <option value="">Not used</option>
+          {orphan && <option value={value}>Missing: {value}</option>}
+          {numeric.map((f) => (
+            <option key={f.id} value={f.variable_name}>
+              {f.internal_name} ({f.variable_name})
+            </option>
+          ))}
+        </select>
+        {orphan && (
+          <p className="mt-1 text-[11px] text-destructive">
+            “{value}” no longer exists in this product. Choose “Not used” or the right question, then
+            save.
+          </p>
+        )}
+      </div>
+    );
+  };
+
 
   return (
     <Card>

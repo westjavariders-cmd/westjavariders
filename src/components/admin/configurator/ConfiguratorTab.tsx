@@ -314,9 +314,22 @@ function FieldEditor({
       })
       .eq("id", field.id);
     if (error) { toast.error(error.message); return; }
+    // A rename must follow through to Pricing, otherwise its quantity mappings
+    // and rules keep pointing at a name that no longer exists.
+    const renamedFrom = draft.variable_name === field.variable_name ? null : field.variable_name;
+    if (renamedFrom) {
+      const { error: syncError } = await supabase.rpc("rename_pricing_variable", {
+        _product_id: bundle.product.id,
+        _old: renamedFrom,
+        _new: draft.variable_name.trim(),
+      });
+      if (syncError) {
+        toast.error("The question was renamed, but Pricing could not be updated. Check Pricing settings.");
+      }
+    }
     await recordAdminAction("configurator_field_updated", "fields", draft.internal_name, {
       variable_name: draft.variable_name,
-      renamed_from: draft.variable_name === field.variable_name ? null : field.variable_name,
+      renamed_from: renamedFrom,
     });
     toast.success("Field saved.");
     reload();
@@ -325,9 +338,16 @@ function FieldEditor({
   async function removeField() {
     const { error } = await supabase.from("fields").delete().eq("id", field.id);
     if (error) { toast.error(error.message); return; }
+    // Clear any Pricing mapping that used this question, so activation is never
+    // blocked by a pointer to a deleted question.
+    await supabase.rpc("clear_pricing_variable", {
+      _product_id: bundle.product.id,
+      _name: field.variable_name,
+    });
     await recordAdminAction("configurator_field_removed", "fields", field.internal_name);
     reload();
   }
+
 
   async function addOption() {
     const { error } = await supabase.from("field_options").insert({
