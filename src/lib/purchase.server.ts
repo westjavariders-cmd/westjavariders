@@ -28,6 +28,8 @@ import { activePaymentProvider, providerByName } from "@/lib/payments/provider.s
 import { validateGift, type GiftData, type GiftInput } from "@/lib/voucher";
 import { fxContext, freezeFx, displayAmount } from "@/lib/fx.server";
 import { toPublicFx, type PublicFxContext } from "@/lib/fx.functions";
+import { summarizeAnswers } from "@/lib/public-catalog";
+
 
 export { CartError };
 
@@ -66,6 +68,11 @@ export type RevalidatedPackage = {
   /** Null on direct catalogue bookings, which have no product. */
   product_id: string | null;
   product_title: string;
+  /** Base amount configured in Pricing, before the customer's choices. */
+  base_price_idr: number | null;
+  /** The customer's choices with the real question labels they answered. */
+  option_labels: { label: string; value: string }[];
+
   pricing_mode: string;
   answers: Record<string, unknown>;
   resolved_inputs: Record<string, unknown>;
