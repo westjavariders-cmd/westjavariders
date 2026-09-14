@@ -61,3 +61,19 @@ describe("purchase status", () => {
     expect(purchaseStatusFor(1000, 1200)).toBe("paid");
   });
 });
+
+describe("voucher option order", () => {
+  it("lists questions by step order, then by question order", () => {
+    const fields = [
+      { id: "b1", step_id: "s2", display_order: 0 },
+      { id: "a2", step_id: "s1", display_order: 1 },
+      { id: "a1", step_id: "s1", display_order: 0 },
+      { id: "x", step_id: null, display_order: 0 },
+    ];
+    const steps = [
+      { id: "s1", display_order: 0 },
+      { id: "s2", display_order: 1 },
+    ];
+    expect(sortFieldsByStepOrder(fields, steps).map((f) => f.id)).toEqual(["a1", "a2", "b1", "x"]);
+  });
+});
