@@ -194,11 +194,9 @@ function optionLabels(pkg: any): { label: string; value: string }[] {
     if (Array.isArray(raw)) {
       const parts = raw.map(resolve).filter((v): v is string => !!v);
       value = parts.length > 0 ? parts.join(", ") : null;
-    } else if (typeof raw === "boolean") value = "Yes";
+    } else if (typeof raw === "boolean") value = null; // yes/no gates are not shown
     else value = resolve(raw);
-    if (value == null || value === "") continue;
-
-    out.push({ label, value });
+    if (value != null && value !== "") out.push({ label, value });
     for (const { suffix, label: qLabel } of QUANTITY_SUFFIXES) {
       const q = answers[`${key}${suffix}`];
       if (isEmptyAnswer(q)) continue;

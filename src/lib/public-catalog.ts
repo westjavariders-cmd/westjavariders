@@ -77,12 +77,18 @@ export function summarizeAnswers(
       return UUID_RE.test(value) ? null : value;
     };
 
+    // Yes/no questions are only gates for what follows: the chosen extras and
+    // their quantities are listed on their own, so the "Yes" itself is noise.
+    if (typeof raw === "boolean" || f.field_type === "boolean") {
+      lines.push(...quantityLines(f.variable_name, all));
+      continue;
+    }
+
     let value: string | null;
     if (Array.isArray(raw)) {
       const parts = raw.map((v) => optionLabel(String(v))).filter((v): v is string => !!v);
       value = parts.length > 0 ? parts.join(", ") : null;
-    } else if (typeof raw === "boolean") value = "Yes";
-    else if (f.field_type === "single_select" || f.field_type === "multi_select")
+    } else if (f.field_type === "single_select" || f.field_type === "multi_select")
       value = optionLabel(String(raw));
     else value = String(raw);
 
