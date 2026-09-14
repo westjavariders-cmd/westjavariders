@@ -125,7 +125,9 @@ function CartPage() {
             <CardContent className="space-y-3 p-4">
               <div className="flex items-baseline justify-between gap-3">
                 <p className="text-sm font-medium">
-                  {p.product_title.toUpperCase()} — PACKAGE
+                  {p.product_id
+                    ? `${p.product_title.toUpperCase()} — PACKAGE`
+                    : p.product_title.toUpperCase()}
                 </p>
                 <p className="text-base font-semibold">{formatIdr(p.total_idr)}</p>
               </div>
@@ -183,17 +185,19 @@ function CartPage() {
                 Not finished yet, so it is not part of your total.
               </p>
               <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    navigate({
-                      to: "/build-your-trip/$productId",
-                      params: { productId: draft.product_id },
-                    })
-                  }
-                >
-                  Continue current package
-                </Button>
+                {draft.product_id && (
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      navigate({
+                        to: "/build-your-trip/$productId",
+                        params: { productId: draft.product_id as string },
+                      })
+                    }
+                  >
+                    Continue current package
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="outline"

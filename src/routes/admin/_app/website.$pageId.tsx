@@ -75,6 +75,7 @@ type BlockDraft = {
   body: string;
   cta_label: string;
   product_ids: string[];
+  catalogue_ids: string[];
 };
 
 function selectClass() {
@@ -189,12 +190,45 @@ function WebsitePageEditor() {
     },
   });
 
+  const blockCatalogues = useQuery({
+    queryKey: ["website-block-catalogues", blockIds.join(",")],
+    enabled: blockIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("website_block_catalogues")
+        .select("block_id, catalogue_id, sort_order")
+        .in("block_id", blockIds)
+        .order("sort_order");
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    },
+  });
+
+  const catalogues = useQuery({
+    queryKey: ["website-catalogue-options"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("catalogues")
+        .select("id, internal_name, public_name, template, active")
+        .eq("active", true)
+        .order("sort_order");
+      if (error) throw new Error(error.message);
+      return (data ?? []) as {
+        id: string;
+        internal_name: string;
+        public_name: string | null;
+        template: string;
+      }[];
+    },
+  });
+
   function refresh() {
     void queryClient.invalidateQueries({ queryKey: ["website-sections", pageId] });
     void queryClient.invalidateQueries({ queryKey: ["website-section-text"] });
     void queryClient.invalidateQueries({ queryKey: ["website-blocks", pageId] });
     void queryClient.invalidateQueries({ queryKey: ["website-block-text"] });
     void queryClient.invalidateQueries({ queryKey: ["website-block-products"] });
+    void queryClient.invalidateQueries({ queryKey: ["website-block-catalogues"] });
   }
 
   /* ---------------- sections ---------------- */
@@ -295,6 +329,7 @@ function WebsitePageEditor() {
       body: "",
       cta_label: "",
       product_ids: [],
+      catalogue_ids: [],
     };
   }
 
@@ -318,6 +353,9 @@ function WebsitePageEditor() {
       product_ids: (blockProducts.data ?? [])
         .filter((r: any) => r.block_id === block.id)
         .map((r: any) => r.product_id),
+      catalogue_ids: (blockCatalogues.data ?? [])
+        .filter((r: any) => r.block_id === block.id)
+        .map((r: any) => r.catalogue_id),
     });
     setMediaPreview(null);
     if (block.media_path) {
@@ -372,6 +410,7 @@ function WebsitePageEditor() {
           body: blockDraft.body,
           cta_label: blockDraft.cta_label,
           product_ids: blockDraft.product_ids,
+          catalogue_ids: blockDraft.catalogue_ids,
         },
       });
       toast.success("Block saved.");
@@ -685,6 +724,41 @@ function WebsitePageEditor() {
                 <video src={mediaPreview} controls className="h-32 w-auto rounded-md border" />
               )}
             </div>
+
+            {blockDraft.block_kind === "catalogue" && (
+              <div>
+                <Label>Catalogues shown by this block</Label>
+                <div className="mt-1 max-h-40 space-y-1 overflow-y-auto rounded-md border p-2">
+                  {(catalogues.data ?? []).map((c) => {
+                    const checked = blockDraft.catalogue_ids.includes(c.id);
+                    return (
+                      <label key={c.id} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() =>
+                            setBlockDraft({
+                              ...blockDraft,
+                              catalogue_ids: checked
+                                ? blockDraft.catalogue_ids.filter((id) => id !== c.id)
+                                : [...blockDraft.catalogue_ids, c.id],
+                            })
+                          }
+                        />
+                        {c.public_name ?? c.internal_name}
+                        <span className="text-muted-foreground">({c.template})</span>
+                      </label>
+                    );
+                  })}
+                  {(catalogues.data ?? []).length === 0 && (
+                    <p className="text-sm text-muted-foreground">No active catalogues yet.</p>
+                  )}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Each bookable item links to its own booking page.
+                </p>
+              </div>
+            )}
 
             {showsProducts && (
               <div>

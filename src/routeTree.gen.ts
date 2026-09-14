@@ -32,6 +32,7 @@ import { Route as AdminAppPricesRouteImport } from './routes/admin/_app/prices'
 import { Route as AdminAppPromoCodesRouteImport } from './routes/admin/_app/promo-codes'
 import { Route as AdminAppReviewsRouteImport } from './routes/admin/_app/reviews'
 import { Route as AdminAppTeamRouteImport } from './routes/admin/_app/team'
+import { Route as BookCatalogueIdItemIdRouteImport } from './routes/book.$catalogueId.$itemId'
 import { Route as AdminAppHotelsIndexRouteImport } from './routes/admin/_app/hotels.index'
 import { Route as AdminAppHotelsAccommodationIdRouteImport } from './routes/admin/_app/hotels.$accommodationId'
 import { Route as AdminAppMotorbikesIndexRouteImport } from './routes/admin/_app/motorbikes.index'
@@ -170,6 +171,11 @@ const AdminAppTeamRoute = AdminAppTeamRouteImport.update({
   id: '/team',
   path: '/team',
   getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const BookCatalogueIdItemIdRoute = BookCatalogueIdItemIdRouteImport.update({
+  id: '/book/$catalogueId/$itemId',
+  path: '/book/$catalogueId/$itemId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminAppHotelsIndexRoute = AdminAppHotelsIndexRouteImport.update({
   id: '/hotels/',
@@ -318,6 +324,7 @@ export interface FileRoutesByFullPath {
   '/admin/promo-codes': typeof AdminAppPromoCodesRoute
   '/admin/reviews': typeof AdminAppReviewsRoute
   '/admin/team': typeof AdminAppTeamRoute
+  '/book/$catalogueId/$itemId': typeof BookCatalogueIdItemIdRoute
   '/admin/': typeof AdminAppIndexRoute
   '/admin/hotels/$accommodationId': typeof AdminAppHotelsAccommodationIdRoute
   '/admin/motorbikes/$motorbikeId': typeof AdminAppMotorbikesMotorbikeIdRoute
@@ -365,6 +372,7 @@ export interface FileRoutesByTo {
   '/admin/promo-codes': typeof AdminAppPromoCodesRoute
   '/admin/reviews': typeof AdminAppReviewsRoute
   '/admin/team': typeof AdminAppTeamRoute
+  '/book/$catalogueId/$itemId': typeof BookCatalogueIdItemIdRoute
   '/admin/hotels/$accommodationId': typeof AdminAppHotelsAccommodationIdRoute
   '/admin/motorbikes/$motorbikeId': typeof AdminAppMotorbikesMotorbikeIdRoute
   '/admin/orders/$purchaseId': typeof AdminAppOrdersPurchaseIdRoute
@@ -413,6 +421,7 @@ export interface FileRoutesById {
   '/admin/_app/promo-codes': typeof AdminAppPromoCodesRoute
   '/admin/_app/reviews': typeof AdminAppReviewsRoute
   '/admin/_app/team': typeof AdminAppTeamRoute
+  '/book/$catalogueId/$itemId': typeof BookCatalogueIdItemIdRoute
   '/admin/_app/': typeof AdminAppIndexRoute
   '/admin/_app/hotels/$accommodationId': typeof AdminAppHotelsAccommodationIdRoute
   '/admin/_app/motorbikes/$motorbikeId': typeof AdminAppMotorbikesMotorbikeIdRoute
@@ -462,6 +471,7 @@ export interface FileRouteTypes {
     | '/admin/promo-codes'
     | '/admin/reviews'
     | '/admin/team'
+    | '/book/$catalogueId/$itemId'
     | '/admin/'
     | '/admin/hotels/$accommodationId'
     | '/admin/motorbikes/$motorbikeId'
@@ -509,6 +519,7 @@ export interface FileRouteTypes {
     | '/admin/promo-codes'
     | '/admin/reviews'
     | '/admin/team'
+    | '/book/$catalogueId/$itemId'
     | '/admin/hotels/$accommodationId'
     | '/admin/motorbikes/$motorbikeId'
     | '/admin/orders/$purchaseId'
@@ -556,6 +567,7 @@ export interface FileRouteTypes {
     | '/admin/_app/promo-codes'
     | '/admin/_app/reviews'
     | '/admin/_app/team'
+    | '/book/$catalogueId/$itemId'
     | '/admin/_app/'
     | '/admin/_app/hotels/$accommodationId'
     | '/admin/_app/motorbikes/$motorbikeId'
@@ -591,6 +603,7 @@ export interface RootRouteChildren {
   PagesSlugRoute: typeof PagesSlugRoute
   PurchasePurchaseIdRoute: typeof PurchasePurchaseIdRoute
   BuildYourTripIndexRoute: typeof BuildYourTripIndexRoute
+  BookCatalogueIdItemIdRoute: typeof BookCatalogueIdItemIdRoute
   ApiPublicPaymentsXenditRoute: typeof ApiPublicPaymentsXenditRoute
 }
 
@@ -756,6 +769,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/team'
       preLoaderRoute: typeof AdminAppTeamRouteImport
       parentRoute: typeof AdminAppRouteRoute
+    }
+    '/book/$catalogueId/$itemId': {
+      id: '/book/$catalogueId/$itemId'
+      path: '/book/$catalogueId/$itemId'
+      fullPath: '/book/$catalogueId/$itemId'
+      preLoaderRoute: typeof BookCatalogueIdItemIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/_app/hotels/': {
       id: '/admin/_app/hotels/'
@@ -1024,6 +1044,7 @@ const rootRouteChildren: RootRouteChildren = {
   PagesSlugRoute: PagesSlugRoute,
   PurchasePurchaseIdRoute: PurchasePurchaseIdRoute,
   BuildYourTripIndexRoute: BuildYourTripIndexRoute,
+  BookCatalogueIdItemIdRoute: BookCatalogueIdItemIdRoute,
   ApiPublicPaymentsXenditRoute: ApiPublicPaymentsXenditRoute,
 }
 export const routeTree = rootRouteImport

@@ -300,6 +300,7 @@ export const saveBlock = createServerFn({ method: "POST" })
         body: text(4000),
         cta_label: text(80),
         product_ids: z.array(z.string().uuid()).max(50).optional(),
+        catalogue_ids: z.array(z.string().uuid()).max(20).optional(),
       })
       .parse(data),
   )
@@ -370,6 +371,24 @@ export const saveBlock = createServerFn({ method: "POST" })
           })),
         );
         if (insertError) fail("The referenced products could not be saved.");
+      }
+    }
+
+    if (data.catalogue_ids) {
+      const { error: clearError } = await supabase
+        .from("website_block_catalogues")
+        .delete()
+        .eq("block_id", blockId);
+      if (clearError) fail(SAFE_ERROR);
+      if (data.catalogue_ids.length > 0) {
+        const { error: insertError } = await supabase.from("website_block_catalogues").insert(
+          data.catalogue_ids.map((catalogueId, index) => ({
+            block_id: blockId,
+            catalogue_id: catalogueId,
+            sort_order: index,
+          })),
+        );
+        if (insertError) fail("The referenced catalogues could not be saved.");
       }
     }
 

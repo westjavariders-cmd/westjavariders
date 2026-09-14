@@ -61,7 +61,10 @@ function origin(): string {
 
 export type RevalidatedPackage = {
   package_id: string;
-  product_id: string;
+  /** 'product' = configured package; 'catalogue_item' = direct booking. */
+  line_kind: string;
+  /** Null on direct catalogue bookings, which have no product. */
+  product_id: string | null;
   product_title: string;
   pricing_mode: string;
   answers: Record<string, unknown>;
@@ -69,7 +72,7 @@ export type RevalidatedPackage = {
   /** Catalogue items selected in this package, as resolved at quote time. */
   catalogue_selections: unknown[];
   lines: unknown;
-  season_month: number;
+  season_month: number | null;
   season_period: string | null;
   promo_code: string | null;
   subtotal_idr: number;
@@ -131,7 +134,7 @@ export async function revalidateCart(token?: string): Promise<CheckoutRevalidati
   const { data: rows } = await db
     .from("cart_packages")
     .select(
-      "position, packages!inner(id, product_id, status, answers, season_month, promo_code, total_idr)",
+      "position, packages!inner(id, product_id, line_kind, catalogue_id, catalogue_item_id, item_title, status, answers, season_month, promo_code, total_idr)",
     )
     .eq("cart_id", cart.id)
     .order("position");
@@ -149,7 +152,39 @@ export async function revalidateCart(token?: string): Promise<CheckoutRevalidati
   const packages: RevalidatedPackage[] = [];
   const blockers: string[] = [];
 
+  const { revalidateDirectLine } = await import("@/lib/direct-booking.server");
+
   for (const pkg of complete) {
+    // Direct catalogue bookings re-price from the live catalogue only; the
+    // configurator, season and promo engines never see them.
+    if (pkg.line_kind === "catalogue_item") {
+      const direct = await revalidateDirectLine(pkg);
+      const previousDirect = Number(pkg.total_idr);
+      packages.push({
+        package_id: pkg.id,
+        line_kind: "catalogue_item",
+        product_id: null,
+        product_title: direct.title,
+        pricing_mode: "structured",
+        answers: (pkg.answers ?? {}) as Record<string, unknown>,
+        resolved_inputs: {},
+        catalogue_selections: [],
+        lines: direct.summary,
+        season_month: null,
+        season_period: null,
+        promo_code: null,
+        subtotal_idr: direct.total_idr,
+        season_discount_idr: 0,
+        promo_discount_idr: 0,
+        total_idr: direct.total_idr,
+        blockers: direct.blockers,
+        price_changed: direct.blockers.length === 0 && direct.total_idr !== previousDirect,
+        previous_total_idr: previousDirect,
+      });
+      blockers.push(...direct.blockers);
+      continue;
+    }
+
     const [{ data: product }, { data: translation }, { data: pricing }] = await Promise.all([
       db.from("products").select("id, internal_name").eq("id", pkg.product_id).maybeSingle(),
       db
@@ -179,6 +214,7 @@ export async function revalidateCart(token?: string): Promise<CheckoutRevalidati
     const previous = Number(pkg.total_idr);
     packages.push({
       package_id: pkg.id,
+      line_kind: "product",
       product_id: pkg.product_id,
       product_title: title,
       pricing_mode: pricing?.mode ?? "structured",

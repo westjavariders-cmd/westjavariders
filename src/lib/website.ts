@@ -17,6 +17,7 @@ export const BLOCK_KINDS = [
   "video",
   "people",
   "door",
+  "catalogue",
 ] as const;
 export type BlockKind = (typeof BLOCK_KINDS)[number];
 
@@ -28,6 +29,7 @@ export const BLOCK_KIND_LABELS: Record<BlockKind, string> = {
   video: "Video / media",
   people: "People / team",
   door: "Home door",
+  catalogue: "Catalogue (book individually)",
 };
 
 export const DESTINATION_KINDS = [
