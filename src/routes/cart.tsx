@@ -125,7 +125,9 @@ function CartPage() {
             <CardContent className="space-y-3 p-4">
               <div className="flex items-baseline justify-between gap-3">
                 <p className="text-sm font-medium">
-                  {p.product_title.toUpperCase()} — PACKAGE
+                  {p.product_id
+                    ? `${p.product_title.toUpperCase()} — PACKAGE`
+                    : p.product_title.toUpperCase()}
                 </p>
                 <p className="text-base font-semibold">{formatIdr(p.total_idr)}</p>
               </div>
