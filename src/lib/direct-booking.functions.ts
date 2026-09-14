@@ -40,10 +40,10 @@ export const bookCatalogueItem = createServerFn({ method: "POST" })
       catalogueId: data.catalogueId,
       itemId: data.itemId,
       choices: {
-        nights: data.nights ?? null,
-        days: data.days ?? null,
-        people: data.people ?? null,
-        hours: data.hours ?? null,
+        nights: data.choices.nights ?? null,
+        days: data.choices.days ?? null,
+        people: data.choices.people ?? null,
+        hours: data.choices.hours ?? null,
       },
     });
   });
