@@ -16,7 +16,6 @@ import {
   depositFor,
   parseFirstPaymentPercentage,
   purchaseStatusFor,
-  sortFieldsByStepOrder,
   type PaymentRequestKind,
 } from "@/lib/purchase";
 import {
@@ -29,7 +28,7 @@ import { activePaymentProvider, providerByName } from "@/lib/payments/provider.s
 import { validateGift, type GiftData, type GiftInput } from "@/lib/voucher";
 import { fxContext, freezeFx, displayAmount } from "@/lib/fx.server";
 import { toPublicFx, type PublicFxContext } from "@/lib/fx.functions";
-import { summarizeAnswers } from "@/lib/public-catalog";
+import { orderedAnswerSummary, withOrderedSnapshotAnswers } from "@/lib/answer-summary.server";
 
 
 export { CartError };
@@ -111,22 +110,6 @@ export type CheckoutRevalidation = {
   customer_first_payment: number;
   customer_outstanding: number;
 };
-
-async function orderFieldsByStep(db: any, productId: string, fields: any[]): Promise<any[]> {
-  if (fields.length === 0) return fields;
-  const { data: flow } = await db
-    .from("config_flows")
-    .select("id")
-    .eq("product_id", productId)
-    .maybeSingle();
-  if (!flow) return fields;
-  const { data: steps } = await db
-    .from("steps")
-    .select("id, display_order")
-    .eq("flow_id", flow.id)
-    .order("display_order");
-  return sortFieldsByStepOrder(fields, (steps ?? []) as any[]);
-}
 
 /**
  * Recomputes every complete package in the cart from live configuration and
@@ -233,9 +216,6 @@ export async function revalidateCart(token?: string): Promise<CheckoutRevalidati
         db.from("fields").select("*").eq("product_id", pkg.product_id).order("display_order"),
       ]);
 
-    // The voucher lists the customer's choices in configurator order: step by step.
-    const orderedFields = await orderFieldsByStep(db, pkg.product_id, (fieldRows ?? []) as any[]);
-
     const optionRows = (fieldRows ?? []).length
       ? ((
           await db
@@ -276,13 +256,11 @@ export async function revalidateCart(token?: string): Promise<CheckoutRevalidati
       product_title: title,
       base_price_idr:
         pricing?.base_amount_idr == null ? null : Number(pricing.base_amount_idr),
-      option_labels: summarizeAnswers(
-        orderedFields as never,
-        optionRows as never,
-        (pkg.answers ?? {}) as PreviewValues,
-        Object.fromEntries(
-          ((quote.catalogue_selections ?? []) as any[]).map((c) => [c.item_id, c.name]),
-        ),
+      option_labels: await orderedAnswerSummary(
+        db,
+        pkg.product_id,
+        pkg.answers,
+        quote.catalogue_selections,
       ),
       pricing_mode: pricing?.mode ?? "structured",
 
@@ -510,7 +488,7 @@ async function loadPurchase(purchaseId: string): Promise<PurchaseView | null> {
           customer_amount: open.customer_amount != null ? Number(open.customer_amount) : null,
         }
       : null,
-    snapshot: snapshot?.data ?? null,
+    snapshot: await withOrderedSnapshotAnswers(db, snapshot?.data ?? null),
   };
 }
 

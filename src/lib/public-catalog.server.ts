@@ -14,7 +14,8 @@ import {
 import { resolveCatalogues } from "@/lib/catalogue-bridge.server";
 import { isPurchasable } from "@/lib/pricing";
 import { fail, listCart } from "@/lib/cart.server";
-import { summarizeAnswers, type AnswerSummaryLine } from "@/lib/public-catalog";
+import type { AnswerSummaryLine } from "@/lib/public-catalog";
+import { orderedAnswerSummary } from "@/lib/answer-summary.server";
 
 async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -207,7 +208,7 @@ export async function publicCart(token?: string): Promise<PublicCartView> {
   }
 
 
-  const view = (row: any): PublicCartPackage => ({
+  const view = async (row: any): Promise<PublicCartPackage> => ({
     id: row.id,
     product_id: row.product_id,
     product_title:
@@ -223,19 +224,17 @@ export async function publicCart(token?: string): Promise<PublicCartView> {
     summary:
       row.line_kind === "catalogue_item"
         ? ((row.quote_lines ?? []) as AnswerSummaryLine[])
-        : summarizeAnswers(
-      (fields.data ?? []).filter((f: any) => f.product_id === row.product_id),
-      options,
-      (row.answers ?? {}) as never,
-      Object.fromEntries(
-        ((row.catalogue_selections ?? []) as any[]).map((c) => [c.item_id, c.name]),
-      ),
-    ),
+        : await orderedAnswerSummary(
+            db,
+            row.product_id,
+            row.answers,
+            row.catalogue_selections,
+          ),
   });
 
   return {
-    packages: (cart.packages as any[]).map(view),
-    draft: cart.draft ? view(cart.draft) : null,
+    packages: await Promise.all((cart.packages as any[]).map(view)),
+    draft: cart.draft ? await view(cart.draft) : null,
     payable_total_idr: cart.payable_total_idr,
     fx: toPublicFx(fx),
     payable_total_customer: displayAmount(cart.payable_total_idr, fx),
