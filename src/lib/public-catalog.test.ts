@@ -77,14 +77,14 @@ describe("configuration summary", () => {
     expect(summarizeAnswers(fields, [], { note: "hi", extra: "x" })).toEqual([]);
   });
 
-  it("hides declined extras", () => {
+  it("hides yes/no questions, keeping their quantities", () => {
     const fields = [
       field({ id: "f5", variable_name: "wantsbike", field_type: "boolean", customer_label: "Motorbike?" }),
       field({ id: "f6", variable_name: "wantsboard", field_type: "boolean", customer_label: "Board?" }),
     ];
-    expect(summarizeAnswers(fields, [], { wantsbike: true, wantsboard: false } as never)).toEqual([
-      { label: "Motorbike?", value: "Yes" },
-    ]);
+    expect(
+      summarizeAnswers(fields, [], { wantsbike: true, wantsbike_days: 3, wantsboard: false } as never),
+    ).toEqual([{ label: "Days", value: "3" }]);
   });
 
   it("shows catalogue names and their quantities, never raw ids", () => {
