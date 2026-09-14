@@ -189,12 +189,45 @@ function WebsitePageEditor() {
     },
   });
 
+  const blockCatalogues = useQuery({
+    queryKey: ["website-block-catalogues", blockIds.join(",")],
+    enabled: blockIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("website_block_catalogues")
+        .select("block_id, catalogue_id, sort_order")
+        .in("block_id", blockIds)
+        .order("sort_order");
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    },
+  });
+
+  const catalogues = useQuery({
+    queryKey: ["website-catalogue-options"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("catalogues")
+        .select("id, internal_name, public_name, template, active")
+        .eq("active", true)
+        .order("sort_order");
+      if (error) throw new Error(error.message);
+      return (data ?? []) as {
+        id: string;
+        internal_name: string;
+        public_name: string | null;
+        template: string;
+      }[];
+    },
+  });
+
   function refresh() {
     void queryClient.invalidateQueries({ queryKey: ["website-sections", pageId] });
     void queryClient.invalidateQueries({ queryKey: ["website-section-text"] });
     void queryClient.invalidateQueries({ queryKey: ["website-blocks", pageId] });
     void queryClient.invalidateQueries({ queryKey: ["website-block-text"] });
     void queryClient.invalidateQueries({ queryKey: ["website-block-products"] });
+    void queryClient.invalidateQueries({ queryKey: ["website-block-catalogues"] });
   }
 
   /* ---------------- sections ---------------- */
