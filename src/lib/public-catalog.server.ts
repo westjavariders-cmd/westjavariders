@@ -184,7 +184,7 @@ export async function publicCart(token?: string): Promise<PublicCartView> {
     new Set(rows.map((r) => r.product_id).filter((id): id is string => Boolean(id))),
   );
   const [products, translations, fields] = await Promise.all([
-    db.from("products").select("id, internal_name").in("id", productIds),
+    db.from("products").select("id, internal_name, voucher_name").in("id", productIds),
     db
       .from("product_translations")
       .select("product_id, title")
@@ -200,6 +200,12 @@ export async function publicCart(token?: string): Promise<PublicCartView> {
   const titles = new Map<string, string>();
   for (const p of products.data ?? []) titles.set(p.id, p.internal_name);
   for (const t of translations.data ?? []) if (t.title) titles.set(t.product_id, t.title);
+  // The display name set on the product wins over the catalogue title.
+  for (const p of products.data ?? []) {
+    const display = (p as any).voucher_name?.trim();
+    if (display) titles.set(p.id, display);
+  }
+
 
   const view = (row: any): PublicCartPackage => ({
     id: row.id,

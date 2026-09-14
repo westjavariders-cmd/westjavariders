@@ -363,6 +363,9 @@ function buildSnapshot(
       package_id: p.package_id,
       product_id: p.product_id,
       product_title: p.product_title,
+      base_price_idr: p.base_price_idr,
+      option_labels: p.option_labels,
+
       pricing_mode: p.pricing_mode,
       answers: p.answers,
       resolved_inputs: p.resolved_inputs,
