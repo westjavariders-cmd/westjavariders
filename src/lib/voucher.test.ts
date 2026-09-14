@@ -126,6 +126,39 @@ describe("entitlement", () => {
     expect(gift.items[0]!.breakdown).toEqual([]);
     expect(gift.items[0]!.total_idr).toBeNull();
   });
+
+  it("rebuilds readable choices for older snapshots without saved labels", () => {
+    const id = "288bc324-a6fb-4723-90c4-2806478853f5";
+    const legacy = {
+      packages: [
+        {
+          package_id: "pk1",
+          product_title: "Beginners week",
+          answers: {
+            lessonsyesno: true,
+            motorbikeyesno: false,
+            choosemotorbike: "",
+            softboard: [],
+            surflessonscatalogueprice: id,
+            surflessonscatalogueprice_hours: "2",
+            surflessonscatalogueprice_people: "1",
+          },
+          catalogue_selections: [{ item_id: id, name: "Price per people" }],
+          total_idr: 600_000,
+        },
+      ],
+      customer: { full_name: "Ana Rivera" },
+    };
+    const built = buildEntitlement({ ...base, snapshot: legacy, voucherType: "STANDARD" });
+    const options = built.items[0]!.options;
+    expect(options).toEqual([
+      { label: "Lessonsyesno", value: "Yes" },
+      { label: "Surflessonscatalogueprice", value: "Price per people" },
+      { label: "People", value: "1" },
+      { label: "Hours", value: "2" },
+    ]);
+  });
+
 });
 
 
