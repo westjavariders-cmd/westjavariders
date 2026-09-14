@@ -172,7 +172,10 @@ export async function revalidateCart(token?: string): Promise<CheckoutRevalidati
         line_kind: "catalogue_item",
         product_id: null,
         product_title: direct.title,
+        base_price_idr: null,
+        option_labels: (direct.summary ?? []) as { label: string; value: string }[],
         pricing_mode: "structured",
+
         answers: (pkg.answers ?? {}) as Record<string, unknown>,
         resolved_inputs: {},
         catalogue_selections: [],
@@ -192,16 +195,40 @@ export async function revalidateCart(token?: string): Promise<CheckoutRevalidati
       continue;
     }
 
-    const [{ data: product }, { data: translation }, { data: pricing }] = await Promise.all([
-      db.from("products").select("id, internal_name").eq("id", pkg.product_id).maybeSingle(),
-      db
-        .from("product_translations")
-        .select("title")
-        .eq("product_id", pkg.product_id)
-        .eq("language_code", "en")
-        .maybeSingle(),
-      db.from("product_pricing").select("mode").eq("product_id", pkg.product_id).maybeSingle(),
-    ]);
+    const [{ data: product }, { data: translation }, { data: pricing }, { data: fieldRows }] =
+      await Promise.all([
+        db
+          .from("products")
+          .select("id, internal_name, voucher_name")
+          .eq("id", pkg.product_id)
+          .maybeSingle(),
+        db
+          .from("product_translations")
+          .select("title")
+          .eq("product_id", pkg.product_id)
+          .eq("language_code", "en")
+          .maybeSingle(),
+        db
+          .from("product_pricing")
+          .select("mode, base_amount_idr")
+          .eq("product_id", pkg.product_id)
+          .maybeSingle(),
+        db.from("fields").select("*").eq("product_id", pkg.product_id).order("display_order"),
+      ]);
+
+    const optionRows = (fieldRows ?? []).length
+      ? ((
+          await db
+            .from("field_options")
+            .select("*")
+            .in(
+              "field_id",
+              (fieldRows ?? []).map((f: any) => f.id),
+            )
+            .order("display_order")
+        ).data ?? [])
+      : [];
+
 
     const quote = await quotePackage({
       productId: pkg.product_id,
