@@ -390,7 +390,8 @@ function CartPage() {
             </>
           )}
 
-          {packages.length > 0 && <SaveAndShareTrip />}
+          {packages.length > 0 && <ShareTrip />}
+          <ContactUs />
 
           <Link
             to="/build-your-trip"
@@ -404,8 +405,8 @@ function CartPage() {
   );
 }
 
-/** Saves the current configuration and returns a shareable link. */
-function SaveAndShareTrip() {
+/** Shares the trip that already belongs to this cart. Creates nothing new. */
+function ShareTrip() {
   const save = useServerFn(saveTrip);
   const [code, setCode] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -418,7 +419,7 @@ function SaveAndShareTrip() {
       const result = await save({ data: undefined as never });
       setCode(result.code);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "This trip could not be saved.");
+      toast.error(e instanceof Error ? e.message : "This link could not be prepared.");
     } finally {
       setSaving(false);
     }
@@ -447,10 +448,10 @@ function SaveAndShareTrip() {
     return (
       <div className="space-y-1 border-t border-border pt-4">
         <Button variant="outline" className="w-full" disabled={saving} onClick={onSave}>
-          {saving ? "Saving…" : "SAVE & SHARE YOUR TRIP"}
+          {saving ? "Preparing link…" : "SHARE YOUR TRIP"}
         </Button>
         <p className="text-xs text-muted-foreground">
-          Save your trip and share it with your travel companions.
+          Share your trip with your travel companions.
         </p>
       </div>
     );
@@ -459,7 +460,7 @@ function SaveAndShareTrip() {
   return (
     <div className="space-y-2 border-t border-border pt-4">
       <p className="text-sm uppercase tracking-[0.14em] text-muted-foreground">
-        Your trip is saved
+        Share your trip
       </p>
       <p className="text-xs text-muted-foreground">Share this link with your travel companions:</p>
       <p className="break-all rounded-md border border-border p-2 text-sm">{url}</p>
@@ -474,5 +475,99 @@ function SaveAndShareTrip() {
         )}
       </div>
     </div>
+  );
+}
+
+/** A customer question, sent to the business with the vouchers of this cart. */
+function ContactUs() {
+  const send = useServerFn(sendContactRequest);
+  const [open, setOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [form, setForm] = useState({ full_name: "", phone: "", email: "", message: "" });
+
+  async function onSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setSending(true);
+    try {
+      await send({
+        data: {
+          full_name: form.full_name,
+          phone: form.phone || null,
+          email: form.email,
+          message: form.message,
+        },
+      });
+      setSent(true);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "This question could not be sent.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  if (sent) {
+    return (
+      <div className="space-y-1 border-t border-border pt-4">
+        <p className="text-sm uppercase tracking-[0.14em] text-muted-foreground">Thank you</p>
+        <p className="text-xs text-muted-foreground">
+          We have your question and the trip you were configuring. We will reply by email or
+          WhatsApp as soon as possible.
+        </p>
+      </div>
+    );
+  }
+
+  if (!open) {
+    return (
+      <div className="border-t border-border pt-4">
+        <Button variant="outline" className="w-full" onClick={() => setOpen(true)}>
+          DO YOU HAVE ANY QUESTIONS? CONTACT US
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="space-y-2 border-t border-border pt-4">
+      <p className="text-sm uppercase tracking-[0.14em] text-muted-foreground">Contact us</p>
+      <Input
+        placeholder="Name"
+        value={form.full_name}
+        maxLength={200}
+        required
+        onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))}
+      />
+      <Input
+        placeholder="WhatsApp / phone"
+        value={form.phone}
+        maxLength={60}
+        onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+      />
+      <Input
+        type="email"
+        placeholder="Email"
+        value={form.email}
+        maxLength={320}
+        required
+        onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+      />
+      <Textarea
+        placeholder="Your question"
+        value={form.message}
+        maxLength={4000}
+        required
+        rows={4}
+        onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
+      />
+      <div className="flex gap-2">
+        <Button type="submit" size="sm" disabled={sending}>
+          {sending ? "Sending…" : "SEND"}
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>
+          CANCEL
+        </Button>
+      </div>
+    </form>
   );
 }
