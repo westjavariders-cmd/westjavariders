@@ -17,6 +17,8 @@ import { confirmCheckout, getCheckoutSummary } from "@/lib/purchase.functions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { sendContactRequest } from "@/lib/contact.functions";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
