@@ -15,6 +15,7 @@ import {
   type ProductBundle,
 } from "@/lib/catalog";
 import { formatIdr } from "@/lib/public-catalog";
+import { readStoredPromoCode } from "@/lib/promo-code-storage";
 import {
   catalogueHoursVariable,
   cataloguePeopleVariable,
