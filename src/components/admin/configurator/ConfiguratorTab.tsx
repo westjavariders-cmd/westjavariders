@@ -328,6 +328,7 @@ function FieldEditor({
     option_source: ((field as any).option_source as string) || "manual",
     catalogue_type: ((field as any).catalogue_type as string) || "",
     catalogue_id: ((field as any).catalogue_id as string | null) ?? "",
+    photo_display_size: field.photo_display_size || "large",
   });
   const catalogues = useCatalogueChoices();
   const options = bundle.options.filter((o) => o.field_id === field.id);
@@ -364,6 +365,7 @@ function FieldEditor({
         option_source: usesCatalogue ? "catalogue" : "manual",
         catalogue_type: usesCatalogue ? (draft.catalogue_type as never) : null,
         catalogue_id: usesCatalogue && draft.catalogue_id ? draft.catalogue_id : null,
+        photo_display_size: usesCatalogue ? draft.photo_display_size : "large",
       })
       .eq("id", field.id);
     if (error) { toast.error(error.message); return; }
@@ -474,49 +476,67 @@ function FieldEditor({
               </select>
             </div>
             {draft.option_source === "catalogue" && (
-              <div>
-                <Label className="text-xs">Catalogue</Label>
-                <select
-                  className={selectClass}
-                  value={draft.catalogue_id ? `id:${draft.catalogue_id}` : draft.catalogue_type ? `type:${draft.catalogue_type}` : ""}
-                  disabled={!canEdit}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    if (raw.startsWith("id:")) {
-                      const id = raw.slice(3);
-                      const chosen = (catalogues.data ?? []).find((c) => c.id === id);
-                      setDraft({
-                        ...draft,
-                        catalogue_id: id,
-                        catalogue_type: chosen
-                          ? CATALOGUE_TYPE_OF_TEMPLATE[chosen.template as CatalogueTemplate]
-                          : "",
-                      });
-                    } else if (raw.startsWith("type:")) {
-                      setDraft({ ...draft, catalogue_id: "", catalogue_type: raw.slice(5) });
-                    } else {
-                      setDraft({ ...draft, catalogue_id: "", catalogue_type: "" });
-                    }
-                  }}
-                >
-                  <option value="">Choose a catalogue…</option>
-                  {(catalogues.data ?? []).map((c) => (
-                    <option key={c.id} value={`id:${c.id}`}>
-                      {catalogueLabel(c as never)} ({CATALOGUE_TEMPLATE_SHORT[c.template as CatalogueTemplate]})
-                    </option>
-                  ))}
-                  {CATALOGUE_TYPES.map((t) => (
-                    <option key={t} value={`type:${t}`}>
-                      {CATALOGUE_TYPE_LABELS[t]}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Customers see the active items of this catalogue. The price of the chosen item is
-                  available to pricing as{" "}
-                  <span className="font-mono">{draft.variable_name}_price</span>.
-                </p>
-              </div>
+              <>
+                <div>
+                  <Label className="text-xs">Catalogue</Label>
+                  <select
+                    className={selectClass}
+                    value={draft.catalogue_id ? `id:${draft.catalogue_id}` : draft.catalogue_type ? `type:${draft.catalogue_type}` : ""}
+                    disabled={!canEdit}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw.startsWith("id:")) {
+                        const id = raw.slice(3);
+                        const chosen = (catalogues.data ?? []).find((c) => c.id === id);
+                        setDraft({
+                          ...draft,
+                          catalogue_id: id,
+                          catalogue_type: chosen
+                            ? CATALOGUE_TYPE_OF_TEMPLATE[chosen.template as CatalogueTemplate]
+                            : "",
+                        });
+                      } else if (raw.startsWith("type:")) {
+                        setDraft({ ...draft, catalogue_id: "", catalogue_type: raw.slice(5) });
+                      } else {
+                        setDraft({ ...draft, catalogue_id: "", catalogue_type: "" });
+                      }
+                    }}
+                  >
+                    <option value="">Choose a catalogue…</option>
+                    {(catalogues.data ?? []).map((c) => (
+                      <option key={c.id} value={`id:${c.id}`}>
+                        {catalogueLabel(c as never)} ({CATALOGUE_TEMPLATE_SHORT[c.template as CatalogueTemplate]})
+                      </option>
+                    ))}
+                    {CATALOGUE_TYPES.map((t) => (
+                      <option key={t} value={`type:${t}`}>
+                        {CATALOGUE_TYPE_LABELS[t]}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Customers see the active items of this catalogue. The price of the chosen item is
+                    available to pricing as{" "}
+                    <span className="font-mono">{draft.variable_name}_price</span>.
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-xs">Photo size</Label>
+                  <select
+                    className={selectClass}
+                    value={draft.photo_display_size}
+                    disabled={!canEdit}
+                    onChange={(e) => setDraft({ ...draft, photo_display_size: e.target.value })}
+                  >
+                    <option value="small">Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="large">Large</option>
+                  </select>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Changes only the displayed width. The photo shape and crop stay the same.
+                  </p>
+                </div>
+              </>
             )}
           </>
         )}

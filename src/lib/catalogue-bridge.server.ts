@@ -56,7 +56,7 @@ async function allowedCatalogueIds(db: any, ref: CatalogueRef): Promise<string[]
 }
 
 async function accommodationRooms(db: any, catalogueIds: string[]): Promise<CatalogueItem[]> {
-  const [rooms, parents, photos] = await Promise.all([
+  const [rooms, parents, photos, characteristics] = await Promise.all([
     db
       .from("accommodation_rooms")
       .select(
@@ -64,19 +64,25 @@ async function accommodationRooms(db: any, catalogueIds: string[]): Promise<Cata
       )
       .eq("active", true)
       .order("sort_order"),
-    db.from("accommodations").select("id, active, catalogue_id").in("catalogue_id", catalogueIds),
+    db.from("accommodations").select("id, active, catalogue_id, location").in("catalogue_id", catalogueIds),
     db.from("accommodation_photos").select("room_id, storage_path, is_primary, sort_order").order("sort_order"),
+    db
+      .from("accommodation_room_characteristics")
+      .select("room_id, name, value, sort_order")
+      .order("sort_order"),
   ]);
 
-  const activeParents = new Map<string, string>();
+  const activeParents = new Map<string, { catalogueId: string; location: string | null }>();
   for (const a of parents.data ?? []) {
-    if (a.active) activeParents.set(a.id, a.catalogue_id);
+    if (a.active) activeParents.set(a.id, { catalogueId: a.catalogue_id, location: a.location });
   }
 
   const items: CatalogueItem[] = [];
   for (const room of rooms.data ?? []) {
     // A room is only offerable while its accommodation is active too.
     if (!activeParents.has(room.accommodation_id)) continue;
+    const parent = activeParents.get(room.accommodation_id);
+    if (!parent) continue;
     // Every photo of the room travels to the configurator, primary first.
     const roomPhotos = (photos.data ?? [])
       .filter((p: any) => p.room_id === room.id)
@@ -91,12 +97,22 @@ async function accommodationRooms(db: any, catalogueIds: string[]): Promise<Cata
     items.push(
       toCatalogueItem("accommodation_room", {
         id: room.id,
-        catalogue_id: activeParents.get(room.accommodation_id) ?? null,
+        catalogue_id: parent.catalogueId,
         name: room.public_name || room.internal_name,
         reference: room.internal_reference,
         description: room.description,
         photo_url: signedPhotos[0] ?? null,
         photo_urls: signedPhotos,
+        details: [
+          room.description ? { label: "Description", value: room.description } : null,
+          parent.location ? { label: "Location", value: parent.location } : null,
+          room.max_guests != null
+            ? { label: "Maximum guests", value: String(room.max_guests) }
+            : null,
+          ...(characteristics.data ?? [])
+            .filter((c: any) => c.room_id === room.id && c.name?.trim() && c.value?.trim())
+            .map((c: any) => ({ label: c.name.trim(), value: c.value.trim() })),
+        ].filter(Boolean),
         customer_price_idr: room.customer_price_per_night_idr,
       }),
     );
@@ -158,6 +174,20 @@ async function transports(db: any, catalogueIds: string[]): Promise<CatalogueIte
       reference: t.internal_reference,
       description: t.description,
       photo_url: null,
+      details: [
+        t.description ? { label: "Description", value: t.description } : null,
+        t.origin ? { label: "Origin", value: t.origin } : null,
+        t.destination ? { label: "Destination", value: t.destination } : null,
+        t.min_travel_hours != null || t.max_travel_hours != null
+          ? {
+              label: "Travel time",
+              value:
+                t.min_travel_hours != null && t.max_travel_hours != null
+                  ? `${t.min_travel_hours}–${t.max_travel_hours} hours`
+                  : `${t.min_travel_hours ?? t.max_travel_hours} hours`,
+            }
+          : null,
+      ].filter(Boolean),
       customer_price_idr: null,
       variants: hasChoices
         ? {
@@ -193,6 +223,7 @@ async function motorbikes(db: any, catalogueIds: string[]): Promise<CatalogueIte
         reference: m.internal_reference,
         description: m.description,
         photo_url: await signed(db, MOTORBIKE_PHOTO_BUCKET, m.photo_path ?? null),
+        details: m.description ? [{ label: "Description", value: m.description }] : [],
         customer_price_idr: m.customer_price_idr,
       }),
     );

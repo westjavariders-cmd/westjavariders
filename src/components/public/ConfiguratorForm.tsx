@@ -262,9 +262,16 @@ export function ConfiguratorForm({
                           : (list[list.length - 1] ?? "")
                         : String(value);
                     const item = catalogueItems.find((i) => i.id === id);
-                    const photos = item?.photo_urls ?? [];
-                    if (photos.length === 0) return null;
-                    return <CatalogueGallery key={id} photos={photos} name={item!.name} />;
+                    if (!item) return null;
+                    return (
+                      <CatalogueItemPresentation
+                        key={id}
+                        photos={item.photo_urls}
+                        name={item.name}
+                        details={item.details}
+                        size={f.photo_display_size}
+                      />
+                    );
                   })()}
 
                 {catalogueKeyOfField && options.length === 0 && (
@@ -272,16 +279,6 @@ export function ConfiguratorForm({
                     No choices are available right now.
                   </p>
                 )}
-                {catalogueKeyOfField &&
-                  (() => {
-                    const chosen = options.find((o) => o.internal_value === value) as
-                      | { description?: string | null }
-                      | undefined;
-                    return chosen?.description ? (
-                      <p className="text-xs text-muted-foreground">{chosen.description}</p>
-                    ) : null;
-                  })()}
-
                 {catalogueKeyOfField &&
                   (() => {
                     const chosen = catalogueItems.find((i) => i.id === String(value));
@@ -539,6 +536,37 @@ function CatalogueGallery({ photos, name }: { photos: string[]; name: string }) 
             />
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+function CatalogueItemPresentation({
+  photos,
+  name,
+  details,
+  size,
+}: {
+  photos: string[];
+  name: string;
+  details: { label: string; value: string }[];
+  size: string;
+}) {
+  const width = size === "small" ? "max-w-xs" : size === "medium" ? "max-w-lg" : "max-w-full";
+  if (photos.length === 0 && details.length === 0) return null;
+
+  return (
+    <div className={`space-y-3 ${width}`}>
+      {photos.length > 0 && <CatalogueGallery photos={photos} name={name} />}
+      {details.length > 0 && (
+        <dl className="grid gap-2 border-l border-border pl-3 text-sm">
+          {details.map((detail) => (
+            <div key={`${detail.label}-${detail.value}`}>
+              <dt className="text-xs font-medium text-muted-foreground">{detail.label}</dt>
+              <dd className="whitespace-pre-line text-foreground">{detail.value}</dd>
+            </div>
+          ))}
+        </dl>
       )}
     </div>
   );

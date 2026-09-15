@@ -40,6 +40,9 @@ export type CatalogueVariants = {
   calc_mode?: CatalogueCalcMode;
 };
 
+/** One customer-facing fact filled in on the catalogue item's form. */
+export type CatalogueDetail = { label: string; value: string };
+
 
 export const DEFAULT_PEOPLE_LABEL = "Number of people";
 export const DEFAULT_HOURS_LABEL = "Travel time (hours)";
@@ -56,6 +59,8 @@ export type CatalogueItem = {
   photo_url: string | null;
   /** Every photo of the item, primary first. Empty when it has none. */
   photo_urls: string[];
+  /** Filled customer-facing catalogue data; never internal or supplier data. */
+  details: CatalogueDetail[];
   /** Customer-facing price in whole IDR, when the catalogue defines one. */
   customer_price_idr: number | null;
   /** Present when the item is priced by additional customer choices. */
@@ -132,6 +137,16 @@ export function toCatalogueItem(type: CatalogueType, row: Record<string, unknown
     : single
       ? [single]
       : [];
+  const details = Array.isArray(row["details"])
+    ? (row["details"] as unknown[]).filter(
+        (detail): detail is CatalogueDetail =>
+          typeof detail === "object" &&
+          detail !== null &&
+          typeof (detail as CatalogueDetail).label === "string" &&
+          typeof (detail as CatalogueDetail).value === "string" &&
+          (detail as CatalogueDetail).value.trim() !== "",
+      )
+    : [];
   return {
     catalogue_type: type,
     catalogue_id: (row["catalogue_id"] as string | null) ?? null,
@@ -141,6 +156,7 @@ export function toCatalogueItem(type: CatalogueType, row: Record<string, unknown
     description: (row["description"] as string | null) ?? null,
     photo_url: single ?? many[0] ?? null,
     photo_urls: many,
+    details,
     customer_price_idr: price == null ? null : Number(price),
     variants: (row["variants"] as CatalogueVariants | null) ?? null,
   };

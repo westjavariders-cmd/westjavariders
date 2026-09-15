@@ -20,6 +20,8 @@ const room = (id: string, price: number | null = 500000): CatalogueItem => ({
   reference: null,
   description: null,
   photo_url: null,
+  photo_urls: [],
+  details: [],
   customer_price_idr: price,
 });
 
@@ -67,6 +69,7 @@ describe("customer-safe projection", () => {
       description: null,
       photo_url: null,
       photo_urls: [],
+      details: [],
       customer_price_idr: 90000,
       variants: null,
     });
@@ -199,6 +202,8 @@ describe("transport catalogue extra choices", () => {
     reference: null,
     description: null,
     photo_url: null,
+    photo_urls: [],
+    details: [],
     customer_price_idr: null,
     variants: {
       people_label: "Surfers",
@@ -267,6 +272,8 @@ describe("transport variant calculation mode", () => {
     reference: null,
     description: null,
     photo_url: null,
+    photo_urls: [],
+    details: [],
     customer_price_idr: null,
     variants: {
       people_label: "Number of people",
