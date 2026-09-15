@@ -496,8 +496,36 @@ function FieldEditor({
                 <option value="catalogue">A catalogue</option>
               </select>
             </div>
+            {draft.option_source === "manual" && (
+              <div className="sm:col-span-2">
+                <p className="text-[11px] text-muted-foreground">
+                  Photo size only applies to questions whose choices come from a catalogue, because
+                  the photos come from the catalogue items.
+                </p>
+              </div>
+            )}
             {draft.option_source === "catalogue" && (
               <>
+                <div>
+                  <Label className="text-xs">Photo size shown to the customer</Label>
+                  <div className="mt-1 flex gap-2">
+                    {(["small", "medium", "large"] as const).map((size) => (
+                      <Button
+                        key={size}
+                        type="button"
+                        size="sm"
+                        variant={draft.photo_display_size === size ? "default" : "outline"}
+                        disabled={!canEdit}
+                        onClick={() => setDraft({ ...draft, photo_display_size: size })}
+                      >
+                        {size === "small" ? "Small" : size === "medium" ? "Medium" : "Large"}
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Changes only the displayed width. The photo shape and crop stay the same.
+                  </p>
+                </div>
                 <div>
                   <Label className="text-xs">Catalogue</Label>
                   <select
