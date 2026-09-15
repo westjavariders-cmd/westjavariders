@@ -2095,6 +2095,33 @@ export type Database = {
           },
         ]
       }
+      saved_trips: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          lines: Json
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          lines: Json
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          lines?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           created_at: string

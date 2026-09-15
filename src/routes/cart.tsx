@@ -12,6 +12,7 @@ import {
 } from "@/components/public/SiteHeader";
 import { formatIdr } from "@/lib/public-catalog";
 import { discardDraftPackage, removeCartPackage } from "@/lib/cart.functions";
+import { saveTrip } from "@/lib/saved-trip.functions";
 import { confirmCheckout, getCheckoutSummary } from "@/lib/purchase.functions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -389,6 +390,8 @@ function CartPage() {
             </>
           )}
 
+          {packages.length > 0 && <SaveAndShareTrip />}
+
           <Link
             to="/build-your-trip"
             className="block text-center text-sm underline underline-offset-2"
@@ -398,5 +401,78 @@ function CartPage() {
         </div>
       )}
     </PublicPage>
+  );
+}
+
+/** Saves the current configuration and returns a shareable link. */
+function SaveAndShareTrip() {
+  const save = useServerFn(saveTrip);
+  const [code, setCode] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const url = code && typeof window !== "undefined" ? `${window.location.origin}/trip/${code}` : "";
+
+  async function onSave() {
+    setSaving(true);
+    try {
+      const result = await save({ data: undefined as never });
+      setCode(result.code);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "This trip could not be saved.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onCopy() {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied.");
+    } catch {
+      toast.error("This link could not be copied. Please select it and copy it manually.");
+    }
+  }
+
+  async function onShare() {
+    try {
+      await navigator.share({ title: "My trip", url });
+    } catch {
+      /* The customer cancelled the share sheet. */
+    }
+  }
+
+  const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
+
+  if (!code) {
+    return (
+      <div className="space-y-1 border-t border-border pt-4">
+        <Button variant="outline" className="w-full" disabled={saving} onClick={onSave}>
+          {saving ? "Saving…" : "SAVE & SHARE YOUR TRIP"}
+        </Button>
+        <p className="text-xs text-muted-foreground">
+          Save your trip and share it with your travel companions.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2 border-t border-border pt-4">
+      <p className="text-sm uppercase tracking-[0.14em] text-muted-foreground">
+        Your trip is saved
+      </p>
+      <p className="text-xs text-muted-foreground">Share this link with your travel companions:</p>
+      <p className="break-all rounded-md border border-border p-2 text-sm">{url}</p>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" onClick={onCopy}>
+          COPY LINK
+        </Button>
+        {canShare && (
+          <Button variant="outline" size="sm" onClick={onShare}>
+            SHARE
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }
