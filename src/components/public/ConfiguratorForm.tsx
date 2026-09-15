@@ -93,6 +93,8 @@ export function ConfiguratorForm({
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoting, setQuoting] = useState(false);
   const [booking, setBooking] = useState(false);
+  // Which catalogue item's photos are on screen per question, and which photo.
+  const [shown, setShown] = useState<Record<string, string>>({});
   const seq = useRef(0);
 
   // Live server quote. Debounced; the newest answer always wins.
