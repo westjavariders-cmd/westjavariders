@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { linkedComponentIds } from "@/lib/option-components";
@@ -281,27 +281,48 @@ function StepEditor({
       )}
 
       <div className="space-y-2">
-        {fields.map((field) => (
+        {fields.map((field) => {
+          const isOpen = openField === field.id;
+          const fromCatalogue =
+            SELECT_FIELD_TYPES.includes(field.field_type as string) &&
+            ((field as any).option_source as string) === "catalogue";
+          return (
           <div key={field.id} className="rounded-md border border-border p-3">
             <button
               type="button"
-              className="text-left text-sm font-medium"
-              onClick={() => setOpenField(openField === field.id ? null : field.id)}
+              className="flex w-full items-center gap-2 rounded-sm text-left hover:bg-muted/40"
+              onClick={() => setOpenField(isOpen ? null : field.id)}
             >
-              {field.internal_name}
-              <span className="ml-2 font-mono text-xs text-muted-foreground">
-                {field.variable_name}
+              {isOpen ? (
+                <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              )}
+              <span className="min-w-0 flex-1">
+                <span className="text-sm font-medium">{field.internal_name}</span>
+                <span className="ml-2 font-mono text-xs text-muted-foreground">
+                  {field.variable_name}
+                </span>
+                <span className="ml-2 text-xs text-muted-foreground">
+                  {FIELD_TYPES.find((t) => t.value === field.field_type)?.label}
+                  {field.is_active ? "" : " · inactive"}
+                </span>
+                {fromCatalogue && (
+                  <span className="ml-2 rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
+                    Catalogue · photo {field.photo_display_size || "large"}
+                  </span>
+                )}
               </span>
-              <span className="ml-2 text-xs text-muted-foreground">
-                {FIELD_TYPES.find((t) => t.value === field.field_type)?.label}
-                {field.is_active ? "" : " · inactive"}
+              <span className="shrink-0 text-xs text-muted-foreground underline">
+                {isOpen ? "Close" : "Edit"}
               </span>
             </button>
-            {openField === field.id && (
+            {isOpen && (
               <FieldEditor bundle={bundle} field={field} canEdit={canEdit} reload={reload} />
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -475,8 +496,36 @@ function FieldEditor({
                 <option value="catalogue">A catalogue</option>
               </select>
             </div>
+            {draft.option_source === "manual" && (
+              <div className="sm:col-span-2">
+                <p className="text-[11px] text-muted-foreground">
+                  Photo size only applies to questions whose choices come from a catalogue, because
+                  the photos come from the catalogue items.
+                </p>
+              </div>
+            )}
             {draft.option_source === "catalogue" && (
               <>
+                <div>
+                  <Label className="text-xs">Photo size shown to the customer</Label>
+                  <div className="mt-1 flex gap-2">
+                    {(["small", "medium", "large"] as const).map((size) => (
+                      <Button
+                        key={size}
+                        type="button"
+                        size="sm"
+                        variant={draft.photo_display_size === size ? "default" : "outline"}
+                        disabled={!canEdit}
+                        onClick={() => setDraft({ ...draft, photo_display_size: size })}
+                      >
+                        {size === "small" ? "Small" : size === "medium" ? "Medium" : "Large"}
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Changes only the displayed width. The photo shape and crop stay the same.
+                  </p>
+                </div>
                 <div>
                   <Label className="text-xs">Catalogue</Label>
                   <select
@@ -518,22 +567,6 @@ function FieldEditor({
                     Customers see the active items of this catalogue. The price of the chosen item is
                     available to pricing as{" "}
                     <span className="font-mono">{draft.variable_name}_price</span>.
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-xs">Photo size</Label>
-                  <select
-                    className={selectClass}
-                    value={draft.photo_display_size}
-                    disabled={!canEdit}
-                    onChange={(e) => setDraft({ ...draft, photo_display_size: e.target.value })}
-                  >
-                    <option value="small">Small</option>
-                    <option value="medium">Medium</option>
-                    <option value="large">Large</option>
-                  </select>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    Changes only the displayed width. The photo shape and crop stay the same.
                   </p>
                 </div>
               </>
