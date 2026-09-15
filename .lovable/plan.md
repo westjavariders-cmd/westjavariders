@@ -1,21 +1,29 @@
-# Que lleguen los emails del formulario de contacto
+# Borrar productos desde Admin → Products
 
-## Qué ha pasado
+## Qué verá el usuario
 
-Tu consulta sí se guardó (la del 15 de septiembre a las 16:34, desde remesal3c@gmail.com), pero quedó marcada como "no enviada" con el motivo: no hay remitente de email configurado en el proyecto.
+- En Admin → Products, cada producto tendrá un botón de papelera junto al de duplicar (solo para ADMIN, como el resto de acciones).
+- Al pulsarlo, un diálogo pide confirmación con el nombre del producto ("Delete product …? This cannot be undone").
+- Si el producto nunca se ha usado (no hay carritos, pedidos ni vouchers asociados), se borra por completo y desaparece de la lista.
+- Si el producto ya fue configurado o comprado alguna vez, el borrado se rechaza con un mensaje claro que propone archivarlo en su lugar, con botón "Archive instead" que cambia su estado a archived en el mismo diálogo.
 
-El email del negocio (westjavariders@gmail.com) y el WhatsApp ya están rellenados, así que no falta nada por tu parte ahí. Lo que falta es el dominio desde el que se envían los emails: sin él, ni las consultas de contacto ni los vouchers en PDF pueden salir.
+## Cómo funciona por dentro
 
-## Qué hay que hacer
+- La base de datos ya está preparada: todo lo que cuelga del producto (traducciones, componentes, configurador, precios, temporadas, relaciones con categorías/placements/web) se borra en cascada con el producto.
+- La única referencia con restricción es `packages.product_id` (configuraciones/pedidos/vouchers históricos): la base de datos la protege con RESTRICT, y eso es lo que impide borrar un producto con historial. Por eso el flujo "archivar en su lugar".
+- Nueva función de servidor `deleteProduct` en `src/lib/catalog.functions.ts`, siguiendo el patrón existente: solo ADMIN, auditoría `product.deleted` en `admin_audit_log`, mensajes de error seguros.
+- Nueva función `archiveProduct` o reutilización de `setProductStatus` si ya existe para el fallback "Archive instead".
+- Cambios en `src/routes/admin/_app/products.index.tsx`: botón de papelera, diálogo de confirmación con estado de error que ofrece archivar, refresco de la lista tras borrar/archivar.
 
-1. Configurar el dominio de envío (un dominio tuyo, por ejemplo westjavariders.com). Es un paso guiado; sólo hay que elegir el dominio y esperar la verificación, que puede tardar hasta 72 horas.
-2. Una vez verificado, reenviar la consulta pendiente que quedó guardada, para no perderla.
-3. Comprobar de punta a punta: enviar una consulta de prueba desde el carrito y confirmar que llega a westjavariders@gmail.com con el voucher incluido.
+## Lo que NO se toca
 
-Si no tienes todavía un dominio propio, se puede comprar desde los ajustes del proyecto o en cualquier registrador; sin dominio propio no es posible enviar emails de la aplicación.
+- No se borran ni modifican paquetes, pedidos, pagos, vouchers ni snapshots históricos (por eso el borrado con historial se bloquea y se ofrece archivar).
+- Nada de la web pública, carrito, precios ni configurador.
+- Sin migración de base de datos: las reglas de borrado ya existen.
 
-## Detalles técnicos
+## Verificación
 
-- `src/lib/email.server.ts` devuelve `not_configured` cuando faltan `LOVABLE_API_KEY` o el dominio remitente; eso es exactamente lo que registró `contact_requests.email_error`. No hay ningún error de código en el formulario ni en `submitContactRequest`.
-- Tras verificar el dominio, adaptar `email.server.ts` al envío gestionado (dominio delegado como remitente en el campo `from`), sin tocar el formulario, `contact.server.ts`, precios, vouchers ni pagos.
-- Reenvío de la consulta pendiente: una única llamada a `sendEmail` reutilizando la fila guardada y su `idempotencyKey`, actualizando `email_status` a `SENT`.
+- Borrar un producto de prueba sin historial: desaparece de la lista y queda auditado.
+- Intentar borrar un producto con historial: se rechaza y el botón "Archive instead" lo archiva.
+- Un usuario Staff no ve el botón de borrado.
+- Typecheck, tests y build limpios.
