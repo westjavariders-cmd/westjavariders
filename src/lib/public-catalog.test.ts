@@ -107,6 +107,41 @@ describe("configuration summary", () => {
     ]);
   });
 
+  it("uses each catalogue's configured names for people and hours", () => {
+    const id = "288bc324-a6fb-4723-90c4-2806478853f5";
+    const lessonId = "c1f780d5-bcb1-44df-84db-ac2561f14f53";
+    const fields = [
+      field({ id: "f7", variable_name: "board", field_type: "single_select", customer_label: "Board" }),
+      field({ id: "f8", variable_name: "lesson", field_type: "single_select", customer_label: "Lesson" }),
+    ];
+    expect(
+      summarizeAnswers(
+        fields,
+        [],
+        {
+          board: id,
+          board_people: 2,
+          board_hours: 5,
+          lesson: lessonId,
+          lesson_people: 1,
+          lesson_hours: 3,
+        } as never,
+        { [id]: "Fiber board", [lessonId]: "Surf lesson" },
+        {
+          board: { _people: "Number of boards", _hours: "Number of days" },
+          lesson: { _people: "Number of surfers", _hours: "Number of sessions" },
+        },
+      ),
+    ).toEqual([
+      { label: "Board", value: "Fiber board" },
+      { label: "Number of boards", value: "2" },
+      { label: "Number of days", value: "5" },
+      { label: "Lesson", value: "Surf lesson" },
+      { label: "Number of surfers", value: "1" },
+      { label: "Number of sessions", value: "3" },
+    ]);
+  });
+
 });
 
 describe("configurator defaults", () => {
