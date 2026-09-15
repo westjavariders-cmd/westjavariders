@@ -115,6 +115,45 @@ function ProductsPage() {
     }
   }
 
+  async function onDelete() {
+    if (!deleting) return;
+    setDeleteBusy(true);
+    try {
+      await deleteFn({ data: { productId: deleting.id } });
+      toast.success("Product deleted.");
+      setDeleting(null);
+      setDeleteHasHistory(false);
+      await products.refetch();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "This product could not be deleted.";
+      if (message === "PRODUCT_HAS_HISTORY") {
+        setDeleteHasHistory(true);
+      } else {
+        toast.error(message);
+        setDeleting(null);
+        setDeleteHasHistory(false);
+      }
+    } finally {
+      setDeleteBusy(false);
+    }
+  }
+
+  async function onArchive() {
+    if (!deleting) return;
+    setDeleteBusy(true);
+    try {
+      await setStatusFn({ data: { productId: deleting.id, status: "archived" } });
+      toast.success("Product archived.");
+      setDeleting(null);
+      setDeleteHasHistory(false);
+      await products.refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "This product could not be archived.");
+    } finally {
+      setDeleteBusy(false);
+    }
+  }
+
   return (
     <div>
       <PageHeader
