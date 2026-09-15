@@ -289,7 +289,6 @@ export async function loadSavedTripIntoCart(
     }
     const title = quote ? await productTitle(db, line.product_id) : "One part of the trip";
     if (!quote || !quote.purchasable || quote.configuration_issues.length > 0 || quote.errors.length > 0) {
-      console.error("[saved-trip] quote rejected", quote && { purchasable: quote.purchasable, issues: quote.configuration_issues, errors: quote.errors });
       skipped.push(`${title} is no longer available.`);
       continue;
     }
@@ -297,7 +296,7 @@ export async function loadSavedTripIntoCart(
     const { data: inserted, error } = await db
       .from("packages")
       .insert({
-        line_kind: "package",
+        line_kind: "product",
         product_id: line.product_id,
         status: "complete",
         answers: quote.answers as never,
@@ -317,7 +316,6 @@ export async function loadSavedTripIntoCart(
       .select("id")
       .maybeSingle();
     if (error || !inserted) {
-      console.error("[saved-trip] insert failed", error);
       skipped.push(`${title} could not be added.`);
       continue;
     }
