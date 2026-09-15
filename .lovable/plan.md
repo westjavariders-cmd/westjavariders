@@ -1,22 +1,29 @@
-# Que los accesos de la portada usen el título de cada página
+# Guardar y compartir el viaje (Save & share your trip)
 
-## Qué está pasando
+## Qué verá el usuario
 
-Los cuatro accesos que se ven en la portada (Build your trip, Book individually, Explore West Java, Meet the Boardriders) **no** leen el "Displayed title" ni el "Supporting text" de cada página. Son bloques propios dentro de la portada, con su propio título y texto, guardados en Admin → Website → Pages → Home → sección "Main doors".
+1. En el carrito, debajo del total y sin estorbar al botón de pago, un botón discreto **SAVE & SHARE YOUR TRIP** con el texto de apoyo "Save your trip and share it with your travel companions."
+2. Al pulsarlo se genera un enlace propio del tipo `/trip/CBR-X7K4P` y aparece un bloque sencillo: "YOUR TRIP IS SAVED", el enlace, **COPY LINK** y, si el navegador lo permite, **SHARE** (compartir nativo del móvil).
+3. Cualquiera que abra ese enlace ve el viaje reconstruido con los precios de hoy: cada parte del viaje con su nombre, sus opciones elegidas y su importe, más el total.
+4. En esa página hay dos acciones: **EDIT TRIP** y **CONTINUE TO CHECKOUT**. Ambas cargan el viaje en el carrito de quien abre el enlace y le llevan al carrito, que es donde ya se paga hoy.
+5. Si algo del viaje ya no está disponible o ha cambiado de precio, se avisa con un texto claro en esa parte y el resto del viaje sigue funcionando.
+6. Si el enlace no existe o ha caducado: "THIS TRIP IS NO LONGER AVAILABLE" y un botón **BUILD YOUR TRIP**.
 
-Comprobado: en la página "Build your trip" el título guardado es "Build your trip in 2 minutes", y el acceso de la portada tiene su propio título "Build your trip". Por eso al cambiar el título de la página el acceso no cambia.
+No se pide cuenta, registro, email ni ningún dato personal para guardar o abrir un viaje. No se guarda nombre, teléfono, email ni datos de pago.
 
-## Qué se va a hacer
+## Alcance y límites
 
-1. **El acceso hereda el texto de la página a la que lleva.** Si un acceso apunta a una página del sitio y no tiene título propio escrito, mostrará el "Displayed title" de esa página; y si no tiene texto propio, mostrará su "Supporting text". Así, cambiando el título de la página se actualiza también la portada.
-2. **Se respeta lo escrito a mano.** Si el acceso tiene su propio título o texto escrito, ese sigue teniendo prioridad (nada de lo ya configurado cambia por sorpresa).
-3. **Aviso claro en Admin.** En el editor de cada acceso, junto a los campos de título y texto, se indicará: "Si lo dejas vacío se usará el título y el texto de la página de destino".
-4. Para que los cuatro accesos de la portada empiecen a seguir el título de sus páginas, bastará con vaciar su título/texto propio en Admin; también se puede dejar como está.
+- No se toca el pago, los vouchers, los precios, los productos, los catálogos, el configurador, la navegación ni las páginas `/` y `/home`.
+- No hay panel "My Trips", ni cuentas, ni edición administrativa de viajes guardados.
+- Los productos siguen siendo la única fuente de verdad: el viaje guardado solo almacena referencias e identificadores.
 
 ## Detalle técnico
 
-- Solo lectura pública: en `src/lib/website.server.ts`, dentro de `websitePage`, cuando un bloque tiene `cta_kind = 'page'` (o el destino resuelto es una página del sitio) se cargan las traducciones de `website_page_translations` de esa página en el idioma pedido, con el mismo `pickTranslation` e idioma de reserva ya usado. `title` del bloque pasa a ser `blockText?.title ?? pageTitleDeDestino ?? null` y `body` a `blockText?.body ?? pageSubtitleDeDestino ?? null`.
-- Se aprovecha la consulta `ctaPages` ya existente (que hoy solo trae `id, slug, is_active`) para conocer las páginas destino activas; se añade una única consulta de traducciones para esos ids.
-- Nada de esto afecta a precios, productos, catálogos, vouchers ni al carrito. Sin migración de base de datos.
-- Admin: solo un texto de ayuda en el editor de bloques (`src/routes/admin/_app/website.$pageId.tsx`); no cambia cómo se guarda.
-- Verificación: typecheck, suite de tests y revisión de `/home` comprobando que el acceso muestra "Build your trip in 2 minutes" cuando el bloque no tiene título propio.
+- **Migración** (una tabla nueva, mínima): `public.saved_trips` con `id uuid pk`, `code text unique` (formato `CBR-` + 5 caracteres de un alfabeto sin ambigüedades, generado en servidor con `crypto.getRandomValues`), `lines jsonb not null`, `created_at timestamptz default now()`, `expires_at timestamptz default now() + interval '180 days'`. RLS activada; sin políticas para `anon`/`authenticated`; `GRANT ALL ... TO service_role` (solo se lee/escribe desde funciones de servidor con el cliente admin). Ninguna tabla existente se modifica.
+- **Qué se guarda por línea** (solo configuración, nunca importes): para paquetes `{ kind: 'package', product_id, answers, season_month, promo_code }`; para reservas directas `{ kind: 'catalogue_item', catalogue_id, catalogue_item_id, answers }`. Se copia de las filas `packages` completas del carrito actual, sin duplicar información comercial.
+- **Nuevo módulo** `src/lib/saved-trip.server.ts`: `saveCurrentTrip()` (lee con `listCart`, guarda las líneas completas, devuelve el código), `readSavedTrip(code)` (comprueba caducidad, recalcula cada línea en vivo: paquetes con `quotePackage` y directos con `quoteDirectBooking`, devolviendo por línea título, resumen, total actual y avisos), y `loadSavedTripIntoCart(code)` (crea de nuevo las líneas en el carrito de sesión reutilizando `startPackage` + `savePackage` + `completePackage` para paquetes y `addDirectBookingToCart` para directos, omitiendo lo ya no disponible y devolviendo qué se omitió). Cero lógica de precios nueva: todo pasa por el motor actual.
+- **Nuevo** `src/lib/saved-trip.functions.ts` con tres server functions (`saveTrip`, `getSavedTrip`, `loadSavedTrip`), validadas con Zod, anónimas como el resto del carrito.
+- **Nueva ruta** `src/routes/trip.$code.tsx` con `head()` propio (título y descripción específicos, `noindex` porque es un enlace privado), envuelta en `PublicPage` para heredar el tema negro sobre blanco actual.
+- **`src/routes/cart.tsx`**: se añade el bloque de guardar/compartir (botón, enlace, copiar, compartir nativo con `navigator.share` cuando exista). No se cambia ningún campo, validación ni acción del pago actual.
+- **Textos**: en inglés, igual que el resto de la web pública, sin crear ningún sistema de traducción paralelo.
+- **Verificación**: typecheck, la suite de tests (más tests nuevos para el guardado y la reconstrucción), y prueba de extremo a extremo con navegador: configurar → guardar → copiar enlace → abrir en sesión limpia → comprobar reconstrucción y precio recalculado → editar → llegar al pago; además comprobar `/`, `/home` y el carrito sin cambios.
