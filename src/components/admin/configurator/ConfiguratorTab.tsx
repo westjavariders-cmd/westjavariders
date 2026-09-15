@@ -317,11 +317,12 @@ function StepEditor({
                 {isOpen ? "Close" : "Edit"}
               </span>
             </button>
-            {openField === field.id && (
+            {isOpen && (
               <FieldEditor bundle={bundle} field={field} canEdit={canEdit} reload={reload} />
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
