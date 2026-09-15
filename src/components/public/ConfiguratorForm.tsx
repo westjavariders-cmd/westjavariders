@@ -454,13 +454,33 @@ export function ConfiguratorForm({
             <p className="text-xs text-destructive">{quote.promo_rejection}</p>
           )}
 
-          <div className="flex items-baseline justify-between border-t border-border pt-3">
-            <span className="text-sm text-muted-foreground">
-              {quoting ? "Updating price…" : "Your price"}
-            </span>
-            <span className="text-2xl font-semibold">
-              {quote ? formatIdr(quote.total_idr) : "—"}
-            </span>
+          <div className="flex items-start justify-between gap-3 border-t border-border pt-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {quoting ? "Updating price…" : "Your price"}
+              </span>
+              <CurrencySelector />
+            </div>
+            <div className="text-right">
+              {showCustomer ? (
+                <>
+                  <span className="block text-2xl font-semibold">
+                    {formatCustomerAmount(
+                      display!.total_customer!,
+                      display!.fx!.currency_code,
+                      display!.fx!.symbol,
+                    )}
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    {formatIdr(quote!.total_idr)}
+                  </span>
+                </>
+              ) : (
+                <span className="block text-2xl font-semibold">
+                  {quote ? formatIdr(quote.total_idr) : "—"}
+                </span>
+              )}
+            </div>
           </div>
           {quote && (quote.season_discount_idr > 0 || quote.promo_discount_idr > 0) && (
             <p className="text-xs text-muted-foreground">
