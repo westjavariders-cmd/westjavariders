@@ -24,7 +24,8 @@ import {
 } from "@/lib/catalogue-bridge";
 
 import { completePackage, savePackageConfiguration } from "@/lib/cart.functions";
-import { PUBLIC_CART_KEY } from "@/components/public/SiteHeader";
+import { formatCustomerAmount } from "@/lib/fx";
+import { CurrencySelector, PUBLIC_CART_KEY, usePublicCart } from "@/components/public/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +41,12 @@ type Quote = {
   season_discount_idr: number;
   promo_discount_idr: number;
   total_idr: number;
+};
+
+/** Presentation only: the same total shown in the currency the customer picked. */
+type QuoteDisplay = {
+  fx: { currency_code: string; symbol: string } | null;
+  total_customer: number | null;
 };
 
 /** Default answers from the saved Phase 3 configuration (or a recovered draft). */
