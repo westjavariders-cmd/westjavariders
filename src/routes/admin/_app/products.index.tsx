@@ -34,6 +34,8 @@ function ProductsPage() {
   const navigate = useNavigate();
   const create = useServerFn(createProduct);
   const duplicate = useServerFn(duplicateProduct);
+  const deleteFn = useServerFn(deleteProduct);
+  const setStatusFn = useServerFn(setProductStatus);
 
   const [search, setSearch] = useState("");
   const [kind, setKind] = useState("");
@@ -42,6 +44,9 @@ function ProductsPage() {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState({ internal_name: "", kind: "package", internal_ref: "" });
   const [busy, setBusy] = useState(false);
+  const [deleting, setDeleting] = useState<{ id: string; name: string } | null>(null);
+  const [deleteHasHistory, setDeleteHasHistory] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const categories = useQuery({
     queryKey: ["categories"],
