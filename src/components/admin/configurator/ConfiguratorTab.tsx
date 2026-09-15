@@ -569,22 +569,6 @@ function FieldEditor({
                     <span className="font-mono">{draft.variable_name}_price</span>.
                   </p>
                 </div>
-                <div>
-                  <Label className="text-xs">Photo size</Label>
-                  <select
-                    className={selectClass}
-                    value={draft.photo_display_size}
-                    disabled={!canEdit}
-                    onChange={(e) => setDraft({ ...draft, photo_display_size: e.target.value })}
-                  >
-                    <option value="small">Small</option>
-                    <option value="medium">Medium</option>
-                    <option value="large">Large</option>
-                  </select>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    Changes only the displayed width. The photo shape and crop stay the same.
-                  </p>
-                </div>
               </>
             )}
           </>
