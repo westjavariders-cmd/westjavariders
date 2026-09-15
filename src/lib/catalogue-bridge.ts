@@ -54,6 +54,8 @@ export type CatalogueItem = {
   reference: string | null;
   description: string | null;
   photo_url: string | null;
+  /** Every photo of the item, primary first. Empty when it has none. */
+  photo_urls: string[];
   /** Customer-facing price in whole IDR, when the catalogue defines one. */
   customer_price_idr: number | null;
   /** Present when the item is priced by additional customer choices. */
@@ -124,6 +126,12 @@ export const FORBIDDEN_CATALOGUE_KEYS = [
 /** Defensive projection: only the contract fields ever leave the server. */
 export function toCatalogueItem(type: CatalogueType, row: Record<string, unknown>): CatalogueItem {
   const price = row["customer_price_idr"];
+  const single = (row["photo_url"] as string | null) ?? null;
+  const many = Array.isArray(row["photo_urls"])
+    ? (row["photo_urls"] as unknown[]).filter((p): p is string => typeof p === "string" && p !== "")
+    : single
+      ? [single]
+      : [];
   return {
     catalogue_type: type,
     catalogue_id: (row["catalogue_id"] as string | null) ?? null,
