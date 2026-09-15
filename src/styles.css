@@ -97,6 +97,32 @@
   --sidebar-ring: oklch(0.704 0.04 256.788);
 }
 
+/*
+ * Customer-facing monochrome theme. It is scoped to PublicPage so the Admin
+ * keeps its light workspace. The :root selector also themes portalled menus.
+ */
+.public-theme,
+:root:has(.public-theme) {
+  color-scheme: dark;
+  --background: oklch(0.105 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.105 0 0);
+  --secondary: oklch(0.22 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.2 0 0);
+  --muted-foreground: oklch(0.72 0 0);
+  --accent: oklch(0.27 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --border: oklch(1 0 0 / 18%);
+  --input: oklch(1 0 0 / 28%);
+  --ring: oklch(0.84 0 0);
+}
+
 .dark {
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
