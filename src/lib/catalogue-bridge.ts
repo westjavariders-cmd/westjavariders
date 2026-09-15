@@ -139,7 +139,8 @@ export function toCatalogueItem(type: CatalogueType, row: Record<string, unknown
     name: String(row["name"] ?? ""),
     reference: (row["reference"] as string | null) ?? null,
     description: (row["description"] as string | null) ?? null,
-    photo_url: (row["photo_url"] as string | null) ?? null,
+    photo_url: single ?? many[0] ?? null,
+    photo_urls: many,
     customer_price_idr: price == null ? null : Number(price),
     variants: (row["variants"] as CatalogueVariants | null) ?? null,
   };
