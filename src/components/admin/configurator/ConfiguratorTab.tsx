@@ -281,20 +281,40 @@ function StepEditor({
       )}
 
       <div className="space-y-2">
-        {fields.map((field) => (
+        {fields.map((field) => {
+          const isOpen = openField === field.id;
+          const fromCatalogue =
+            SELECT_FIELD_TYPES.includes(field.field_type as string) &&
+            ((field as any).option_source as string) === "catalogue";
+          return (
           <div key={field.id} className="rounded-md border border-border p-3">
             <button
               type="button"
-              className="text-left text-sm font-medium"
-              onClick={() => setOpenField(openField === field.id ? null : field.id)}
+              className="flex w-full items-center gap-2 rounded-sm text-left hover:bg-muted/40"
+              onClick={() => setOpenField(isOpen ? null : field.id)}
             >
-              {field.internal_name}
-              <span className="ml-2 font-mono text-xs text-muted-foreground">
-                {field.variable_name}
+              {isOpen ? (
+                <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              )}
+              <span className="min-w-0 flex-1">
+                <span className="text-sm font-medium">{field.internal_name}</span>
+                <span className="ml-2 font-mono text-xs text-muted-foreground">
+                  {field.variable_name}
+                </span>
+                <span className="ml-2 text-xs text-muted-foreground">
+                  {FIELD_TYPES.find((t) => t.value === field.field_type)?.label}
+                  {field.is_active ? "" : " · inactive"}
+                </span>
+                {fromCatalogue && (
+                  <span className="ml-2 rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
+                    Catalogue · photo {field.photo_display_size || "large"}
+                  </span>
+                )}
               </span>
-              <span className="ml-2 text-xs text-muted-foreground">
-                {FIELD_TYPES.find((t) => t.value === field.field_type)?.label}
-                {field.is_active ? "" : " · inactive"}
+              <span className="shrink-0 text-xs text-muted-foreground underline">
+                {isOpen ? "Close" : "Edit"}
               </span>
             </button>
             {openField === field.id && (
