@@ -308,10 +308,34 @@ export async function regenerateRepresentation(voucherId: string) {
   const db = await admin();
   const { data: voucher } = await db
     .from("vouchers")
-    .select("id, purchase_id, package_id, representation_version")
+    .select("id, purchase_id, package_id, representation_version, cart_snapshot, status")
     .eq("id", voucherId)
     .maybeSingle();
   if (!voucher) fail("This voucher could not be found.");
+
+  // An unpaid voucher has no purchase yet: it is rebuilt from the cart-stage
+  // configuration it was created with.
+  if (!voucher.purchase_id) {
+    const { error: cartError } = await db
+      .from("vouchers")
+      .update({
+        entitlement: buildEntitlement({
+          snapshot: voucher.cart_snapshot ?? {},
+          voucherType: "STANDARD",
+          purchaseReference: null,
+          purchaseCreatedAt: null,
+          packageId: voucher.package_id,
+          totalIdr: Number((voucher.cart_snapshot as any)?.total_idr ?? 0),
+          paidIdr: 0,
+          recipientName: null,
+          giftMessage: null,
+        }) as never,
+        representation_version: Number(voucher.representation_version) + 1,
+      })
+      .eq("id", voucherId);
+    if (cartError) fail(SAFE_ERROR);
+    return { ok: true };
+  }
 
   const { purchase, snapshot } = await purchaseWithSnapshot(db, voucher.purchase_id);
   if (!purchase) fail("This voucher could not be found.");
@@ -340,7 +364,7 @@ export async function markVoucherUsed(voucherId: string, actorId: string, note?:
   const check = redemptionCheck(voucher as any);
   if (!check.ok) {
     // Keep the stored status truthful when validity has simply run out.
-    if (check.effectiveStatus === "EXPIRED" && voucher?.status === "ACTIVE") {
+    if (check.effectiveStatus === "EXPIRED" && (voucher?.status === "ACTIVE" || voucher?.status === "PAID")) {
       await db.from("vouchers").update({ status: "EXPIRED" }).eq("id", voucherId);
     }
     fail(check.reason ?? "This voucher cannot be used.");
@@ -355,7 +379,7 @@ export async function markVoucherUsed(voucherId: string, actorId: string, note?:
       redemption_note: note?.trim() ? note.trim().slice(0, 300) : null,
     })
     .eq("id", voucherId)
-    .eq("status", "ACTIVE");
+    .in("status", ["ACTIVE", "PAID"]);
   if (error) fail(SAFE_ERROR);
   return { ok: true };
 }
