@@ -9,6 +9,7 @@ import { getWebsiteNav } from "@/lib/website.functions";
 import { setFxCurrency } from "@/lib/fx.functions";
 import { formatIdr } from "@/lib/public-catalog";
 import { formatCustomerAmount } from "@/lib/fx";
+import { Button } from "@/components/ui/button";
 
 /** One display rule for every customer-facing total. */
 export function displayTotal(
@@ -82,15 +83,17 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/95 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
         <div className="flex items-center gap-2">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             aria-label={open ? "Close menu" : "Open menu"}
-            className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium hover:bg-accent sm:hidden"
+            className="gap-1.5 px-2 sm:hidden"
             onClick={() => setOpen((v) => !v)}
           >
             {open ? <X className="size-4" /> : <Menu className="size-4" />}
             MENU
-          </button>
+          </Button>
           <Link to="/home" className="text-sm font-semibold uppercase tracking-[0.18em]">
             Cimaja Boardriders
           </Link>
@@ -160,7 +163,7 @@ export function SiteHeader() {
 
 export function PublicPage({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="public-theme min-h-screen bg-background text-foreground">
       <SiteHeader />
       <main className="mx-auto max-w-3xl px-4 pb-16 pt-6">{children}</main>
     </div>
