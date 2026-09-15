@@ -74,11 +74,163 @@ function snapshotPackageIds(snapshot: any): string[] {
   return ids;
 }
 
+/* ------------------------------------------------------------------ */
+/* Voucher at Add to Cart                                              */
+/* ------------------------------------------------------------------ */
+
+const CART_LINE_FIELDS =
+  "id, product_id, line_kind, item_title, answers, resolved_inputs, catalogue_selections, quote_lines, subtotal_idr, season_discount_idr, promo_discount_idr, total_idr, season_month, season_period, promo_code, created_at";
+
+async function cartLineTitle(db: any, line: any): Promise<string> {
+  if (line.line_kind === "catalogue_item") return line.item_title ?? "Booking";
+  const { data: product } = await db
+    .from("products")
+    .select("internal_name, voucher_name")
+    .eq("id", line.product_id)
+    .maybeSingle();
+  if (product?.voucher_name) return product.voucher_name;
+  const { data: translation } = await db
+    .from("product_translations")
+    .select("title")
+    .eq("product_id", line.product_id)
+    .eq("language_code", "en")
+    .maybeSingle();
+  return translation?.title ?? product?.internal_name ?? "Experience";
+}
+
+/** Configuration and prices of one cart line, in the snapshot shape. */
+async function cartSnapshot(db: any, line: any) {
+  const title = await cartLineTitle(db, line);
+  let optionLabels: unknown[] = [];
+  let basePrice: number | null = null;
+
+  if (line.line_kind === "catalogue_item") {
+    optionLabels = Array.isArray(line.quote_lines) ? line.quote_lines : [];
+  } else {
+    const { orderedAnswerSummary } = await import("@/lib/answer-summary.server");
+    optionLabels = await orderedAnswerSummary(
+      db,
+      line.product_id,
+      (line.answers ?? {}) as Record<string, unknown>,
+      (line.catalogue_selections ?? []) as any[],
+    );
+    const { data: pricing } = await db
+      .from("product_pricing")
+      .select("base_amount_idr")
+      .eq("product_id", line.product_id)
+      .maybeSingle();
+    const base = Number(pricing?.base_amount_idr);
+    basePrice = Number.isFinite(base) ? base : null;
+  }
+
+  return {
+    snapshot_version: 1,
+    stage: "cart",
+    taken_at: new Date().toISOString(),
+    currency_code: "IDR",
+    total_idr: Number(line.total_idr),
+    packages: [
+      {
+        package_id: line.id,
+        product_id: line.product_id,
+        product_title: title,
+        base_price_idr: basePrice,
+        option_labels: optionLabels,
+        answers: line.answers ?? {},
+        resolved_inputs: line.resolved_inputs ?? {},
+        catalogue_selections: line.catalogue_selections ?? [],
+        quote_lines: line.quote_lines ?? [],
+        season_month: line.season_month ?? null,
+        season_period: line.season_period ?? null,
+        promo_code: line.promo_code ?? null,
+        subtotal_idr: Number(line.subtotal_idr ?? line.total_idr),
+        season_discount_idr: Number(line.season_discount_idr ?? 0),
+        promo_discount_idr: Number(line.promo_discount_idr ?? 0),
+        total_idr: Number(line.total_idr),
+      },
+    ],
+    customer: null,
+    gift: { is_gift: false, recipient_name: null, message: null },
+  };
+}
+
+/**
+ * Creates the UNPAID voucher of a cart line the moment it is added to the
+ * cart. The number is consumed once and never reused; a repeated call returns
+ * the same voucher. Nothing here prices or re-quotes: it reads the line the
+ * cart already priced server-side.
+ */
+export async function ensureVoucherForCartLine(
+  packageId: string,
+  cartId: string | null,
+): Promise<{ voucher: any | null; created: boolean }> {
+  const db = await admin();
+
+  const { data: existing } = await db
+    .from("vouchers")
+    .select("*")
+    .eq("package_id", packageId)
+    .maybeSingle();
+  if (existing) return { voucher: existing, created: false };
+
+  const { data: line } = await db
+    .from("packages")
+    .select(CART_LINE_FIELDS)
+    .eq("id", packageId)
+    .maybeSingle();
+  if (!line) return { voucher: null, created: false };
+
+  const months = await validityMonths(db);
+  const snapshot = await cartSnapshot(db, line);
+  const entitlement = buildEntitlement({
+    snapshot,
+    voucherType: "STANDARD",
+    purchaseReference: null,
+    purchaseCreatedAt: line.created_at ?? null,
+    packageId,
+    totalIdr: Number(line.total_idr),
+    paidIdr: 0,
+    recipientName: null,
+    giftMessage: null,
+  });
+
+  const { data: code, error: codeError } = await db.rpc("next_voucher_code");
+  if (codeError || !code) return { voucher: null, created: false };
+
+  const validUntil = new Date();
+  validUntil.setUTCMonth(validUntil.getUTCMonth() + months);
+
+  const { data: voucher, error } = await db
+    .from("vouchers")
+    .insert({
+      code,
+      purchase_id: null,
+      package_id: packageId,
+      cart_id: cartId,
+      cart_snapshot: snapshot as never,
+      status: "UNPAID",
+      voucher_type: "STANDARD",
+      validity_months: months,
+      valid_until: validUntil.toISOString(),
+      entitlement: entitlement as never,
+    })
+    .select("*")
+    .single();
+
+  if (error || !voucher) {
+    // A concurrent add already consumed the number for this line.
+    const { data: raced } = await db.from("vouchers").select("*").eq("package_id", packageId).maybeSingle();
+    return { voucher: raced ?? null, created: false };
+  }
+  return { voucher, created: true };
+}
+
 /**
  * Issues one voucher per purchased Package once the required payment is
  * confirmed. Idempotent: repeated calls (payment replays, Admin retries)
  * return the same vouchers with the same numbers, and the database enforces
- * one voucher per package.
+ * one voucher per package. A voucher already created at Add to Cart is
+ * adopted — its number never changes.
  */
 export async function issueVouchersForPurchase(
   purchaseId: string,
