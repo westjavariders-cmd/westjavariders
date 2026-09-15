@@ -122,6 +122,45 @@ export const duplicateProduct = createServerFn({ method: "POST" })
   });
 
 /**
+ * Deletes a product and everything that hangs from it (content, components,
+ * configurator, pricing, web relations — the database removes them in
+ * cascade). A product with configurations or bookings behind it cannot be
+ * deleted: `packages.product_id` is protected with RESTRICT so history is
+ * never lost. The UI offers archiving instead.
+ */
+export const deleteProduct = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ productId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = ctx(context);
+    await assertAdmin(supabase);
+
+    const { data: product, error } = await supabase
+      .from("products")
+      .select("internal_name")
+      .eq("id", data.productId)
+      .maybeSingle();
+    if (error || !product) fail("This product could not be found.");
+
+    const { count } = await supabase
+      .from("packages")
+      .select("id", { count: "exact", head: true })
+      .eq("product_id", data.productId);
+    if ((count ?? 0) > 0) {
+      fail("PRODUCT_HAS_HISTORY");
+    }
+
+    const { error: delError } = await supabase
+      .from("products")
+      .delete()
+      .eq("id", data.productId);
+    if (delError) fail(SAFE_ERROR);
+
+    await audit(supabase, userId, "product_deleted", data.productId, product.internal_name, {});
+    return { ok: true };
+  });
+
+/**
  * Activation gate recomputed on the server. The browser also shows these
  * problems, but the server never trusts the browser's verdict.
  */

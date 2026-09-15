@@ -3,11 +3,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Copy, Plus } from "lucide-react";
+import { Copy, Plus, Trash2 } from "lucide-react";
 
 import { PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { createProduct, duplicateProduct } from "@/lib/catalog.functions";
+import { createProduct, deleteProduct, duplicateProduct, setProductStatus } from "@/lib/catalog.functions";
 import { PRODUCT_KINDS, PRODUCT_STATUSES } from "@/lib/catalog";
 import { selectClass } from "@/components/admin/configurator/ui";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,8 @@ function ProductsPage() {
   const navigate = useNavigate();
   const create = useServerFn(createProduct);
   const duplicate = useServerFn(duplicateProduct);
+  const deleteFn = useServerFn(deleteProduct);
+  const setStatusFn = useServerFn(setProductStatus);
 
   const [search, setSearch] = useState("");
   const [kind, setKind] = useState("");
@@ -42,6 +44,9 @@ function ProductsPage() {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState({ internal_name: "", kind: "package", internal_ref: "" });
   const [busy, setBusy] = useState(false);
+  const [deleting, setDeleting] = useState<{ id: string; name: string } | null>(null);
+  const [deleteHasHistory, setDeleteHasHistory] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const categories = useQuery({
     queryKey: ["categories"],
@@ -107,6 +112,45 @@ function ProductsPage() {
       navigate({ to: "/admin/products/$productId", params: { productId: res.id } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "This product could not be duplicated.");
+    }
+  }
+
+  async function onDelete() {
+    if (!deleting) return;
+    setDeleteBusy(true);
+    try {
+      await deleteFn({ data: { productId: deleting.id } });
+      toast.success("Product deleted.");
+      setDeleting(null);
+      setDeleteHasHistory(false);
+      await products.refetch();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "This product could not be deleted.";
+      if (message === "PRODUCT_HAS_HISTORY") {
+        setDeleteHasHistory(true);
+      } else {
+        toast.error(message);
+        setDeleting(null);
+        setDeleteHasHistory(false);
+      }
+    } finally {
+      setDeleteBusy(false);
+    }
+  }
+
+  async function onArchive() {
+    if (!deleting) return;
+    setDeleteBusy(true);
+    try {
+      await setStatusFn({ data: { productId: deleting.id, status: "archived" } });
+      toast.success("Product archived.");
+      setDeleting(null);
+      setDeleteHasHistory(false);
+      await products.refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "This product could not be archived.");
+    } finally {
+      setDeleteBusy(false);
     }
   }
 
