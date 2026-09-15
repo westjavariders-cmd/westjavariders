@@ -248,6 +248,25 @@ export function ConfiguratorForm({
                   </div>
                 )}
 
+                {catalogueKeyOfField &&
+                  (() => {
+                    // The photos on screen belong to the last option the
+                    // customer picked; earlier ones are taken as already seen.
+                    const list = Array.isArray(values[f.variable_name])
+                      ? (values[f.variable_name] as string[]).map(String)
+                      : [];
+                    const id =
+                      f.field_type === "multi_select"
+                        ? list.includes(shown[f.id] ?? "")
+                          ? (shown[f.id] as string)
+                          : (list[list.length - 1] ?? "")
+                        : String(value);
+                    const item = catalogueItems.find((i) => i.id === id);
+                    const photos = item?.photo_urls ?? [];
+                    if (photos.length === 0) return null;
+                    return <CatalogueGallery key={id} photos={photos} name={item!.name} />;
+                  })()}
+
                 {catalogueKeyOfField && options.length === 0 && (
                   <p className="text-xs text-muted-foreground">
                     No choices are available right now.
@@ -329,14 +348,15 @@ export function ConfiguratorForm({
                           size="sm"
                           disabled={e.disabled}
                           variant={on ? "default" : "outline"}
-                          onClick={() =>
+                          onClick={() => {
                             set(
                               f,
                               on
                                 ? list.filter((x) => x !== o.internal_value)
                                 : [...list, o.internal_value],
-                            )
-                          }
+                            );
+                            if (!on) setShown((s) => ({ ...s, [f.id]: o.internal_value }));
+                          }}
                         >
                           {o.customer_label ?? o.internal_value}
                         </Button>
