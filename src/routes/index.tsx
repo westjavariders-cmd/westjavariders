@@ -26,16 +26,16 @@ export const Route = createFileRoute("/")({
   ),
   head: () => ({
     meta: [
-      { title: "Cimaja Boardriders | Surf & Travel in West Java" },
+      { title: "West Java Riders | Surf & Travel in West Java" },
       {
         name: "description",
         content:
-          "Cimaja Boardriders — surf, travel and local experiences based in Cimaja, West Java, Indonesia.",
+          "West Java Riders — surf, travel and local experiences based in Cimaja, West Java, Indonesia.",
       },
-      { property: "og:title", content: "Cimaja Boardriders" },
+      { property: "og:title", content: "West Java Riders" },
       {
         property: "og:description",
-        content: "Surf, explore, experience West Java with Cimaja Boardriders.",
+        content: "Surf, explore, experience West Java with West Java Riders.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

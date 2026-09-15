@@ -79,13 +79,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Cimaja Boardriders" },
+      { title: "West Java Riders" },
       {
         name: "description",
         content: "Surf, travel and local experiences in Cimaja, West Java.",
       },
-      { name: "author", content: "Cimaja Boardriders" },
-      { property: "og:title", content: "Cimaja Boardriders" },
+      { name: "author", content: "West Java Riders" },
+      { property: "og:title", content: "West Java Riders" },
       {
         property: "og:description",
         content: "Surf, travel and local experiences in Cimaja, West Java.",
