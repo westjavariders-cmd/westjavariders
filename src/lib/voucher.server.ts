@@ -253,10 +253,33 @@ export async function issueVouchersForPurchase(
   for (const packageId of packageIds) {
     const { data: existing } = await db
       .from("vouchers")
-      .select("id")
+      .select("id, status, purchase_id")
       .eq("package_id", packageId)
       .maybeSingle();
-    if (existing) continue;
+
+    // A voucher created at Add to Cart keeps its number: payment only links it
+    // to the purchase, refreshes its historical representation and marks PAID.
+    if (existing) {
+      const validUntil = new Date();
+      validUntil.setUTCMonth(validUntil.getUTCMonth() + months);
+      const patch: Record<string, unknown> = {
+        purchase_id: purchaseId,
+        entitlement: (await entitlementFor(db, purchase, snapshot, packageId)) as never,
+        voucher_type: purchase.is_gift ? "GIFT" : "STANDARD",
+        customer_id: purchase.customer_id ?? null,
+        gift_recipient_name: purchase.is_gift ? (purchase.gift_recipient_name ?? null) : null,
+        gift_message: purchase.is_gift ? (purchase.gift_message ?? null) : null,
+      };
+      if (existing.status === "UNPAID") {
+        patch["status"] = "PAID";
+        patch["issued_at"] = new Date().toISOString();
+        patch["validity_months"] = months;
+        patch["valid_until"] = validUntil.toISOString();
+      }
+      const { error: adoptError } = await db.from("vouchers").update(patch).eq("id", existing.id);
+      if (adoptError) return { vouchers: [], reason: "issue_failed", created };
+      continue;
+    }
 
     const { data: voucherId, error } = await db.rpc("issue_voucher", {
       _purchase_id: purchaseId,
