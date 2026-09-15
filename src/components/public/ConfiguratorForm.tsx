@@ -90,6 +90,12 @@ export function ConfiguratorForm({
   const [stepIndexRaw, setStepIndex] = useState(0);
   const [values, setValues] = useState<PreviewValues>(() => initialValues(bundle, savedAnswers));
   const [promo, setPromo] = useState(savedPromo ?? "");
+
+  // The customer enters the code on Home; it is kept in their browser.
+  useEffect(() => {
+    const stored = readStoredPromoCode();
+    if (stored) setPromo(stored);
+  }, []);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoting, setQuoting] = useState(false);
   const [booking, setBooking] = useState(false);
@@ -427,16 +433,6 @@ export function ConfiguratorForm({
 
       <Card>
         <CardContent className="space-y-3 p-4">
-          <div className="flex items-end gap-2">
-            <div className="flex-1 space-y-1.5">
-              <Label className="text-sm">Promo code (optional)</Label>
-              <Input
-                value={promo}
-                placeholder="Enter a code"
-                onChange={(e) => setPromo(e.target.value.toUpperCase())}
-              />
-            </div>
-          </div>
           {quote?.promo_rejection && (
             <p className="text-xs text-destructive">{quote.promo_rejection}</p>
           )}
