@@ -175,8 +175,15 @@ function optionLabels(pkg: any): { label: string; value: string }[] {
   // resolving catalogue ids to names and hiding declined or empty answers.
   const answers = (pkg?.answers ?? {}) as Record<string, unknown>;
   const names: Record<string, string> = {};
+  const labels: Record<string, Record<string, string>> = {};
   for (const sel of (pkg?.catalogue_selections ?? []) as any[]) {
     if (sel?.item_id && sel?.name) names[String(sel.item_id)] = String(sel.name);
+    if (sel?.variable_name) {
+      labels[String(sel.variable_name)] = {
+        ...(sel?.people_label ? { _people: String(sel.people_label) } : {}),
+        ...(sel?.hours_label ? { _hours: String(sel.hours_label) } : {}),
+      };
+    }
   }
   const suffixes = QUANTITY_SUFFIXES.map((q) => q.suffix);
   const out: { label: string; value: string }[] = [];
@@ -202,7 +209,7 @@ function optionLabels(pkg: any): { label: string; value: string }[] {
       if (isEmptyAnswer(q)) continue;
       const n = Number(q);
       if (Number.isFinite(n) && n <= 0) continue;
-      out.push({ label: qLabel, value: String(q) });
+      out.push({ label: labels[key]?.[suffix] || qLabel, value: String(q) });
     }
   }
   return out;

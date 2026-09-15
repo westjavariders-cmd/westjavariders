@@ -33,6 +33,7 @@ export function isEmptyAnswer(raw: unknown): boolean {
 function quantityLines(
   variable: string,
   answers: Record<string, unknown>,
+  labels: Record<string, string> = {},
 ): AnswerSummaryLine[] {
   const out: AnswerSummaryLine[] = [];
   for (const { suffix, label } of QUANTITY_SUFFIXES) {
@@ -40,7 +41,7 @@ function quantityLines(
     if (isEmptyAnswer(raw)) continue;
     const n = Number(raw);
     if (Number.isFinite(n) && n <= 0) continue;
-    out.push({ label, value: String(raw) });
+    out.push({ label: labels[suffix] || label, value: String(raw) });
   }
   return out;
 }
@@ -59,6 +60,8 @@ export function summarizeAnswers(
   answers: PreviewValues,
   /** Catalogue item id → public name, for questions fed by a catalogue. */
   catalogueNames: Record<string, string> = {},
+  /** Question variable → quantity suffix → catalogue-specific customer label. */
+  quantityLabels: Record<string, Record<string, string>> = {},
 ): AnswerSummaryLine[] {
   const all = (answers ?? {}) as Record<string, unknown>;
   const lines: AnswerSummaryLine[] = [];
@@ -80,7 +83,7 @@ export function summarizeAnswers(
     // Yes/no questions are only gates for what follows: the chosen extras and
     // their quantities are listed on their own, so the "Yes" itself is noise.
     if (typeof raw === "boolean" || f.field_type === "boolean") {
-      lines.push(...quantityLines(f.variable_name, all));
+      lines.push(...quantityLines(f.variable_name, all, quantityLabels[f.variable_name]));
       continue;
     }
 
@@ -94,7 +97,7 @@ export function summarizeAnswers(
 
     if (value == null || value === "") continue;
     lines.push({ label, value });
-    lines.push(...quantityLines(f.variable_name, all));
+    lines.push(...quantityLines(f.variable_name, all, quantityLabels[f.variable_name]));
   }
   return lines;
 }

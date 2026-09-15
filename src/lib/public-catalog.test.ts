@@ -107,6 +107,26 @@ describe("configuration summary", () => {
     ]);
   });
 
+  it("uses each catalogue's configured names for people and hours", () => {
+    const id = "288bc324-a6fb-4723-90c4-2806478853f5";
+    const fields = [
+      field({ id: "f7", variable_name: "board", field_type: "single_select", customer_label: "Board" }),
+    ];
+    expect(
+      summarizeAnswers(
+        fields,
+        [],
+        { board: id, board_people: 2, board_hours: 5 } as never,
+        { [id]: "Fiber board" },
+        { board: { _people: "Number of boards", _hours: "Number of days" } },
+      ),
+    ).toEqual([
+      { label: "Board", value: "Fiber board" },
+      { label: "Number of boards", value: "2" },
+      { label: "Number of days", value: "5" },
+    ]);
+  });
+
 });
 
 describe("configurator defaults", () => {

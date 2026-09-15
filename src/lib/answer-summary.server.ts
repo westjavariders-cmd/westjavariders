@@ -32,6 +32,19 @@ async function orderedAnswerDetails(
     ? ((await db.from("field_options").select("*").in("field_id", fieldIds).order("display_order")).data ?? [])
     : [];
 
+  const catalogueIds = Array.from(
+    new Set(
+      (catalogueSelections ?? [])
+        .map((selection: any) => selection?.catalogue_id)
+        .filter((id: unknown): id is string => typeof id === "string" && id.length > 0),
+    ),
+  );
+  const catalogueRows = catalogueIds.length
+    ? ((await db.from("catalogues").select("id, people_label, hours_label").in("id", catalogueIds)).data ?? [])
+    : [];
+  const catalogueLabels = new Map(catalogueRows.map((row: any) => [row.id, row]));
+  const quantityLabels: Record<string, Record<string, string>> = {};
+
   // Older snapshots can retain the original variable name after the current
   // catalogue question was renamed. Match it by its stable catalogue source.
   for (const selection of catalogueSelections ?? []) {
@@ -43,6 +56,16 @@ async function orderedAnswerDetails(
         field.catalogue_type === selection?.catalogue_type &&
         (!selection?.catalogue_id || field.catalogue_id === selection.catalogue_id),
     );
+    const targetVariable = matching?.variable_name ?? oldVariable;
+    const storedLabels = catalogueLabels.get(selection?.catalogue_id) as any;
+    quantityLabels[targetVariable] = {
+      ...(selection?.people_label?.trim() || storedLabels?.people_label?.trim()
+        ? { _people: selection?.people_label?.trim() || storedLabels?.people_label?.trim() }
+        : {}),
+      ...(selection?.hours_label?.trim() || storedLabels?.hours_label?.trim()
+        ? { _hours: selection?.hours_label?.trim() || storedLabels?.hours_label?.trim() }
+        : {}),
+    };
     if (!matching || !isEmptyAnswer(answers[matching.variable_name])) continue;
     answers[matching.variable_name] = answers[oldVariable];
     for (const { suffix } of QUANTITY_SUFFIXES) {
@@ -60,6 +83,7 @@ async function orderedAnswerDetails(
         .filter((selection: any) => selection?.item_id && selection?.name)
         .map((selection: any) => [selection.item_id, selection.name]),
     ),
+    quantityLabels,
   );
   return { lines, fields, answers };
 }
@@ -94,6 +118,10 @@ export async function withOrderedSnapshotAnswers(db: any, snapshot: any): Promis
         for (const line of Array.isArray(pkg.option_labels) ? pkg.option_labels : []) {
           if (!line || line.label == null || line.value == null) continue;
           const saved = { label: String(line.label), value: String(line.value) };
+          const isReplacedGenericQuantity =
+            QUANTITY_SUFFIXES.some(({ label }) => label === saved.label) &&
+            ordered.some((current) => current.value === saved.value);
+          if (isReplacedGenericQuantity) continue;
           const key = `${saved.label}\u0000${saved.value}`;
           if (!seen.has(key)) {
             ordered.push(saved);

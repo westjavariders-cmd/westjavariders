@@ -143,7 +143,13 @@ describe("entitlement", () => {
             surflessonscatalogueprice_hours: "2",
             surflessonscatalogueprice_people: "1",
           },
-          catalogue_selections: [{ item_id: id, name: "Price per people" }],
+          catalogue_selections: [{
+            variable_name: "surflessonscatalogueprice",
+            item_id: id,
+            name: "Price per people",
+            people_label: "Number of surfers",
+            hours_label: "Number of sessions",
+          }],
           total_idr: 600_000,
         },
       ],
@@ -153,8 +159,8 @@ describe("entitlement", () => {
     const options = built.items[0]!.options;
     expect(options).toEqual([
       { label: "Surflessonscatalogueprice", value: "Price per people" },
-      { label: "People", value: "1" },
-      { label: "Hours", value: "2" },
+      { label: "Number of surfers", value: "1" },
+      { label: "Number of sessions", value: "2" },
     ]);
   });
 

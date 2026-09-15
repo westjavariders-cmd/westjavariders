@@ -232,6 +232,8 @@ describe("transport catalogue extra choices", () => {
     expect(selections[0]!.customer_price_idr).toBe(950_000);
     expect(selections[0]!.people).toBe(2);
     expect(selections[0]!.travel_hours).toBe(3);
+    expect(selections[0]!.people_label).toBe("Surfers");
+    expect(selections[0]!.hours_label).toBe("Hours in the van");
     expect(cataloguePriceVariables(selections)).toEqual({
       transfer_price: 950_000,
       transfer_people: 2,

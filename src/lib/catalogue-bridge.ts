@@ -205,6 +205,9 @@ export type CatalogueSelection = {
   /** Extra choices the item is priced by, when it has any. */
   people?: number | null;
   travel_hours?: number | null;
+  /** Customer-facing quantity names frozen from the catalogue for vouchers. */
+  people_label?: string | null;
+  hours_label?: string | null;
 };
 
 function selectedIds(raw: unknown): string[] {
@@ -258,7 +261,14 @@ export function resolveCatalogueSelections(
         name: item.name,
         reference: item.reference,
         customer_price_idr: price,
-        ...(item.variants ? { people, travel_hours: hours } : {}),
+        ...(item.variants
+          ? {
+              people,
+              travel_hours: hours,
+              people_label: item.variants.people_label,
+              hours_label: item.variants.hours_label,
+            }
+          : {}),
       });
     }
   }
