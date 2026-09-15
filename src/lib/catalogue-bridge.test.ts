@@ -66,6 +66,7 @@ describe("customer-safe projection", () => {
       reference: null,
       description: null,
       photo_url: null,
+      photo_urls: [],
       customer_price_idr: 90000,
       variants: null,
     });

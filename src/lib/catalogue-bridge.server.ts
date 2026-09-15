@@ -77,9 +77,17 @@ async function accommodationRooms(db: any, catalogueIds: string[]): Promise<Cata
   for (const room of rooms.data ?? []) {
     // A room is only offerable while its accommodation is active too.
     if (!activeParents.has(room.accommodation_id)) continue;
-    const photo =
-      (photos.data ?? []).find((p: any) => p.room_id === room.id && p.is_primary) ??
-      (photos.data ?? []).find((p: any) => p.room_id === room.id);
+    // Every photo of the room travels to the configurator, primary first.
+    const roomPhotos = (photos.data ?? [])
+      .filter((p: any) => p.room_id === room.id)
+      .sort(
+        (a: any, b: any) =>
+          Number(!!b.is_primary) - Number(!!a.is_primary) ||
+          Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0),
+      );
+    const signedPhotos = (
+      await Promise.all(roomPhotos.map((p: any) => signed(db, PHOTO_BUCKET, p.storage_path ?? null)))
+    ).filter((u): u is string => !!u);
     items.push(
       toCatalogueItem("accommodation_room", {
         id: room.id,
@@ -87,7 +95,8 @@ async function accommodationRooms(db: any, catalogueIds: string[]): Promise<Cata
         name: room.public_name || room.internal_name,
         reference: room.internal_reference,
         description: room.description,
-        photo_url: await signed(db, PHOTO_BUCKET, photo?.storage_path ?? null),
+        photo_url: signedPhotos[0] ?? null,
+        photo_urls: signedPhotos,
         customer_price_idr: room.customer_price_per_night_idr,
       }),
     );
