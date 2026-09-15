@@ -98,6 +98,9 @@ export function ConfiguratorForm({
     if (stored) setPromo(stored);
   }, []);
   const [quote, setQuote] = useState<Quote | null>(null);
+  const [display, setDisplay] = useState<QuoteDisplay | null>(null);
+  // The chosen currency lives server-side; the mini cart already exposes it.
+  const cartCurrency = usePublicCart().data?.fx?.currency_code ?? null;
   const [quoting, setQuoting] = useState(false);
   const [booking, setBooking] = useState(false);
   // Which catalogue item's photos are on screen per question, and which photo.
@@ -118,7 +121,13 @@ export function ConfiguratorForm({
             promoCode: promo.trim() ? promo.trim() : null,
           },
         });
-        if (seq.current === id) setQuote(res.quote as Quote);
+        if (seq.current === id) {
+          setQuote(res.quote as Quote);
+          setDisplay({
+            fx: (res as any).fx ?? null,
+            total_customer: (res as any).total_customer ?? null,
+          });
+        }
       } catch (e) {
         if (seq.current === id) toast.error(e instanceof Error ? e.message : "Price unavailable.");
       } finally {
@@ -127,7 +136,7 @@ export function ConfiguratorForm({
     }, 500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values, promo, packageId]);
+  }, [values, promo, packageId, cartCurrency]);
 
   const evaluated = useMemo(() => evaluateDependencies(bundle, values), [bundle, values]);
 
