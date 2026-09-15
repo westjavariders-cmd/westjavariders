@@ -729,6 +729,7 @@ export type Database = {
           max_value: number | null
           min_value: number | null
           option_source: string
+          photo_display_size: string
           product_id: string
           step_id: string
           updated_at: string
@@ -752,6 +753,7 @@ export type Database = {
           max_value?: number | null
           min_value?: number | null
           option_source?: string
+          photo_display_size?: string
           product_id: string
           step_id: string
           updated_at?: string
@@ -775,6 +777,7 @@ export type Database = {
           max_value?: number | null
           min_value?: number | null
           option_source?: string
+          photo_display_size?: string
           product_id?: string
           step_id?: string
           updated_at?: string
