@@ -171,6 +171,13 @@ export function ConfiguratorForm({
   }
 
 
+  // Only show a second amount when there is a real customer currency and rate.
+  const showCustomer =
+    !!quote &&
+    !!display?.fx &&
+    display.fx.currency_code !== "IDR" &&
+    display.total_customer != null;
+
   const stepFields = step ? visibleStepFields(bundle, step.id, evaluated) : [];
 
   const ready =
