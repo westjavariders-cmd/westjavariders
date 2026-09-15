@@ -13,7 +13,7 @@ const UUID_LIKE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
 export const VOUCHER_TYPES = ["STANDARD", "GIFT"] as const;
 export type VoucherType = (typeof VOUCHER_TYPES)[number];
 
-export const VOUCHER_STATUSES = ["ACTIVE", "USED", "EXPIRED", "CANCELLED"] as const;
+export const VOUCHER_STATUSES = ["UNPAID", "PAID", "ACTIVE", "USED", "EXPIRED", "CANCELLED"] as const;
 export type VoucherStatus = (typeof VOUCHER_STATUSES)[number];
 
 export const VOUCHER_TYPE_LABELS: Record<VoucherType, string> = {
@@ -22,6 +22,8 @@ export const VOUCHER_TYPE_LABELS: Record<VoucherType, string> = {
 };
 
 export const VOUCHER_STATUS_LABELS: Record<VoucherStatus, string> = {
+  UNPAID: "Unpaid",
+  PAID: "Paid",
   ACTIVE: "Active",
   USED: "Used",
   EXPIRED: "Expired",
@@ -319,7 +321,7 @@ export function buildEntitlement(args: {
 export type RedeemableVoucher = {
   id: string;
   code: string;
-  purchase_id: string;
+  purchase_id: string | null;
   status: VoucherStatus;
   valid_until: string;
 };
@@ -338,6 +340,8 @@ export function redemptionCheck(
     return { ok: false, reason: "This voucher has been cancelled.", effectiveStatus: "CANCELLED" };
   if (voucher.status === "USED")
     return { ok: false, reason: "This voucher has already been used.", effectiveStatus: "USED" };
+  if (voucher.status === "UNPAID")
+    return { ok: false, reason: "This voucher has not been paid yet.", effectiveStatus: "UNPAID" };
 
   const now = options?.now ?? new Date();
   if (new Date(voucher.valid_until).getTime() < now.getTime()) {
@@ -349,7 +353,7 @@ export function redemptionCheck(
   if (options?.expectedPurchaseId && voucher.purchase_id !== options.expectedPurchaseId) {
     return { ok: false, reason: "This voucher does not belong to that booking." };
   }
-  return { ok: true, effectiveStatus: "ACTIVE" };
+  return { ok: true, effectiveStatus: voucher.status === "PAID" ? "PAID" : "ACTIVE" };
 }
 
 /** Display status: an active voucher past its validity date reads as expired. */
@@ -358,6 +362,7 @@ export function effectiveStatus(
   validUntil: string,
   now: Date = new Date(),
 ): VoucherStatus {
-  if (status === "ACTIVE" && new Date(validUntil).getTime() < now.getTime()) return "EXPIRED";
+  if ((status === "ACTIVE" || status === "PAID") && new Date(validUntil).getTime() < now.getTime())
+    return "EXPIRED";
   return status;
 }

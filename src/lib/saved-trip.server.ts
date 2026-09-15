@@ -61,11 +61,26 @@ export async function saveCurrentTrip(token?: string): Promise<{ code: string }>
   }
   if (lines.length === 0) fail("Your cart is empty, so there is nothing to save yet.");
 
+  // One share link per cart: sharing again reuses the same link and simply
+  // refreshes the configuration it points at. No second record is created.
+  const { data: existing } = await db
+    .from("saved_trips")
+    .select("code")
+    .eq("cart_id", cart.id)
+    .maybeSingle();
+  if (existing?.code) {
+    await db
+      .from("saved_trips")
+      .update({ lines: lines as never })
+      .eq("cart_id", cart.id);
+    return { code: existing.code as string };
+  }
+
   for (let attempt = 0; attempt < 6; attempt += 1) {
     const code = generateTripCode(randomFromCrypto);
     const { data, error } = await db
       .from("saved_trips")
-      .insert({ code, lines: lines as never })
+      .insert({ code, cart_id: cart.id, lines: lines as never })
       .select("code")
       .maybeSingle();
     if (data?.code) return { code: data.code as string };

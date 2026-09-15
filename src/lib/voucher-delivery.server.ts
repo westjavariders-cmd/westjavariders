@@ -259,7 +259,7 @@ export async function deliverVouchersForPurchase(purchaseId: string): Promise<vo
 
   for (const voucher of vouchers ?? []) {
     if (voucher.auto_delivery_at) continue;
-    if (voucher.status !== "ACTIVE") continue;
+    if (voucher.status !== "ACTIVE" && voucher.status !== "PAID") continue;
     await generateVoucherDocument(voucher.id).catch(() => undefined);
     await sendVoucherEmail(voucher.id, { automatic: true }).catch(() => undefined);
   }

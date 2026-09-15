@@ -197,6 +197,15 @@ export async function addDirectBookingToCart(args: {
     fail(SAFE_ERROR);
   }
 
+  // Adding to the cart creates the voucher (UNPAID) with its correlative
+  // number, exactly like a configured package.
+  try {
+    const { ensureVoucherForCartLine } = await import("@/lib/voucher.server");
+    await ensureVoucherForCartLine(line.id as string, cart.id);
+  } catch {
+    // A numbering failure must never block the booking.
+  }
+
   return { cartId: cart.id, lineId: line.id as string, total_idr: Number(line.total_idr) };
 }
 

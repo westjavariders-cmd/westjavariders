@@ -69,14 +69,36 @@ export const getVoucherDetail = createServerFn({ method: "POST" })
     if (error) throw new Error("This voucher could not be loaded.");
     if (!voucher) throw new Error("This voucher could not be found.");
 
-    const [{ data: snapshot }, { data: payments }] = await Promise.all([
-      db.from("purchase_snapshots").select("id, created_at, data").eq("purchase_id", voucher.purchase_id).maybeSingle(),
-      db
-        .from("payment_requests")
-        .select("id, kind, status, amount_idr, paid_at, created_at")
-        .eq("purchase_id", voucher.purchase_id)
-        .order("created_at", { ascending: true }),
-    ]);
+    // An unpaid voucher created at Add to Cart has no purchase yet: its
+    // configuration lives in the cart-stage copy it was created with.
+    const [{ data: snapshot }, { data: payments }] = voucher.purchase_id
+      ? await Promise.all([
+          db
+            .from("purchase_snapshots")
+            .select("id, created_at, data")
+            .eq("purchase_id", voucher.purchase_id)
+            .maybeSingle(),
+          db
+            .from("payment_requests")
+            .select("id, kind, status, amount_idr, paid_at, created_at")
+            .eq("purchase_id", voucher.purchase_id)
+            .order("created_at", { ascending: true }),
+        ])
+      : [
+          {
+            data: await (async () => {
+              const { data: row } = await db
+                .from("vouchers")
+                .select("cart_snapshot, created_at")
+                .eq("id", data.voucherId)
+                .maybeSingle();
+              return row?.cart_snapshot
+                ? { id: null, created_at: row.created_at, data: row.cart_snapshot }
+                : null;
+            })(),
+          },
+          { data: [] },
+        ];
 
     const { data: contactRows } = await db
       .from("settings")

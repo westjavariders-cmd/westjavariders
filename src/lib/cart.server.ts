@@ -535,6 +535,16 @@ export async function completePackage(packageId: string, token?: string) {
     .select(PACKAGE_FIELDS)
     .single();
   if (error || !updated) fail(SAFE_ERROR);
+
+  // Adding to the cart creates the voucher (UNPAID) with its correlative
+  // number. Never blocks the cart if voucher creation fails.
+  try {
+    const { ensureVoucherForCartLine } = await import("@/lib/voucher.server");
+    await ensureVoucherForCartLine(packageId, cart.id);
+  } catch {
+    // The customer's cart must keep working even if numbering is unavailable.
+  }
+
   return { pkg: updated, alreadyComplete: false };
 }
 
