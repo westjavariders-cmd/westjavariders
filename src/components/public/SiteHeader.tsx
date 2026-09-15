@@ -95,7 +95,7 @@ export function SiteHeader() {
             MENU
           </Button>
           <Link to="/home" className="text-sm font-semibold uppercase tracking-[0.18em]">
-            Cimaja Boardriders
+            West Java Riders
           </Link>
         </div>
 

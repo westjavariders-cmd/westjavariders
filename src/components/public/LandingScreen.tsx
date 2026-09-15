@@ -47,7 +47,7 @@ export function LandingScreen({ landing }: { landing: PublicLanding }) {
       <main className="relative flex min-h-[100svh] flex-col items-center justify-center gap-8 px-6 py-16 text-center">
         <div className="space-y-4">
           <h1 className="text-4xl font-semibold uppercase leading-[1.05] tracking-[0.14em] drop-shadow-sm sm:text-6xl lg:text-7xl">
-            {landing.title ?? "Cimaja Boardriders"}
+            {landing.title ?? "West Java Riders"}
           </h1>
           {landing.subtitle && (
             <p className="mx-auto max-w-2xl text-xs uppercase tracking-[0.32em] text-neutral-200 sm:text-sm">
