@@ -3,11 +3,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Copy, Plus } from "lucide-react";
+import { Copy, Plus, Trash2 } from "lucide-react";
 
 import { PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { createProduct, duplicateProduct } from "@/lib/catalog.functions";
+import { createProduct, deleteProduct, duplicateProduct, setProductStatus } from "@/lib/catalog.functions";
 import { PRODUCT_KINDS, PRODUCT_STATUSES } from "@/lib/catalog";
 import { selectClass } from "@/components/admin/configurator/ui";
 import { Button } from "@/components/ui/button";
