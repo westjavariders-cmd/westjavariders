@@ -505,6 +505,56 @@ export type Database = {
           },
         ]
       }
+      contact_requests: {
+        Row: {
+          cart_id: string | null
+          created_at: string
+          email: string
+          email_error: string | null
+          email_status: string
+          full_name: string
+          id: string
+          message: string
+          phone: string | null
+          updated_at: string
+          voucher_codes: string[]
+        }
+        Insert: {
+          cart_id?: string | null
+          created_at?: string
+          email: string
+          email_error?: string | null
+          email_status?: string
+          full_name: string
+          id?: string
+          message: string
+          phone?: string | null
+          updated_at?: string
+          voucher_codes?: string[]
+        }
+        Update: {
+          cart_id?: string | null
+          created_at?: string
+          email?: string
+          email_error?: string | null
+          email_status?: string
+          full_name?: string
+          id?: string
+          message?: string
+          phone?: string | null
+          updated_at?: string
+          voucher_codes?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_requests_cart_id_fkey"
+            columns: ["cart_id"]
+            isOneToOne: false
+            referencedRelation: "carts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       currencies: {
         Row: {
           code: string
@@ -2097,6 +2147,7 @@ export type Database = {
       }
       saved_trips: {
         Row: {
+          cart_id: string | null
           code: string
           created_at: string
           expires_at: string
@@ -2105,6 +2156,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cart_id?: string | null
           code: string
           created_at?: string
           expires_at?: string
@@ -2113,6 +2165,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cart_id?: string | null
           code?: string
           created_at?: string
           expires_at?: string
@@ -2120,7 +2173,15 @@ export type Database = {
           lines?: Json
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "saved_trips_cart_id_fkey"
+            columns: ["cart_id"]
+            isOneToOne: false
+            referencedRelation: "carts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       settings: {
         Row: {
@@ -2383,6 +2444,8 @@ export type Database = {
         Row: {
           auto_delivery_at: string | null
           cancelled_at: string | null
+          cart_id: string | null
+          cart_snapshot: Json | null
           code: string
           created_at: string
           customer_id: string | null
@@ -2400,8 +2463,8 @@ export type Database = {
           gift_recipient_name: string | null
           id: string
           issued_at: string
-          package_id: string
-          purchase_id: string
+          package_id: string | null
+          purchase_id: string | null
           redeemed_at: string | null
           redeemed_by: string | null
           redemption_note: string | null
@@ -2415,6 +2478,8 @@ export type Database = {
         Insert: {
           auto_delivery_at?: string | null
           cancelled_at?: string | null
+          cart_id?: string | null
+          cart_snapshot?: Json | null
           code: string
           created_at?: string
           customer_id?: string | null
@@ -2432,8 +2497,8 @@ export type Database = {
           gift_recipient_name?: string | null
           id?: string
           issued_at?: string
-          package_id: string
-          purchase_id: string
+          package_id?: string | null
+          purchase_id?: string | null
           redeemed_at?: string | null
           redeemed_by?: string | null
           redemption_note?: string | null
@@ -2447,6 +2512,8 @@ export type Database = {
         Update: {
           auto_delivery_at?: string | null
           cancelled_at?: string | null
+          cart_id?: string | null
+          cart_snapshot?: Json | null
           code?: string
           created_at?: string
           customer_id?: string | null
@@ -2464,8 +2531,8 @@ export type Database = {
           gift_recipient_name?: string | null
           id?: string
           issued_at?: string
-          package_id?: string
-          purchase_id?: string
+          package_id?: string | null
+          purchase_id?: string | null
           redeemed_at?: string | null
           redeemed_by?: string | null
           redemption_note?: string | null
@@ -2477,6 +2544,13 @@ export type Database = {
           voucher_type?: Database["public"]["Enums"]["voucher_type"]
         }
         Relationships: [
+          {
+            foreignKeyName: "vouchers_cart_id_fkey"
+            columns: ["cart_id"]
+            isOneToOne: false
+            referencedRelation: "carts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "vouchers_customer_id_fkey"
             columns: ["customer_id"]
@@ -3196,7 +3270,13 @@ export type Database = {
         | "per_night"
         | "per_session"
       user_role: "ADMIN" | "STAFF"
-      voucher_status: "ACTIVE" | "USED" | "EXPIRED" | "CANCELLED"
+      voucher_status:
+        | "ACTIVE"
+        | "USED"
+        | "EXPIRED"
+        | "CANCELLED"
+        | "UNPAID"
+        | "PAID"
       voucher_type: "STANDARD" | "GIFT"
       website_block_kind:
         | "hero"
@@ -3410,7 +3490,14 @@ export const Constants = {
         "per_session",
       ],
       user_role: ["ADMIN", "STAFF"],
-      voucher_status: ["ACTIVE", "USED", "EXPIRED", "CANCELLED"],
+      voucher_status: [
+        "ACTIVE",
+        "USED",
+        "EXPIRED",
+        "CANCELLED",
+        "UNPAID",
+        "PAID",
+      ],
       voucher_type: ["STANDARD", "GIFT"],
       website_block_kind: [
         "hero",
