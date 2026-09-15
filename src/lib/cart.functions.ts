@@ -50,12 +50,23 @@ export const savePackageConfiguration = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const { savePackage } = await import("@/lib/cart.server");
-    return savePackage({
+    const { fxContext, displayAmount } = await import("@/lib/fx.server");
+    const { toPublicFx } = await import("@/lib/fx.functions");
+
+    const saved = await savePackage({
       packageId: data.packageId,
       answers: data.answers as never,
       month: data.month ?? null,
       promoCode: data.promoCode ?? null,
     });
+
+    // Presentation only: the authoritative amount stays the Rupiah total.
+    const fx = await fxContext();
+    return {
+      ...saved,
+      fx: toPublicFx(fx),
+      total_customer: displayAmount(saved.quote.total_idr, fx),
+    };
   });
 
 /** Provisional quote without saving. */

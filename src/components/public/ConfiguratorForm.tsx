@@ -24,7 +24,8 @@ import {
 } from "@/lib/catalogue-bridge";
 
 import { completePackage, savePackageConfiguration } from "@/lib/cart.functions";
-import { PUBLIC_CART_KEY } from "@/components/public/SiteHeader";
+import { formatCustomerAmount } from "@/lib/fx";
+import { CurrencySelector, PUBLIC_CART_KEY, usePublicCart } from "@/components/public/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +41,12 @@ type Quote = {
   season_discount_idr: number;
   promo_discount_idr: number;
   total_idr: number;
+};
+
+/** Presentation only: the same total shown in the currency the customer picked. */
+type QuoteDisplay = {
+  fx: { currency_code: string; symbol: string } | null;
+  total_customer: number | null;
 };
 
 /** Default answers from the saved Phase 3 configuration (or a recovered draft). */
@@ -98,6 +105,9 @@ export function ConfiguratorForm({
     if (stored) setPromo(stored);
   }, []);
   const [quote, setQuote] = useState<Quote | null>(null);
+  const [display, setDisplay] = useState<QuoteDisplay | null>(null);
+  // The chosen currency lives server-side; the mini cart already exposes it.
+  const cartCurrency = usePublicCart().data?.fx?.currency_code ?? null;
   const [quoting, setQuoting] = useState(false);
   const [booking, setBooking] = useState(false);
   // Which catalogue item's photos are on screen per question, and which photo.
@@ -118,7 +128,13 @@ export function ConfiguratorForm({
             promoCode: promo.trim() ? promo.trim() : null,
           },
         });
-        if (seq.current === id) setQuote(res.quote as Quote);
+        if (seq.current === id) {
+          setQuote(res.quote as Quote);
+          setDisplay({
+            fx: (res as any).fx ?? null,
+            total_customer: (res as any).total_customer ?? null,
+          });
+        }
       } catch (e) {
         if (seq.current === id) toast.error(e instanceof Error ? e.message : "Price unavailable.");
       } finally {
@@ -127,7 +143,7 @@ export function ConfiguratorForm({
     }, 500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values, promo, packageId]);
+  }, [values, promo, packageId, cartCurrency]);
 
   const evaluated = useMemo(() => evaluateDependencies(bundle, values), [bundle, values]);
 
@@ -154,6 +170,13 @@ export function ConfiguratorForm({
     setValues((v) => ({ ...v, [name]: value }));
   }
 
+
+  // Only show a second amount when there is a real customer currency and rate.
+  const showCustomer =
+    !!quote &&
+    !!display?.fx &&
+    display.fx.currency_code !== "IDR" &&
+    display.total_customer != null;
 
   const stepFields = step ? visibleStepFields(bundle, step.id, evaluated) : [];
 
@@ -438,13 +461,33 @@ export function ConfiguratorForm({
             <p className="text-xs text-destructive">{quote.promo_rejection}</p>
           )}
 
-          <div className="flex items-baseline justify-between border-t border-border pt-3">
-            <span className="text-sm text-muted-foreground">
-              {quoting ? "Updating price…" : "Your price"}
-            </span>
-            <span className="text-2xl font-semibold">
-              {quote ? formatIdr(quote.total_idr) : "—"}
-            </span>
+          <div className="flex items-start justify-between gap-3 border-t border-border pt-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {quoting ? "Updating price…" : "Your price"}
+              </span>
+              <CurrencySelector />
+            </div>
+            <div className="text-right">
+              {showCustomer ? (
+                <>
+                  <span className="block text-2xl font-semibold">
+                    {formatCustomerAmount(
+                      display!.total_customer!,
+                      display!.fx!.currency_code,
+                      display!.fx!.symbol,
+                    )}
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    {formatIdr(quote!.total_idr)}
+                  </span>
+                </>
+              ) : (
+                <span className="block text-2xl font-semibold">
+                  {quote ? formatIdr(quote.total_idr) : "—"}
+                </span>
+              )}
+            </div>
           </div>
           {quote && (quote.season_discount_idr > 0 || quote.promo_discount_idr > 0) && (
             <p className="text-xs text-muted-foreground">

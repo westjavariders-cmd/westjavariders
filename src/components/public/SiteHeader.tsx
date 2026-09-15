@@ -30,7 +30,7 @@ export function usePublicCart() {
 }
 
 /** Currency selector. The server decides what is supported and at what rate. */
-function CurrencySelector() {
+export function CurrencySelector() {
   const cart = usePublicCart();
   const queryClient = useQueryClient();
   const select = useServerFn(setFxCurrency);
