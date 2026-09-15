@@ -484,3 +484,62 @@ export function ConfiguratorForm({
     </div>
   );
 }
+
+/**
+ * Photos of the chosen catalogue item. One photo shows on its own; several can
+ * be stepped through. Purely presentational — no pricing, no answers.
+ */
+function CatalogueGallery({ photos, name }: { photos: string[]; name: string }) {
+  const [index, setIndex] = useState(0);
+  const i = Math.min(index, photos.length - 1);
+  const go = (delta: number) => setIndex((n) => (n + delta + photos.length) % photos.length);
+
+  return (
+    <div className="space-y-2">
+      <div className="relative overflow-hidden rounded-md border border-border bg-muted/30">
+        <img
+          src={photos[i]}
+          alt={name}
+          loading="lazy"
+          className="aspect-[4/3] w-full object-cover"
+        />
+        {photos.length > 1 && (
+          <>
+            <button
+              type="button"
+              aria-label="Previous photo"
+              onClick={() => go(-1)}
+              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 px-2 py-1 text-sm"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              aria-label="Next photo"
+              onClick={() => go(1)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 px-2 py-1 text-sm"
+            >
+              ›
+            </button>
+            <span className="absolute bottom-2 right-2 rounded-full bg-background/80 px-2 py-0.5 text-[11px]">
+              {i + 1} / {photos.length}
+            </span>
+          </>
+        )}
+      </div>
+      {photos.length > 1 && (
+        <div className="flex justify-center gap-1.5">
+          {photos.map((p, n) => (
+            <button
+              key={p}
+              type="button"
+              aria-label={`Photo ${n + 1}`}
+              onClick={() => setIndex(n)}
+              className={`h-1.5 w-1.5 rounded-full ${n === i ? "bg-foreground" : "bg-muted-foreground/40"}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
