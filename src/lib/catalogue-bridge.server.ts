@@ -60,7 +60,7 @@ async function accommodationRooms(db: any, catalogueIds: string[]): Promise<Cata
     db
       .from("accommodation_rooms")
       .select(
-        "id, accommodation_id, internal_name, public_name, internal_reference, description, customer_price_per_night_idr, active",
+        "id, accommodation_id, internal_name, public_name, internal_reference, description, max_guests, customer_price_per_night_idr, active",
       )
       .eq("active", true)
       .order("sort_order"),
