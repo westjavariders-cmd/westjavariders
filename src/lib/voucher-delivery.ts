@@ -170,7 +170,7 @@ export function buildDocumentModel(source: DocumentSource): DocumentModel {
     type_label: isGift ? "Gift voucher" : "Standard voucher",
     commercial,
     validity: [
-      { label: "Voucher number", value: voucher.code },
+      
       { label: "Issued", value: formatDate(voucher.issued_at) },
       { label: "Valid until", value: formatDate(voucher.valid_until) },
       ...(voucher.validity_months
