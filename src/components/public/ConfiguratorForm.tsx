@@ -514,7 +514,7 @@ export function ConfiguratorForm({
             {booking ? "Adding…" : "Add to cart"}
           </Button>
           <p className="text-center text-[11px] text-muted-foreground">
-             No hidden price surprises
+            Prices are indicative until your booking is confirmed.
           </p>
         </CardContent>
       </Card>
