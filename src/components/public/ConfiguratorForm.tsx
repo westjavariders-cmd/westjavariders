@@ -96,6 +96,8 @@ export function ConfiguratorForm({
   const complete = useServerFn(completePackage);
 
   const [stepIndexRaw, setStepIndex] = useState(0);
+  // Direction of the last question change: 1 = forward (Next), -1 = back (Back).
+  const [dir, setDir] = useState<1 | -1>(1);
   const [values, setValues] = useState<PreviewValues>(() => initialValues(bundle, savedAnswers));
   const [promo, setPromo] = useState(savedPromo ?? "");
 
@@ -215,12 +217,13 @@ export function ConfiguratorForm({
 
       <Card>
         <CardContent className="space-y-5 p-4">
-          <div>
-            <h2 className="text-lg font-medium">{step.customer_title || step.internal_name}</h2>
-            {step.customer_description && (
-              <p className="mt-1 text-sm text-muted-foreground">{step.customer_description}</p>
-            )}
-          </div>
+          <div key={stepIndex} className={dir === 1 ? "cbr-step-next" : "cbr-step-prev"}>
+            <div>
+              <h2 className="text-lg font-medium">{step.customer_title || step.internal_name}</h2>
+              {step.customer_description && (
+                <p className="mt-1 text-sm text-muted-foreground">{step.customer_description}</p>
+              )}
+            </div>
 
           {stepFields.map((f) => {
             const e = evaluated.fields[f.id]!;
@@ -434,20 +437,27 @@ export function ConfiguratorForm({
           {stepFields.length === 0 && (
             <p className="text-sm text-muted-foreground">Nothing to choose in this step.</p>
           )}
+          </div>
 
           <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
             <Button
               variant="outline"
               size="sm"
               disabled={stepIndex === 0}
-              onClick={() => setStepIndex((i) => i - 1)}
+              onClick={() => {
+                setDir(-1);
+                setStepIndex((i) => i - 1);
+              }}
             >
               Back
             </Button>
             <Button
               size="sm"
               disabled={stepIndex >= activeSteps.length - 1}
-              onClick={() => setStepIndex((i) => i + 1)}
+              onClick={() => {
+                setDir(1);
+                setStepIndex((i) => i + 1);
+              }}
             >
               Next
             </Button>
