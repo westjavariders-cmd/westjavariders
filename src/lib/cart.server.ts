@@ -106,21 +106,31 @@ async function findCart(token: string): Promise<CartRow | null> {
  */
 export async function currentCart(create: boolean, explicitToken?: string): Promise<CartRow | null> {
   const token = explicitToken ?? readCookieToken();
+  let reusableToken: string | null = null;
   if (token) {
     const existing = await findCart(token);
     if (existing) return existing;
+    // The cookie token may already belong to a closed cart; session_token is
+    // unique, so only reuse it when no cart row holds it.
+    const db0 = await admin();
+    const { data: taken } = await db0
+      .from("carts")
+      .select("id")
+      .eq("session_token", token)
+      .maybeSingle();
+    if (!taken) reusableToken = token;
   }
   if (!create) return null;
 
   const db = await admin();
-  const fresh = token ?? newToken();
+  const fresh = reusableToken ?? newToken();
   const { data, error } = await db
     .from("carts")
     .insert({ session_token: fresh })
     .select("id, status, market_code, currency_code")
     .single();
   if (error || !data) fail(SAFE_ERROR);
-  if (!explicitToken) writeCookieToken(fresh);
+  if (!explicitToken || fresh !== explicitToken) writeCookieToken(fresh);
   return data;
 }
 
