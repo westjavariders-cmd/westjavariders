@@ -144,7 +144,7 @@ function Block({ block }: { block: PublicBlock }) {
           {block.media && <Media media={block.media} />}
           {block.title && <h2 className="mt-3 text-base font-semibold tracking-tight">{block.title}</h2>}
           {block.body && <p className="mt-1 text-sm text-muted-foreground">{block.body}</p>}
-          {block.cta && (
+          {block.cta?.label && (
             <p className="mt-3 text-xs font-medium uppercase tracking-[0.14em]">{block.cta.label}</p>
           )}
         </CardContent>

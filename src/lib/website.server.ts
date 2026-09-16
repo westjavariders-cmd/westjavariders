@@ -318,10 +318,9 @@ export async function websitePage(
               title: blockText?.title ?? null,
               body: blockText?.body ?? null,
               media: mediaUrl && block.media_kind ? { kind: block.media_kind, url: mediaUrl } : null,
-              cta:
-                destination && blockText?.cta_label
-                  ? { label: blockText.cta_label, ...destination }
-                  : null,
+              cta: destination
+                ? { label: blockText?.cta_label ?? "", ...destination }
+                : null,
               products: productRefs
                 .filter((r: any) => r.block_id === block.id)
                 .map((r: any) => products.get(r.product_id))
