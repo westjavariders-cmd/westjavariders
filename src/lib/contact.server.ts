@@ -34,14 +34,30 @@ function escape(value: unknown): string {
     .replace(/>/g, "&gt;");
 }
 
-type VoucherRow = { code: string; status: string; entitlement: any };
+type VoucherRow = {
+  code: string;
+  status: string;
+  entitlement: any;
+  valid_until?: string | null;
+  validity_months?: number | string | null;
+};
+
+function day(iso: unknown): string {
+  if (typeof iso !== "string" || !iso) return "—";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "—" : d.toISOString().slice(0, 10);
+}
 
 function voucherText(vouchers: VoucherRow[]): string {
   if (vouchers.length === 0) return "No voucher is associated with this enquiry yet.";
   const blocks: string[] = [];
   for (const v of vouchers) {
     const e = v.entitlement ?? {};
-    const lines: string[] = [`Voucher ${v.code} (${v.status})`];
+    const lines: string[] = [`Voucher number: ${v.code} (${v.status})`];
+    lines.push(
+      `  Valid until: ${day(v.valid_until)}${v.validity_months ? ` (${v.validity_months} months)` : ""}`,
+    );
+
     for (const item of Array.isArray(e.items) ? e.items : []) {
       lines.push(`  Experience: ${item.product_title ?? "Experience"}`);
       if (item.base_price_idr != null) lines.push(`  Base price: ${idr(item.base_price_idr)}`);
