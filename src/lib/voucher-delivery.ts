@@ -170,10 +170,15 @@ export function buildDocumentModel(source: DocumentSource): DocumentModel {
     type_label: isGift ? "Gift voucher" : "Standard voucher",
     commercial,
     validity: [
+      
       { label: "Issued", value: formatDate(voucher.issued_at) },
       { label: "Valid until", value: formatDate(voucher.valid_until) },
+      ...(voucher.validity_months
+        ? [{ label: "Validity", value: `${voucher.validity_months} months from purchase` }]
+        : []),
       { label: "Dates", value: "Open date — arrange with us any time before the validity date" },
     ],
+
     experience: {
       package_title: entitlement?.package_title ?? "Your experience",
       items: (entitlement?.items ?? []).map((item: any) => ({
