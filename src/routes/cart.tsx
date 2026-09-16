@@ -219,19 +219,6 @@ function CartPage() {
 
       {(packages.length > 0 || draft) && (
         <div className="mt-6 space-y-3 border-t border-border pt-4">
-          <div className="flex items-baseline justify-between">
-            <span className="text-sm uppercase tracking-[0.14em] text-muted-foreground">
-              Total price
-            </span>
-            <span className="text-2xl font-semibold">
-              {displayTotal(
-                money?.total_idr ?? cart.data?.payable_total_idr ?? 0,
-                money?.fx ?? cart.data?.fx,
-                money?.customer_total ?? cart.data?.payable_total_customer,
-              )}
-            </span>
-          </div>
-
           {money && (
             <>
               <div className="flex items-baseline justify-between">
@@ -257,6 +244,20 @@ function CartPage() {
               )}
             </>
           )}
+
+          <div className="flex items-baseline justify-between border-t border-border pt-3">
+            <span className="text-sm uppercase tracking-[0.14em] text-muted-foreground">
+              Total price
+            </span>
+            <span className="text-2xl font-semibold">
+              {displayTotal(
+                money?.total_idr ?? cart.data?.payable_total_idr ?? 0,
+                money?.fx ?? cart.data?.fx,
+                money?.customer_total ?? cart.data?.payable_total_customer,
+              )}
+            </span>
+          </div>
+
 
           {money?.existing_purchase_id && (
             <Button
