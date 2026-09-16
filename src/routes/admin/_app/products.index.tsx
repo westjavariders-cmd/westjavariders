@@ -279,15 +279,64 @@ function ProductsPage() {
               <div className="flex items-center gap-2">
                 <Badge variant={p.status === "active" ? "default" : "secondary"}>{p.status}</Badge>
                 {canEdit && (
-                  <Button size="sm" variant="ghost" onClick={() => onDuplicate(p.id)}>
-                    <Copy className="h-3.5 w-3.5" />
-                  </Button>
+                  <>
+                    <Button size="sm" variant="ghost" onClick={() => onDuplicate(p.id)}>
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setDeleting({ id: p.id, name: p.internal_name });
+                        setDeleteHasHistory(false);
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </>
                 )}
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      <Dialog
+        open={deleting !== null}
+        onOpenChange={(next) => {
+          if (!next) {
+            setDeleting(null);
+            setDeleteHasHistory(false);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete product</DialogTitle>
+          </DialogHeader>
+          {deleteHasHistory ? (
+            <p className="text-sm text-muted-foreground">
+              “{deleting?.name}” has configurations or bookings behind it, so it cannot be deleted.
+              You can archive it instead: it disappears from the website and the list stays intact.
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Delete “{deleting?.name}”? This cannot be undone.
+            </p>
+          )}
+          <DialogFooter>
+            {deleteHasHistory ? (
+              <Button onClick={onArchive} disabled={deleteBusy}>
+                Archive instead
+              </Button>
+            ) : (
+              <Button variant="destructive" onClick={onDelete} disabled={deleteBusy}>
+                Delete
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
