@@ -168,3 +168,55 @@
     color: var(--color-foreground);
   }
 }
+
+/* ---- Minimal transitions (no libraries) ---- */
+@keyframes cbr-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cbr-step-next {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes cbr-step-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.cbr-page-enter {
+  animation: cbr-fade-in 0.25s ease-out both;
+}
+
+.cbr-step-next {
+  animation: cbr-step-next 0.3s ease-out both;
+}
+
+.cbr-step-prev {
+  animation: cbr-step-prev 0.3s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cbr-page-enter,
+  .cbr-step-next,
+  .cbr-step-prev {
+    animation: none;
+  }
+}
