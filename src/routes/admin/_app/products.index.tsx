@@ -300,6 +300,43 @@ function ProductsPage() {
           </Card>
         ))}
       </div>
+
+      <Dialog
+        open={deleting !== null}
+        onOpenChange={(next) => {
+          if (!next) {
+            setDeleting(null);
+            setDeleteHasHistory(false);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete product</DialogTitle>
+          </DialogHeader>
+          {deleteHasHistory ? (
+            <p className="text-sm text-muted-foreground">
+              “{deleting?.name}” has configurations or bookings behind it, so it cannot be deleted.
+              You can archive it instead: it disappears from the website and the list stays intact.
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Delete “{deleting?.name}”? This cannot be undone.
+            </p>
+          )}
+          <DialogFooter>
+            {deleteHasHistory ? (
+              <Button onClick={onArchive} disabled={deleteBusy}>
+                Archive instead
+              </Button>
+            ) : (
+              <Button variant="destructive" onClick={onDelete} disabled={deleteBusy}>
+                Delete
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
