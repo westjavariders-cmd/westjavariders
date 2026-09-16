@@ -100,7 +100,7 @@ export async function submitContactRequest(input: ContactInput): Promise<{
   const { data: voucherRows } = cart
     ? await db
         .from("vouchers")
-        .select("code, status, entitlement")
+        .select("code, status, entitlement, valid_until, validity_months")
         .eq("cart_id", cart.id)
         .order("code")
     : { data: [] };
