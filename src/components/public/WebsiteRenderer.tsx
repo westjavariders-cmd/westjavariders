@@ -172,7 +172,7 @@ function Block({ block }: { block: PublicBlock }) {
       {block.kind === "product_selection" && <ProductList products={block.products} />}
       {block.kind === "people" && block.products.length > 0 && <ProductList products={block.products} />}
       {block.kind === "catalogue" && <CatalogueList items={block.catalogue_items} />}
-      {block.cta && (
+      {block.cta?.label && (
         <div>
           <Cta cta={block.cta} />
         </div>
