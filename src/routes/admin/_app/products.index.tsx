@@ -279,9 +279,21 @@ function ProductsPage() {
               <div className="flex items-center gap-2">
                 <Badge variant={p.status === "active" ? "default" : "secondary"}>{p.status}</Badge>
                 {canEdit && (
-                  <Button size="sm" variant="ghost" onClick={() => onDuplicate(p.id)}>
-                    <Copy className="h-3.5 w-3.5" />
-                  </Button>
+                  <>
+                    <Button size="sm" variant="ghost" onClick={() => onDuplicate(p.id)}>
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setDeleting({ id: p.id, name: p.internal_name });
+                        setDeleteHasHistory(false);
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </>
                 )}
               </div>
             </CardContent>
