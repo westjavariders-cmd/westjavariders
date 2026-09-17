@@ -766,10 +766,9 @@ export const translateWebsitePage = createServerFn({ method: "POST" })
       fail("The texts could not be translated. Please try again.");
     }
 
-    const pageValues: Record<string, string | null> = {};
-    if (result["page:title"]) pageValues.title = result["page:title"];
-    if (result["page:subtitle"]) pageValues.subtitle = result["page:subtitle"];
-    if (Object.keys(pageValues).length > 0) {
+    const pageTitle = result["page:title"];
+    const pageSubtitle = result["page:subtitle"];
+    if (pageTitle || pageSubtitle) {
       await upsertTranslation(
         supabase,
         "website_page_translations",
@@ -777,11 +776,12 @@ export const translateWebsitePage = createServerFn({ method: "POST" })
         data.page_id,
         targetLang.code,
         {
-          title: pageValues.title ?? pageTarget.data?.title ?? null,
-          subtitle: pageValues.subtitle ?? pageTarget.data?.subtitle ?? null,
+          title: pageTitle ?? pageTarget.data?.title ?? null,
+          subtitle: pageSubtitle ?? pageTarget.data?.subtitle ?? null,
         },
       );
     }
+
 
     for (const id of sectionIds) {
       const title = result[`section:${id}:title`];
