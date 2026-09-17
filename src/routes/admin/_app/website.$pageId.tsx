@@ -532,9 +532,30 @@ function WebsitePageEditor() {
         }
       />
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <LanguagePicker value={activeLanguage} onChange={setLanguage} languages={languages.list} />
+        {canEdit && activeLanguage && activeLanguage !== languages.master && (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={translating}
+              onClick={() => void translatePage(false)}
+            >
+              {translating ? "Translating…" : "Translate this page"}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={translating}
+              onClick={() => void translatePage(true)}
+            >
+              Retranslate everything
+            </Button>
+          </>
+        )}
       </div>
+
 
       {sectionDraft && (
         <Card className="mb-4">
