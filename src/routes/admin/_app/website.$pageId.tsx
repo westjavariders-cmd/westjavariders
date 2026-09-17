@@ -14,7 +14,9 @@ import {
   reorderSections,
   saveBlock,
   saveSection,
+  translateWebsitePage,
 } from "@/lib/website.functions";
+
 import {
   BLOCK_KINDS,
   BLOCK_KIND_LABELS,
@@ -101,6 +103,9 @@ function WebsitePageEditor() {
   const persistBlock = useServerFn(saveBlock);
   const removeBlock = useServerFn(deleteBlock);
   const orderBlocks = useServerFn(reorderBlocks);
+  const runTranslation = useServerFn(translateWebsitePage);
+  const [translating, setTranslating] = useState(false);
+
 
   const page = useQuery({
     queryKey: ["website-page", pageId],
@@ -230,6 +235,31 @@ function WebsitePageEditor() {
     void queryClient.invalidateQueries({ queryKey: ["website-block-products"] });
     void queryClient.invalidateQueries({ queryKey: ["website-block-catalogues"] });
   }
+
+  async function translatePage(overwrite: boolean) {
+    setTranslating(true);
+    try {
+      const result = await runTranslation({
+        data: { page_id: pageId, language: activeLanguage, overwrite },
+      });
+      if (result.translated === 0) {
+        toast.success("Nothing left to translate on this page.");
+      } else {
+        toast.success(`Translated ${result.translated} texts into ${activeLanguage}.`);
+      }
+      void queryClient.invalidateQueries({ queryKey: ["website-page-translations"] });
+      refresh();
+    } catch (error) {
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "The texts could not be translated.",
+      );
+    } finally {
+      setTranslating(false);
+    }
+  }
+
 
   /* ---------------- sections ---------------- */
 
@@ -502,9 +532,30 @@ function WebsitePageEditor() {
         }
       />
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <LanguagePicker value={activeLanguage} onChange={setLanguage} languages={languages.list} />
+        {canEdit && activeLanguage && activeLanguage !== languages.master && (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={translating}
+              onClick={() => void translatePage(false)}
+            >
+              {translating ? "Translating…" : "Translate this page"}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={translating}
+              onClick={() => void translatePage(true)}
+            >
+              Retranslate everything
+            </Button>
+          </>
+        )}
       </div>
+
 
       {sectionDraft && (
         <Card className="mb-4">
