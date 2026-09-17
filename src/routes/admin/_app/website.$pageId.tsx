@@ -236,6 +236,31 @@ function WebsitePageEditor() {
     void queryClient.invalidateQueries({ queryKey: ["website-block-catalogues"] });
   }
 
+  async function translatePage(overwrite: boolean) {
+    setTranslating(true);
+    try {
+      const result = await runTranslation({
+        data: { page_id: pageId, language: activeLanguage, overwrite },
+      });
+      if (result.translated === 0) {
+        toast.success("Nothing left to translate on this page.");
+      } else {
+        toast.success(`Translated ${result.translated} texts into ${activeLanguage}.`);
+      }
+      void queryClient.invalidateQueries({ queryKey: ["website-page-translations"] });
+      refresh();
+    } catch (error) {
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "The texts could not be translated.",
+      );
+    } finally {
+      setTranslating(false);
+    }
+  }
+
+
   /* ---------------- sections ---------------- */
 
   const [sectionDraft, setSectionDraft] = useState<{
