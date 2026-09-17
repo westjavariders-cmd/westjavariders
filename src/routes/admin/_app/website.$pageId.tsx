@@ -14,7 +14,9 @@ import {
   reorderSections,
   saveBlock,
   saveSection,
+  translateWebsitePage,
 } from "@/lib/website.functions";
+
 import {
   BLOCK_KINDS,
   BLOCK_KIND_LABELS,
