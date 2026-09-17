@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Menu, X } from "lucide-react";
@@ -7,6 +7,7 @@ import { Menu, X } from "lucide-react";
 import { getPublicCart } from "@/lib/public.functions";
 import { getWebsiteNav } from "@/lib/website.functions";
 import { setFxCurrency } from "@/lib/fx.functions";
+import { getPublicLanguages, setPublicLanguage } from "@/lib/language.functions";
 import { formatIdr } from "@/lib/public-catalog";
 import { formatCustomerAmount } from "@/lib/fx";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,48 @@ export function CurrencySelector() {
         {fx.currencies.map((c) => (
           <option key={c.code} value={c.code}>
             {c.code}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+/**
+ * Language selector. The visitor's choice is remembered by the server, so
+ * every page and the menu come back written in that language.
+ */
+export function LanguageSelector() {
+  const load = useServerFn(getPublicLanguages);
+  const select = useServerFn(setPublicLanguage);
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const languages = useQuery({ queryKey: ["public-languages"], queryFn: () => load() });
+
+  const change = useMutation({
+    mutationFn: (code: string) => select({ data: { code } }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries();
+      await router.invalidate();
+    },
+  });
+
+  const list = languages.data?.languages ?? [];
+  if (list.length < 2) return null;
+
+  return (
+    <label>
+      <span className="sr-only">Language</span>
+      <select
+        aria-label="Language"
+        className="rounded-full border border-border bg-background px-2 py-1.5 text-xs font-medium uppercase"
+        value={languages.data?.current ?? ""}
+        disabled={change.isPending}
+        onChange={(e) => change.mutate(e.target.value)}
+      >
+        {list.map((l) => (
+          <option key={l.code} value={l.code}>
+            {l.code.toUpperCase()}
           </option>
         ))}
       </select>
