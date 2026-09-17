@@ -29,6 +29,16 @@ async function signedMedia(db: any, path: string | null): Promise<string | null>
   return data?.signedUrl ?? null;
 }
 
+/**
+ * The language this request should use: the explicit one, else the visitor's
+ * stored choice, else the default language.
+ */
+async function requestedLanguage(explicit: string | undefined, fallback: string): Promise<string> {
+  if (explicit && explicit.trim() !== "") return explicit;
+  const { resolveLanguage } = await import("@/lib/language.server");
+  return (await resolveLanguage()) ?? fallback;
+}
+
 /** The configured default language; content falls back to it. */
 export async function defaultLanguage(db: any): Promise<string> {
   const { data } = await db
@@ -104,7 +114,7 @@ export type PublicLanding = {
 export async function websiteLanding(language?: string): Promise<PublicLanding | null> {
   const db = await admin();
   const fallback = await defaultLanguage(db);
-  const wanted = language && language.trim() !== "" ? language : fallback;
+  const wanted = await requestedLanguage(language, fallback);
 
   const { data: landing } = await db
     .from("website_landing")
