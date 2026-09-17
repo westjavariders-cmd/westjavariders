@@ -11,6 +11,7 @@ import { getPublicLanguages, setPublicLanguage } from "@/lib/language.functions"
 import { formatIdr } from "@/lib/public-catalog";
 import { formatCustomerAmount } from "@/lib/fx";
 import { Button } from "@/components/ui/button";
+import { useUiStrings } from "@/hooks/use-ui-strings";
 
 /** One display rule for every customer-facing total. */
 export function displayTotal(
@@ -113,6 +114,7 @@ function useWebsiteNav() {
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const t = useUiStrings();
   const cart = usePublicCart();
   const nav = useWebsiteNav();
   const navItems = nav.data?.items ?? [];
@@ -130,7 +132,7 @@ export function SiteHeader() {
             type="button"
             variant="ghost"
             size="sm"
-            aria-label={open ? "Close menu" : "Open menu"}
+            aria-label={open ? t("Close menu") : t("Open menu")}
             className="gap-1.5 px-2 sm:hidden"
             onClick={() => setOpen((v) => !v)}
           >
@@ -156,11 +158,11 @@ export function SiteHeader() {
             ))
           ) : (
             <Link to="/build-your-trip" activeProps={{ className: "font-semibold" }}>
-              Build your trip
+              {t("Build your trip")}
             </Link>
           )}
           <Link to="/cart" className="text-muted-foreground hover:text-foreground">
-            Cart
+            {t("Cart")}
           </Link>
         </nav>
 
@@ -171,7 +173,7 @@ export function SiteHeader() {
             to="/cart"
             className="rounded-full border border-border px-3 py-1.5 text-xs font-medium tracking-wide"
           >
-            <span className="hidden sm:inline">TOTAL PRICE — </span>
+            <span className="hidden sm:inline">{t("TOTAL PRICE")} — </span>
             {total}
           </Link>
         </div>
@@ -193,11 +195,11 @@ export function SiteHeader() {
             ))
           ) : (
             <Link to="/build-your-trip" className="py-2" onClick={() => setOpen(false)}>
-              Build your trip
+              {t("Build your trip")}
             </Link>
           )}
           <Link to="/cart" className="py-2" onClick={() => setOpen(false)}>
-            Cart
+            {t("Cart")}
           </Link>
         </nav>
       )}

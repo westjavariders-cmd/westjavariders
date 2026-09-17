@@ -16,6 +16,8 @@ import { isPurchasable } from "@/lib/pricing";
 import { fail, listCart } from "@/lib/cart.server";
 import type { AnswerSummaryLine } from "@/lib/public-catalog";
 import { orderedAnswerSummary } from "@/lib/answer-summary.server";
+import { resolveLanguage } from "@/lib/language.server";
+import { loadTexts, translated } from "@/lib/text-translations.server";
 
 async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -54,12 +56,24 @@ export async function listPurchasableProducts(): Promise<PublicProduct[]> {
     (categories.data ?? []).filter((c: any) => c.is_active).map((c: any) => [c.id, c.name]),
   );
 
+  // Chosen language, falling back to the original text when not translated.
+  const language = await resolveLanguage();
+  const texts = await loadTexts(
+    "product",
+    language,
+    (products.data ?? []).map((p: any) => String(p.id)),
+  );
+
   return (products.data ?? [])
     .filter((p: any) => isPurchasable(p.status, pricingStatus.get(p.id)))
     .map((p: any) => ({
       id: p.id,
-      title: p.voucher_name?.trim() || translation.get(p.id)?.title || p.internal_name,
-      summary: translation.get(p.id)?.summary ?? null,
+      title:
+        translated(texts, p.id, "title", null) ||
+        p.voucher_name?.trim() ||
+        translation.get(p.id)?.title ||
+        p.internal_name,
+      summary: translated(texts, p.id, "summary", translation.get(p.id)?.summary ?? null),
       categories: (links.data ?? [])
         .filter((l: any) => l.product_id === p.id)
         .map((l: any) => categoryName.get(l.category_id))
@@ -117,13 +131,47 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
     fieldCatalogueRefs((fields.data ?? []).filter((f: any) => f.is_active) as never),
   );
 
+  // Chosen language for the product copy and every configurator question.
+  const language = await resolveLanguage();
+  const [productTexts, stepTexts, fieldTexts, optionTexts] = await Promise.all([
+    loadTexts("product", language, [String(productId)]),
+    loadTexts("step", language, (steps as any[]).map((s: any) => String(s.id))),
+    loadTexts("field", language, fieldIds.map((id: any) => String(id))),
+    loadTexts("field_option", language, (options as any[]).map((o: any) => String(o.id))),
+  ]);
+
+  const localizedSteps = (steps as any[]).map((step: any) => ({
+    ...step,
+    customer_title: translated(stepTexts, step.id, "customer_title", step.customer_title),
+    customer_description: translated(
+      stepTexts,
+      step.id,
+      "customer_description",
+      step.customer_description,
+    ),
+  }));
+  const localizedFields = (fields.data ?? []).map((field: any) => ({
+    ...field,
+    customer_label: translated(fieldTexts, field.id, "customer_label", field.customer_label),
+    help_text: translated(fieldTexts, field.id, "help_text", field.help_text),
+  }));
+  const localizedOptions = (options as any[]).map((option: any) => ({
+    ...option,
+    customer_label: translated(optionTexts, option.id, "customer_label", option.customer_label),
+    description: translated(optionTexts, option.id, "description", option.description),
+  }));
+
   return {
     catalogue,
     product: {
       id: product.id,
-      title: (product as any).voucher_name?.trim() || translation.data?.title || product.internal_name,
-      summary: translation.data?.summary ?? null,
-      body: translation.data?.body ?? null,
+      title:
+        translated(productTexts, product.id, "title", null) ||
+        (product as any).voucher_name?.trim() ||
+        translation.data?.title ||
+        product.internal_name,
+      summary: translated(productTexts, product.id, "summary", translation.data?.summary ?? null),
+      body: translated(productTexts, product.id, "body", translation.data?.body ?? null),
     },
     bundle: {
       product,
@@ -133,9 +181,9 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
       // Components carry supplier costs, so they never reach the browser.
       components: [],
       flow: flow.data,
-      steps,
-      fields: fields.data ?? [],
-      options,
+      steps: localizedSteps,
+      fields: localizedFields,
+      options: localizedOptions,
       dependencies: dependencies.data ?? [],
     },
   };
@@ -205,6 +253,13 @@ export async function publicCart(token?: string): Promise<PublicCartView> {
   for (const p of products.data ?? []) {
     const display = (p as any).voucher_name?.trim();
     if (display) titles.set(p.id, display);
+  }
+  // A translated title, when the visitor is browsing in another language.
+  const cartLanguage = await resolveLanguage();
+  const cartTexts = await loadTexts("product", cartLanguage, productIds);
+  for (const id of productIds) {
+    const localized = cartTexts.get(`${id}::title`);
+    if (localized) titles.set(id, localized);
   }
 
 

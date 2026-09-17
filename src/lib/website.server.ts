@@ -179,13 +179,26 @@ async function resolveProducts(db: any, productIds: string[]) {
     (translations.data ?? []).map((t: any) => [t.product_id, t]),
   );
 
+  // The visitor's language, when those texts have been translated.
+  const { resolveLanguage } = await import("@/lib/language.server");
+  const { loadTexts, translated } = await import("@/lib/text-translations.server");
+  const texts = await loadTexts("product", await resolveLanguage(), productIds);
+
   for (const product of products.data ?? []) {
     if (!isPubliclyListable(product.status)) continue;
     const bookable = isPurchasable(product.status, pricingStatus.get(product.id));
     resolved.set(product.id, {
       id: product.id,
-      title: translation.get(product.id)?.title || product.internal_name,
-      summary: translation.get(product.id)?.summary ?? null,
+      title:
+        translated(texts, product.id, "title", null) ||
+        translation.get(product.id)?.title ||
+        product.internal_name,
+      summary: translated(
+        texts,
+        product.id,
+        "summary",
+        translation.get(product.id)?.summary ?? null,
+      ),
       href: `/build-your-trip/${product.id}`,
       bookable,
     });
