@@ -200,7 +200,7 @@ export async function websitePage(
 ): Promise<PublicWebsitePage | null> {
   const db = await admin();
   const fallback = await defaultLanguage(db);
-  const wanted = language && language.trim() !== "" ? language : fallback;
+  const wanted = await requestedLanguage(language, fallback);
 
   const { data: page } = await db
     .from("website_pages")
@@ -378,7 +378,7 @@ export async function websitePage(
 export async function websiteNav(language?: string): Promise<PublicNavItem[]> {
   const db = await admin();
   const fallback = await defaultLanguage(db);
-  const wanted = language && language.trim() !== "" ? language : fallback;
+  const wanted = await requestedLanguage(language, fallback);
 
   const [items, pages] = await Promise.all([
     db
