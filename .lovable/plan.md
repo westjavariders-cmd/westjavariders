@@ -1,4 +1,4 @@
-# Dos cosas: la tarjeta que no se puede pinchar y el cambio de idioma
+# Dos cosas: la tarjeta que no se puede pinchar y el selector de idioma
 
 ## 1. Por qué no se puede pinchar "Begginers: Cimaja, Cikembang and more surprises"
 
@@ -6,30 +6,27 @@ La experiencia está activa, pero **sus precios están en borrador** (se cambiar
 
 No es un fallo de programación: es el estado de los precios de esa experiencia.
 
-**Solución, sin tocar el código:**
+**Solución, sin tocar el código:** Admin → Products → esa experiencia → pestaña de precios → **Activate pricing**. Puedo activarlo yo si me lo confirmas.
 
-1. Admin → Products → "Begginers: Cimaja, Cikembang and more surprises".
-2. Abrir la pestaña de precios (Pricing).
-3. Pulsar **Activate pricing**.
-4. Volver a la web y comprobar que la tarjeta ya lleva al configurador.
+## 2. Selector de idioma en la parte superior
 
-Puedo activarlo yo si me lo confirmas, o lo pulsas tú desde Admin.
+Estado actual: hay 8 idiomas activos (inglés como principal, más chino, japonés, indonesio, filipino, tailandés, español y portugués de Brasil) y en Admin ya puedes escribir los textos de cada página, sección, bloque y menú en cualquiera de ellos. Lo que falta es que el visitante pueda elegir su idioma; hoy la web siempre pide el idioma principal.
 
-## 2. ¿Hay algo preparado para cambiar de idioma en la web?
+Lo que haré:
 
-A medias:
+- Un **selector de idioma en la barra superior**, junto al de moneda y con el mismo estilo discreto (lista corta con los idiomas activos).
+- Al elegir un idioma, la página, el menú y la pantalla de entrada se vuelven a cargar con los textos escritos en Admin para ese idioma. Si algún texto no está traducido todavía, se muestra el inglés.
+- **"Recordar el idioma elegido"** significa que, al cambiar de página o volver más tarde, la web sigue en el idioma que eligió, sin tener que seleccionarlo otra vez. Igual que ya ocurre con la moneda.
+- El nombre **West Java Riders** se queda siempre igual, no se traduce.
+- Los textos fijos de la aplicación (botones como "Add to cart", avisos del carrito y del configurador) siguen en inglés en esta primera versión: traducirlos es un trabajo aparte y mucho mayor.
 
-- **Sí está preparado por debajo.** Hay 8 idiomas activos (inglés como principal, más chino, japonés, indonesio, filipino, tailandés, español y portugués de Brasil), y en Admin puedes escribir los textos de cada página, sección, bloque y menú en cualquiera de ellos. Cuando falta una traducción, se muestra el inglés.
-- **No hay todavía un selector de idioma para el visitante.** La web pública siempre pide los textos en el idioma principal, así que aunque traduzcas en Admin, el cliente sigue viendo inglés.
+## Detalles técnicos
 
-**Lo que faltaría para que funcione (si lo quieres, en un segundo paso):**
-
-- Un selector de idioma en la barra superior, junto al de moneda, con el mismo estilo discreto.
-- Recordar el idioma elegido (como ya se hace con la moneda) y pasarlo a las páginas, al menú y a la pantalla de entrada.
-- Los textos fijos de la web (botones como "Add to cart", avisos del carrito) seguirían en inglés en esta primera versión; traducirlos sería un trabajo aparte y más grande.
-
-Dime si quieres que lo prepare y hago un plan solo para eso.
+- Nueva preferencia de idioma del visitante guardada como la moneda: una función de servidor que la fija y una cookie, para que también funcione en la primera carga (SSR).
+- `websitePage`, `websiteNav` y `websiteLanding` ya aceptan idioma; las páginas públicas (`pages.$slug`, `home`, `index`) y `SiteHeader` pasarán el idioma elegido.
+- Componente `LanguageSelector` junto a `CurrencySelector` en `SiteHeader.tsx`, alimentado por la lista de idiomas activos leída en servidor; al cambiar se invalidan las consultas para recargar los textos.
+- Sin migraciones de base de datos y sin sistema de traducción paralelo.
 
 ## No se toca
 
-Precios, productos, catálogos, configurador, carrito, pagos, vouchers ni Admin.
+Precios, productos, catálogos, configurador, carrito, pagos, vouchers, Admin ni el diseño actual.
