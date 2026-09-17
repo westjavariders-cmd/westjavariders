@@ -31,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
+import { useUiStrings } from "@/hooks/use-ui-strings";
 
 type Quote = {
   purchasable: boolean;
@@ -92,6 +93,7 @@ export function ConfiguratorForm({
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const t = useUiStrings();
   const save = useServerFn(savePackageConfiguration);
   const complete = useServerFn(completePackage);
 
@@ -435,7 +437,7 @@ export function ConfiguratorForm({
           })}
 
           {stepFields.length === 0 && (
-            <p className="text-sm text-muted-foreground">Nothing to choose in this step.</p>
+            <p className="text-sm text-muted-foreground">{t("Nothing to choose in this step.")}</p>
           )}
           </div>
 
@@ -449,7 +451,7 @@ export function ConfiguratorForm({
                 setStepIndex((i) => i - 1);
               }}
             >
-              Back
+              {t("Back")}
             </Button>
             <Button
               size="sm"
@@ -459,7 +461,7 @@ export function ConfiguratorForm({
                 setStepIndex((i) => i + 1);
               }}
             >
-              Next
+              {t("Next")}
             </Button>
           </div>
         </CardContent>
@@ -474,7 +476,7 @@ export function ConfiguratorForm({
           <div className="flex items-start justify-between gap-3 border-t border-border pt-3">
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">
-                {quoting ? "Updating price…" : "Your price"}
+                {quoting ? t("Updating price…") : t("Your price")}
               </span>
               <CurrencySelector />
             </div>
@@ -521,10 +523,10 @@ export function ConfiguratorForm({
 
 
           <Button className="w-full" disabled={!ready || quoting || booking} onClick={book}>
-            {booking ? "Adding…" : "Add to cart"}
+            {booking ? t("Adding…") : t("Add to cart")}
           </Button>
           <p className="text-center text-[11px] text-muted-foreground">
-            Prices set in IDR (RP). Your bank sets the final exchange rate.
+            {t("Prices set in IDR (RP). Your bank sets the final exchange rate.")}
           </p>
         </CardContent>
       </Card>
@@ -537,6 +539,7 @@ export function ConfiguratorForm({
  * be stepped through. Purely presentational — no pricing, no answers.
  */
 function CatalogueGallery({ photos, name }: { photos: string[]; name: string }) {
+  const t = useUiStrings();
   const [index, setIndex] = useState(0);
   const i = Math.min(index, photos.length - 1);
   const go = (delta: number) => setIndex((n) => (n + delta + photos.length) % photos.length);
@@ -554,7 +557,7 @@ function CatalogueGallery({ photos, name }: { photos: string[]; name: string }) 
           <>
             <button
               type="button"
-              aria-label="Previous photo"
+              aria-label={t("Previous photo")}
               onClick={() => go(-1)}
               className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 px-2 py-1 text-sm"
             >
@@ -562,7 +565,7 @@ function CatalogueGallery({ photos, name }: { photos: string[]; name: string }) 
             </button>
             <button
               type="button"
-              aria-label="Next photo"
+              aria-label={t("Next photo")}
               onClick={() => go(1)}
               className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 px-2 py-1 text-sm"
             >

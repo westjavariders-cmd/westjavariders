@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/admin/AdminLayout";
+import { SiteTranslation } from "@/components/admin/SiteTranslation";
 import { supabase } from "@/integrations/supabase/client";
 import { setMasterLanguage } from "@/lib/admin.functions";
 import { recordAdminAction } from "@/lib/admin-audit";
@@ -253,6 +254,8 @@ function LanguagesPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <SiteTranslation languages={list.data ?? []} canEdit={adminSession.isAdmin} />
     </>
   );
 }
