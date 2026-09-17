@@ -29,16 +29,6 @@ async function signedMedia(db: any, path: string | null): Promise<string | null>
   return data?.signedUrl ?? null;
 }
 
-/**
- * The language this request should use: the explicit one, else the visitor's
- * stored choice, else the default language.
- */
-async function requestedLanguage(explicit: string | undefined, fallback: string): Promise<string> {
-  if (explicit && explicit.trim() !== "") return explicit;
-  const { resolveLanguage } = await import("@/lib/language.server");
-  return (await resolveLanguage()) ?? fallback;
-}
-
 /** The configured default language; content falls back to it. */
 export async function defaultLanguage(db: any): Promise<string> {
   const { data } = await db
@@ -114,7 +104,7 @@ export type PublicLanding = {
 export async function websiteLanding(language?: string): Promise<PublicLanding | null> {
   const db = await admin();
   const fallback = await defaultLanguage(db);
-  const wanted = await requestedLanguage(language, fallback);
+  const wanted = language && language.trim() !== "" ? language : fallback;
 
   const { data: landing } = await db
     .from("website_landing")
@@ -179,26 +169,13 @@ async function resolveProducts(db: any, productIds: string[]) {
     (translations.data ?? []).map((t: any) => [t.product_id, t]),
   );
 
-  // The visitor's language, when those texts have been translated.
-  const { resolveLanguage } = await import("@/lib/language.server");
-  const { loadTexts, translated } = await import("@/lib/text-translations.server");
-  const texts = await loadTexts("product", await resolveLanguage(), productIds);
-
   for (const product of products.data ?? []) {
     if (!isPubliclyListable(product.status)) continue;
     const bookable = isPurchasable(product.status, pricingStatus.get(product.id));
     resolved.set(product.id, {
       id: product.id,
-      title:
-        translated(texts, product.id, "title", null) ||
-        translation.get(product.id)?.title ||
-        product.internal_name,
-      summary: translated(
-        texts,
-        product.id,
-        "summary",
-        translation.get(product.id)?.summary ?? null,
-      ),
+      title: translation.get(product.id)?.title || product.internal_name,
+      summary: translation.get(product.id)?.summary ?? null,
       href: `/build-your-trip/${product.id}`,
       bookable,
     });
@@ -213,7 +190,7 @@ export async function websitePage(
 ): Promise<PublicWebsitePage | null> {
   const db = await admin();
   const fallback = await defaultLanguage(db);
-  const wanted = await requestedLanguage(language, fallback);
+  const wanted = language && language.trim() !== "" ? language : fallback;
 
   const { data: page } = await db
     .from("website_pages")
@@ -391,7 +368,7 @@ export async function websitePage(
 export async function websiteNav(language?: string): Promise<PublicNavItem[]> {
   const db = await admin();
   const fallback = await defaultLanguage(db);
-  const wanted = await requestedLanguage(language, fallback);
+  const wanted = language && language.trim() !== "" ? language : fallback;
 
   const [items, pages] = await Promise.all([
     db

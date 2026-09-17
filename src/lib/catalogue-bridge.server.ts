@@ -236,56 +236,6 @@ function asRef(input: CatalogueType | CatalogueRef): CatalogueRef {
   return typeof input === "string" ? { catalogue_type: input, catalogue_id: null } : input;
 }
 
-/**
- * Replaces the customer-facing texts of the items with their translation for
- * the visitor's language. Untranslated texts stay exactly as they are.
- */
-async function localize(items: CatalogueItem[], type: CatalogueType): Promise<CatalogueItem[]> {
-  if (items.length === 0) return items;
-  const { resolveLanguage } = await import("@/lib/language.server");
-  const language = await resolveLanguage();
-  if (!language) return items;
-  const { loadTexts, translated } = await import("@/lib/text-translations.server");
-  const [itemTexts, catalogueTexts] = await Promise.all([
-    loadTexts(type as never, language, items.map((item) => String(item.id))),
-    loadTexts(
-      "catalogue",
-      language,
-      Array.from(new Set(items.map((item) => String((item as any).catalogue_id)).filter(Boolean))),
-    ),
-  ]);
-
-  return items.map((item) => {
-    const anyItem = item as any;
-    const name = translated(itemTexts, String(item.id), "name", anyItem.name);
-    const description = translated(itemTexts, String(item.id), "description", anyItem.description);
-    const details = (anyItem.details ?? []).map((detail: any) =>
-      detail?.label === "Description" && anyItem.description
-        ? { ...detail, value: description ?? detail.value }
-        : detail,
-    );
-    const catalogueId = String(anyItem.catalogue_id ?? "");
-    const variants = anyItem.variants
-      ? {
-          ...anyItem.variants,
-          people_label: translated(
-            catalogueTexts,
-            catalogueId,
-            "people_label",
-            anyItem.variants.people_label,
-          ),
-          hours_label: translated(
-            catalogueTexts,
-            catalogueId,
-            "hours_label",
-            anyItem.variants.hours_label,
-          ),
-        }
-      : anyItem.variants;
-    return { ...anyItem, name, description, details, variants } as CatalogueItem;
-  });
-}
-
 /** One catalogue reference → its active, customer-safe items. */
 export async function resolveCatalogue(
   input: CatalogueType | CatalogueRef,
@@ -296,11 +246,11 @@ export async function resolveCatalogue(
   if (ids.length === 0) return [];
   switch (ref.catalogue_type) {
     case "accommodation_room":
-      return localize(await accommodationRooms(db, ids), "accommodation_room");
+      return accommodationRooms(db, ids);
     case "transport":
-      return localize(await transports(db, ids), "transport");
+      return transports(db, ids);
     case "motorbike":
-      return localize(await motorbikes(db, ids), "motorbike");
+      return motorbikes(db, ids);
     default:
       return [];
   }

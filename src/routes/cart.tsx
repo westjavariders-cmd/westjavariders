@@ -19,7 +19,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { sendContactRequest } from "@/lib/contact.functions";
-import { useUiStrings } from "@/hooks/use-ui-strings";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -43,7 +42,6 @@ export const Route = createFileRoute("/cart")({
 });
 
 function CartPage() {
-  const t = useUiStrings();
   const cart = usePublicCart();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -113,14 +111,14 @@ function CartPage() {
 
   return (
     <PublicPage>
-      <h1 className="text-2xl font-semibold tracking-tight">{t("Your cart")}</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Your cart</h1>
 
       {cart.isPending && <p className="mt-4 text-sm text-muted-foreground">Loading…</p>}
 
       {!cart.isPending && packages.length === 0 && !draft && (
         <div className="mt-4 space-y-4">
-          <p className="text-sm text-muted-foreground">{t("Your cart is empty.")}</p>
-          <Button onClick={() => navigate({ to: "/build-your-trip" })}>{t("Build your trip")}</Button>
+          <p className="text-sm text-muted-foreground">Your cart is empty.</p>
+          <Button onClick={() => navigate({ to: "/build-your-trip" })}>Build your trip</Button>
         </div>
       )}
 
@@ -141,7 +139,7 @@ function CartPage() {
                 className="text-xs uppercase tracking-[0.14em] text-muted-foreground underline"
                 onClick={() => setOpen((o) => ({ ...o, [p.id]: !o[p.id] }))}
               >
-                {open[p.id] ? t("Hide details") : t("View details")}
+                {open[p.id] ? "Hide details" : "View details"}
               </button>
               {open[p.id] && (
                 <dl className="space-y-1 border-t border-border pt-3 text-sm">
@@ -153,7 +151,7 @@ function CartPage() {
                   ))}
                   {p.promo_code && (
                     <div className="flex justify-between gap-4">
-                      <dt className="text-muted-foreground">{t("Promo code")}</dt>
+                      <dt className="text-muted-foreground">Promo code</dt>
                       <dd>{p.promo_code}</dd>
                     </div>
                   )}
@@ -171,7 +169,7 @@ function CartPage() {
                   )
                 }
               >
-                {t("Remove")}
+                Remove
               </Button>
             </CardContent>
           </Card>
@@ -200,7 +198,7 @@ function CartPage() {
                       })
                     }
                   >
-                    {t("Continue current package")}
+                    Continue current package
                   </Button>
                 )}
                 <Button
@@ -211,7 +209,7 @@ function CartPage() {
                     run("draft", () => discard(), "This package could not be discarded.")
                   }
                 >
-                  {t("Discard")}
+                  Discard
                 </Button>
               </div>
             </CardContent>
@@ -224,16 +222,14 @@ function CartPage() {
           {money && (
             <>
               <div className="flex items-baseline justify-between">
-                <span className="text-sm">
-                  {t("To pay now")} ({money.first_payment_percentage}%)
-                </span>
+                <span className="text-sm">To pay now ({money.first_payment_percentage}%)</span>
                 <span className="text-xl font-semibold">
                   {displayTotal(money.first_payment_idr, money.fx, money.customer_first_payment)}
                 </span>
               </div>
               <div className="flex items-baseline justify-between">
                 <span className="text-sm text-muted-foreground">
-                  {t("Balance, settled with us before your trip")}
+                  Balance, settled with us before your trip
                 </span>
                 <span className="text-base">
                   {displayTotal(money.outstanding_idr, money.fx, money.customer_outstanding)}
@@ -251,7 +247,7 @@ function CartPage() {
 
           <div className="flex items-baseline justify-between border-t border-border pt-3">
             <span className="text-sm uppercase tracking-[0.14em] text-muted-foreground">
-              {t("Total price")}
+              Total price
             </span>
             <span className="text-2xl font-semibold">
               {displayTotal(
@@ -293,7 +289,7 @@ function CartPage() {
                 </h2>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="space-y-1 text-sm">
-                    <span>{t("Full name")}</span>
+                    <span>Full name</span>
                     <Input
                       value={contact.full_name}
                       autoComplete="name"
@@ -301,7 +297,7 @@ function CartPage() {
                     />
                   </label>
                   <label className="space-y-1 text-sm">
-                    <span>{t("Email")}</span>
+                    <span>Email</span>
                     <Input
                       type="email"
                       value={contact.email}
@@ -336,7 +332,7 @@ function CartPage() {
                   onChange={(e) => setIsGift(e.target.checked)}
                 />
                 <span>
-                  <span className="font-medium">{t("This is a gift")}</span>
+                  <span className="font-medium">This is a gift</span>
                   <span className="block text-xs text-muted-foreground">
                     We send everything to you, so you can give it yourself. The price is never
                     shown on a gift.
@@ -392,7 +388,7 @@ function CartPage() {
                 }
                 onClick={payNow}
               >
-                {busy === "pay" ? t("Opening payment…") : t("Pay now")}
+                {busy === "pay" ? "Opening payment…" : "Pay now"}
               </Button>
             </>
           )}
@@ -414,7 +410,6 @@ function CartPage() {
 
 /** Shares the trip that already belongs to this cart. Creates nothing new. */
 function ShareTrip() {
-  const t = useUiStrings();
   const save = useServerFn(saveTrip);
   const [code, setCode] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -456,7 +451,7 @@ function ShareTrip() {
     return (
       <div className="space-y-1 border-t border-border pt-4">
         <Button variant="outline" className="w-full" disabled={saving} onClick={onSave}>
-          {saving ? t("Preparing link…") : t("SHARE YOUR TRIP")}
+          {saving ? "Preparing link…" : "SHARE YOUR TRIP"}
         </Button>
         <p className="text-xs text-muted-foreground">
           Share your trip with your travel companions.
@@ -488,7 +483,6 @@ function ShareTrip() {
 
 /** A customer question, sent to the business with the vouchers of this cart. */
 function ContactUs() {
-  const t = useUiStrings();
   const send = useServerFn(sendContactRequest);
   const [open, setOpen] = useState(false);
   const [sending, setSending] = useState(false);
@@ -518,7 +512,7 @@ function ContactUs() {
   if (sent) {
     return (
       <div className="space-y-1 border-t border-border pt-4">
-        <p className="text-sm uppercase tracking-[0.14em] text-muted-foreground">{t("Thank you")}</p>
+        <p className="text-sm uppercase tracking-[0.14em] text-muted-foreground">Thank you</p>
         <p className="text-xs text-muted-foreground">
           We have your question and the trip you were configuring. We will reply by email or
           WhatsApp as soon as possible.
@@ -539,30 +533,30 @@ function ContactUs() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-2 border-t border-border pt-4">
-      <p className="text-sm uppercase tracking-[0.14em] text-muted-foreground">{t("Contact us")}</p>
+      <p className="text-sm uppercase tracking-[0.14em] text-muted-foreground">Contact us</p>
       <Input
-        placeholder={t("Full name")}
+        placeholder="Name"
         value={form.full_name}
         maxLength={200}
         required
         onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))}
       />
       <Input
-        placeholder={t("WhatsApp / phone")}
+        placeholder="WhatsApp / phone"
         value={form.phone}
         maxLength={60}
         onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
       />
       <Input
         type="email"
-        placeholder={t("Email")}
+        placeholder="Email"
         value={form.email}
         maxLength={320}
         required
         onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
       />
       <Textarea
-        placeholder={t("Your question")}
+        placeholder="Your question"
         value={form.message}
         maxLength={4000}
         required
@@ -571,7 +565,7 @@ function ContactUs() {
       />
       <div className="flex gap-2">
         <Button type="submit" size="sm" disabled={sending}>
-          {sending ? t("Sending…") : t("SEND")}
+          {sending ? "Sending…" : "SEND"}
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>
           CANCEL
