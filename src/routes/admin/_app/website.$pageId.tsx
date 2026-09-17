@@ -103,6 +103,9 @@ function WebsitePageEditor() {
   const persistBlock = useServerFn(saveBlock);
   const removeBlock = useServerFn(deleteBlock);
   const orderBlocks = useServerFn(reorderBlocks);
+  const runTranslation = useServerFn(translateWebsitePage);
+  const [translating, setTranslating] = useState(false);
+
 
   const page = useQuery({
     queryKey: ["website-page", pageId],
