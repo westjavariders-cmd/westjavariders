@@ -1,35 +1,37 @@
-# Dos cosas: la tarjeta que no se puede pinchar y el cambio de idioma
+# Selector de idioma arriba en la web (y la tarjeta que no se puede pinchar)
 
-## 1. Por qué no se puede pinchar "Begginers: Cimaja, Cikembang and more surprises"
+## 1. Antes de nada: no he tocado nada del idioma
 
-La experiencia está activa, pero **sus precios están en borrador** (se cambiaron ayer a las 22:27). Cuando los precios no están activos, la web muestra la tarjeta apagada con el aviso "Not available for booking right now" y no deja pulsarla. "Intermediates and Pros" sí tiene los precios activos, y por eso esa sí se puede pinchar.
+No he hecho ningún cambio todavía. Lo que veas ahora mismo es como estaba.
 
-No es un fallo de programación: es el estado de los precios de esa experiencia.
+## 2. Por qué no se puede pinchar "Begginers: Cimaja, Cikembang and more surprises"
 
-**Solución, sin tocar el código:**
+La experiencia está activa, pero **sus precios están en borrador**. Cuando los precios no están activos, la web muestra la tarjeta apagada con el aviso "Not available for booking right now" y no deja pulsarla. "Intermediates and Pros" sí tiene los precios activos, y por eso esa sí se puede pinchar.
 
-1. Admin → Products → "Begginers: Cimaja, Cikembang and more surprises".
-2. Abrir la pestaña de precios (Pricing).
-3. Pulsar **Activate pricing**.
-4. Volver a la web y comprobar que la tarjeta ya lleva al configurador.
+No es un fallo de programación. Se arregla en Admin → Products → esa experiencia → pestaña de precios → **Activate pricing**. Dime si quieres que lo active yo.
 
-Puedo activarlo yo si me lo confirmas, o lo pulsas tú desde Admin.
+## 3. Selector de idioma en la parte superior
 
-## 2. ¿Hay algo preparado para cambiar de idioma en la web?
+Ya tienes 8 idiomas activos (inglés como principal, más chino, japonés, indonesio, filipino, tailandés, español y portugués de Brasil) y en Admin puedes escribir los textos de cada página, sección, bloque y menú en cualquiera de ellos. Lo que falta es el selector para el visitante.
 
-A medias:
+Lo que haré:
 
-- **Sí está preparado por debajo.** Hay 8 idiomas activos (inglés como principal, más chino, japonés, indonesio, filipino, tailandés, español y portugués de Brasil), y en Admin puedes escribir los textos de cada página, sección, bloque y menú en cualquiera de ellos. Cuando falta una traducción, se muestra el inglés.
-- **No hay todavía un selector de idioma para el visitante.** La web pública siempre pide los textos en el idioma principal, así que aunque traduzcas en Admin, el cliente sigue viendo inglés.
+- Un desplegable de idioma en la barra superior, **justo al lado del de moneda**, con el mismo estilo discreto (EN, ES, JA…).
+- Al elegir un idioma, la web vuelve a pedir los textos en ese idioma: páginas, secciones, bloques, menú y pantalla de entrada. Si a algún texto le falta traducción, se muestra el inglés, como ahora.
+- **"Recordar el idioma elegido"** simplemente significa que si eliges español y luego navegas a otra página o vuelves más tarde, sigue en español sin tener que elegirlo otra vez. Funciona igual que la moneda: se guarda en el navegador del visitante. Si prefieres que no se recuerde y vuelva siempre a inglés, dímelo.
+- **"West Java Riders" no se traduce nunca**: el nombre de la marca en la cabecera se queda siempre igual, en todos los idiomas.
 
-**Lo que faltaría para que funcione (si lo quieres, en un segundo paso):**
+## 4. Lo que seguirá en inglés por ahora
 
-- Un selector de idioma en la barra superior, junto al de moneda, con el mismo estilo discreto.
-- Recordar el idioma elegido (como ya se hace con la moneda) y pasarlo a las páginas, al menú y a la pantalla de entrada.
-- Los textos fijos de la web (botones como "Add to cart", avisos del carrito) seguirían en inglés en esta primera versión; traducirlos sería un trabajo aparte y más grande.
+Los textos fijos de la web que no vienen de Admin (botones como "Add to cart", avisos del carrito, formulario de contacto) seguirán en inglés. Traducir esos es un trabajo aparte y bastante mayor; si lo quieres, lo hacemos en un paso siguiente.
 
-Dime si quieres que lo prepare y hago un plan solo para eso.
+## Detalle técnico
+
+- Guardado de la elección con una cookie propia y una función de servidor `setSiteLanguage`, siguiendo el patrón que ya usa la moneda (`setFxCurrency` / `selectCurrency`).
+- Las lecturas públicas (`websitePage`, `websiteNav`, `websiteLanding`) ya aceptan un idioma; se les pasará el elegido en lugar de dejar el idioma por defecto.
+- Nuevo `LanguageSelector` en `SiteHeader.tsx` junto a `CurrencySelector`, alimentado por los idiomas activos.
+- Sin migración de base de datos.
 
 ## No se toca
 
-Precios, productos, catálogos, configurador, carrito, pagos, vouchers ni Admin.
+Precios, productos, catálogos, configurador, carrito, pagos, vouchers, Admin ni el nombre de la marca.
