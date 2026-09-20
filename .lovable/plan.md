@@ -1,23 +1,25 @@
-# Corregir el guardado del quinto apartado de Inicio
+# Enlazar "Epic Trips" desde el inicio y el menú
 
-## Causa confirmada
+## Qué ocurre ahora
 
-La página **Inicio** está activa y su única sección también. En los datos guardados solo existen cuatro apartados, todos activos y visibles. El quinto no está oculto ni desordenado: **no llegó a guardarse**, por eso la web pública no puede mostrarlo.
+Lo que creaste hoy no es un quinto apartado dentro de la página de inicio: es una **página nueva llamada "Epic Trips"**, con dos apartados dentro (Begginers y readyintermediates). Está activa y guardada correctamente.
 
-## Cambios
+La página de inicio sigue teniendo solo cuatro tarjetas (Build your trip, Select Activities individually, Explore West Java, Meet the Boardriders) y ninguna lleva a Epic Trips. El menú superior también tiene solo esas cuatro entradas. Por eso no la ves desde el inicio.
 
-1. Reproducir la creación de un quinto apartado desde Admin → Website → Home y localizar en qué punto se pierde el guardado.
-2. Corregir únicamente el formulario o la acción de guardado responsable, manteniendo sin cambios los cuatro apartados actuales.
-3. Hacer que Admin confirme el guardado solo cuando el nuevo apartado realmente exista; si falla, mostrará un aviso claro y conservará la información escrita para poder reintentarlo.
-4. Comprobar que un quinto apartado activo aparece en Inicio, en el orden elegido, y que se puede pulsar si tiene un destino configurado.
+## Qué haré
 
-## No se toca
+1. Añadir una **quinta tarjeta en la página de inicio** con el título "Epic Trips", que lleva a esa página.
+2. Añadir una **entrada "Epic Trips" en el menú superior**, después de Meet the Boardriders.
 
-Idiomas, navegación superior, diseño, productos, precios, configurador, carrito, pagos y vouchers.
+Ambas quedarán visibles en la web pública y editables desde Admin → Website como el resto (título, texto y traducciones).
 
-## Verificación
+## Detalles técnicos
 
-- Crear y guardar un quinto apartado de prueba desde Admin.
-- Confirmar que aparece inmediatamente en la lista de Admin y en Inicio.
-- Recargar ambas páginas y confirmar que continúa visible.
-- Verificar que los cuatro apartados existentes permanecen intactos.
+- Sin cambios de código y sin migración: solo datos.
+- Nuevo `website_blocks` en la sección "Main doors" de la página `home`: `block_kind = 'door'`, `cta_kind = 'page'`, `cta_page_id` = id de la página `epictrips`, `sort_order = 4`, `is_active = true`, más su fila en `website_block_translations` (idioma `en`, título "Epic Trips").
+- Nuevo `website_nav_items`: `destination_kind = 'page'`, `destination_page_id` = misma página, `sort_order = 4`, `is_active = true`, más su `website_nav_item_translations` en `en`.
+- No se toca ninguna otra tarjeta, sección, página, producto ni precio.
+
+## Nota
+
+De momento el título irá en inglés ("Epic Trips"). Las traducciones a los demás idiomas las puedes escribir tú desde Admin → Website cuando quieras; si falta una, se muestra el inglés.
