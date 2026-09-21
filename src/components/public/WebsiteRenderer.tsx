@@ -56,7 +56,12 @@ function ProductList({ products }: { products: PublicBlock["products"] }) {
     <div className="mt-4 space-y-3">
       {products.map((product) =>
         product.bookable ? (
-          <Link key={product.id} to="/build-your-trip/$productId" params={{ productId: product.id }} className="block">
+          <Link
+            key={product.id}
+            to="/build-your-trip/$productId"
+            params={{ productId: product.id }}
+            className="block"
+          >
             <Card className="transition-colors hover:border-primary">
               <CardContent className="p-4">
                 <h3 className="text-base font-medium">{product.title}</h3>
@@ -114,7 +119,8 @@ function CatalogueList({ items }: { items: PublicBlock["catalogue_items"] }) {
               )}
               {item.from_price_idr != null && (
                 <p className="text-sm font-semibold">
-                  From {new Intl.NumberFormat("id-ID", {
+                  From{" "}
+                  {new Intl.NumberFormat("id-ID", {
                     style: "currency",
                     currency: "IDR",
                     maximumFractionDigits: 0,
@@ -142,10 +148,14 @@ function Block({ block }: { block: PublicBlock }) {
       <Card className="h-full transition-colors hover:border-primary">
         <CardContent className="p-4">
           {block.media && <Media media={block.media} />}
-          {block.title && <h2 className="mt-3 text-base font-semibold tracking-tight">{block.title}</h2>}
+          {block.title && (
+            <h2 className="mt-3 text-base font-semibold tracking-tight">{block.title}</h2>
+          )}
           {block.body && <p className="mt-1 text-sm text-muted-foreground">{block.body}</p>}
           {block.cta?.label && (
-            <p className="mt-3 text-xs font-medium uppercase tracking-[0.14em]">{block.cta.label}</p>
+            <p className="mt-3 text-xs font-medium uppercase tracking-[0.14em]">
+              {block.cta.label}
+            </p>
           )}
         </CardContent>
       </Card>
@@ -164,13 +174,18 @@ function Block({ block }: { block: PublicBlock }) {
 
   return (
     <div className="space-y-3">
-      {block.media && (block.kind === "hero" || block.kind === "image_text" || block.kind === "video") && (
-        <Media media={block.media} />
-      )}
+      {block.media &&
+        (block.kind === "hero" || block.kind === "image_text" || block.kind === "video") && (
+          <Media media={block.media} />
+        )}
       {block.title && heading}
-      {block.body && <p className="whitespace-pre-line text-sm text-muted-foreground">{block.body}</p>}
+      {block.body && (
+        <p className="whitespace-pre-line text-sm text-muted-foreground">{block.body}</p>
+      )}
       {block.kind === "product_selection" && <ProductList products={block.products} />}
-      {block.kind === "people" && block.products.length > 0 && <ProductList products={block.products} />}
+      {block.kind === "people" && block.products.length > 0 && (
+        <ProductList products={block.products} />
+      )}
       {block.kind === "catalogue" && <CatalogueList items={block.catalogue_items} />}
       {block.cta?.label && (
         <div>
@@ -186,21 +201,33 @@ function Section({ section }: { section: PublicSection }) {
   const others = section.blocks.filter((b) => b.kind !== "door");
 
   return (
-    <section className="space-y-4">
-      {section.title && <h2 className="text-xl font-semibold tracking-tight">{section.title}</h2>}
-      {section.subtitle && <p className="text-sm text-muted-foreground">{section.subtitle}</p>}
+    <section className="space-y-6">
+      {(section.title || section.subtitle) && (
+        <div className="mx-auto max-w-3xl">
+          {section.title && (
+            <h2 className="text-xl font-semibold tracking-tight">{section.title}</h2>
+          )}
+          {section.subtitle && (
+            <p className="mt-1 text-sm text-muted-foreground">{section.subtitle}</p>
+          )}
+        </div>
+      )}
 
       {doors.length > 0 && (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="mx-auto grid max-w-6xl gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {doors.map((block) => (
             <Block key={block.id} block={block} />
           ))}
         </div>
       )}
 
-      {others.map((block) => (
-        <Block key={block.id} block={block} />
-      ))}
+      {others.length > 0 && (
+        <div className="mx-auto max-w-3xl space-y-8">
+          {others.map((block) => (
+            <Block key={block.id} block={block} />
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -213,9 +240,9 @@ export function WebsiteRenderer({
   showHeading?: boolean;
 }) {
   return (
-    <div className="space-y-10 py-4">
+    <div className="space-y-14 py-2 sm:py-4">
       {showHeading && (page.title || page.subtitle) && (
-        <header className="space-y-2">
+        <header className="mx-auto max-w-3xl space-y-2">
           {page.title && (
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{page.title}</h1>
           )}

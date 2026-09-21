@@ -213,10 +213,40 @@
   animation: cbr-step-prev 0.3s ease-out both;
 }
 
+@keyframes cbr-nav-overlay {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cbr-nav-drawer {
+  from {
+    opacity: 0.4;
+    transform: translateX(1.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.cbr-nav-overlay {
+  animation: cbr-nav-overlay 0.22s ease-out both;
+}
+
+.cbr-nav-drawer {
+  animation: cbr-nav-drawer 0.28s ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cbr-page-enter,
   .cbr-step-next,
-  .cbr-step-prev {
+  .cbr-step-prev,
+  .cbr-nav-overlay,
+  .cbr-nav-drawer {
     animation: none;
   }
 }

@@ -61,7 +61,7 @@ export const Route = createFileRoute("/pages/$slug")({
 function WebsitePageRoute() {
   const { page } = Route.useLoaderData();
   return (
-    <PublicPage>
+    <PublicPage width="full">
       <WebsiteRenderer page={page} />
     </PublicPage>
   );

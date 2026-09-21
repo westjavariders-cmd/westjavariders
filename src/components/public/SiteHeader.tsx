@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -9,7 +10,7 @@ import { getWebsiteNav } from "@/lib/website.functions";
 import { setFxCurrency } from "@/lib/fx.functions";
 import { formatIdr } from "@/lib/public-catalog";
 import { formatCustomerAmount } from "@/lib/fx";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /** One display rule for every customer-facing total. */
 export function displayTotal(
@@ -47,7 +48,7 @@ export function CurrencySelector() {
       <span className="sr-only">Currency</span>
       <select
         aria-label="Currency"
-        className="rounded-full border border-border bg-background px-2 py-1.5 text-xs font-medium"
+        className="h-9 rounded-none border-0 bg-transparent px-1 text-[11px] font-medium uppercase tracking-[0.16em] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
         value={fx.currency_code}
         disabled={change.isPending}
         onChange={(e) => change.mutate(e.target.value)}
@@ -68,7 +69,55 @@ function useWebsiteNav() {
   return useQuery({ queryKey: ["website-nav"], queryFn: () => load({ data: {} }) });
 }
 
+const DESKTOP_NAV = "(min-width: 1280px)";
+
+type CmsNavItem = { id: string; label: string; href: string; external: boolean };
+
+function CmsNavLinks({
+  items,
+  variant,
+  onNavigate,
+}: {
+  items: CmsNavItem[];
+  variant: "desktop" | "mobile";
+  onNavigate?: () => void;
+}) {
+  if (items.length === 0) {
+    return (
+      <Link
+        to="/build-your-trip"
+        className={
+          variant === "desktop"
+            ? "text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground"
+            : "block min-h-12 py-3 text-2xl font-medium tracking-tight"
+        }
+        activeProps={{ className: "text-foreground" }}
+        onClick={onNavigate}
+      >
+        Build your trip
+      </Link>
+    );
+  }
+
+  return items.map((item) => (
+    <a
+      key={item.id}
+      href={item.href}
+      {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+      className={
+        variant === "desktop"
+          ? "whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground"
+          : "block min-h-12 py-3 text-2xl font-medium tracking-tight text-foreground"
+      }
+      onClick={onNavigate}
+    >
+      {item.label}
+    </a>
+  ));
+}
+
 export function SiteHeader() {
+  const menuId = useId();
   const [open, setOpen] = useState(false);
   const cart = usePublicCart();
   const nav = useWebsiteNav();
@@ -79,93 +128,186 @@ export function SiteHeader() {
     cart.data?.payable_total_customer,
   );
 
+  const openButtonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const media = window.matchMedia(DESKTOP_NAV);
+    const collapse = () => {
+      if (media.matches) setOpen(false);
+    };
+    media.addEventListener("change", collapse);
+    return () => media.removeEventListener("change", collapse);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOpen(false);
+        return;
+      }
+      if (event.key !== "Tab" || !panelRef.current) return;
+      const focusable = [
+        ...panelRef.current.querySelectorAll<HTMLElement>(
+          "a[href], button:not([disabled]), select:not([disabled]), textarea, input",
+        ),
+      ];
+      if (focusable.length === 0) return;
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    const trigger = openButtonRef.current;
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKey);
+      trigger?.focus();
+    };
+  }, [open]);
+
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/95 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Button
+    <header className="sticky top-0 z-40 border-b border-border/40 bg-background/90 backdrop-blur-md">
+      <div className="mx-auto grid h-16 max-w-[90rem] grid-cols-[auto_1fr_auto] items-center gap-3 px-4 sm:h-[4.25rem] sm:px-6 lg:px-10 xl:grid-cols-[1fr_auto_1fr]">
+        <div className="flex items-center xl:justify-start">
+          <button
+            ref={openButtonRef}
             type="button"
-            variant="ghost"
-            size="sm"
+            className="inline-flex h-11 min-w-11 items-center justify-center gap-2 text-[11px] font-medium uppercase tracking-[0.22em] xl:hidden"
             aria-label={open ? "Close menu" : "Open menu"}
-            className="gap-1.5 px-2 sm:hidden"
-            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-controls={menuId}
+            onClick={() => setOpen((value) => !value)}
           >
-            {open ? <X className="size-4" /> : <Menu className="size-4" />}
-            MENU
-          </Button>
-          <Link to="/home" className="text-sm font-semibold uppercase tracking-[0.18em] text-red-600">
+            {open ? (
+              <X className="size-5" strokeWidth={1.5} />
+            ) : (
+              <Menu className="size-5" strokeWidth={1.5} />
+            )}
+            <span className="hidden sm:inline">Menu</span>
+          </button>
+          <Link
+            to="/home"
+            className="hidden text-[13px] font-semibold uppercase tracking-[0.22em] xl:inline"
+          >
             West Java Riders
           </Link>
         </div>
 
-        <nav className="hidden items-center gap-5 text-sm sm:flex">
-          {navItems.length > 0 ? (
-            navItems.map((item) => (
-              <a
-                key={item.id}
-                href={item.href}
-                {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                {item.label}
-              </a>
-            ))
-          ) : (
-            <Link to="/build-your-trip" activeProps={{ className: "font-semibold" }}>
-              Build your trip
-            </Link>
-          )}
-          <Link to="/cart" className="text-muted-foreground hover:text-foreground">
-            Cart
-          </Link>
+        <Link
+          to="/home"
+          className="justify-self-center text-center text-[12px] font-semibold uppercase tracking-[0.22em] xl:hidden"
+        >
+          West Java Riders
+        </Link>
+
+        <nav className="hidden items-center justify-center gap-x-7 xl:flex" aria-label="Primary">
+          <CmsNavLinks items={navItems} variant="desktop" />
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-3 sm:gap-4">
           <CurrencySelector />
           <Link
             to="/cart"
-            className="rounded-full border border-border px-3 py-1.5 text-xs font-medium tracking-wide"
+            className="inline-flex min-h-11 items-center text-[11px] font-medium uppercase tracking-[0.18em]"
           >
+            <span className="sr-only">Cart </span>
             <span className="hidden sm:inline">TOTAL PRICE — </span>
             {total}
           </Link>
         </div>
       </div>
 
-      {open && (
-        <nav className="flex flex-col gap-1 border-t border-border/60 px-4 py-2 text-sm sm:hidden">
-          {navItems.length > 0 ? (
-            navItems.map((item) => (
-              <a
-                key={item.id}
-                href={item.href}
-                {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                className="py-2"
+      {open &&
+        createPortal(
+          <div className="public-theme xl:hidden">
+            <button
+              type="button"
+              tabIndex={-1}
+              aria-hidden="true"
+              className="cbr-nav-overlay fixed inset-0 z-50 bg-black/55"
+              onClick={() => setOpen(false)}
+            />
+            <div
+              ref={panelRef}
+              id={menuId}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Menu"
+              className="cbr-nav-drawer fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-background px-6 pb-8 pt-5 text-foreground sm:px-8"
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+                  West Java Riders
+                </p>
+                <button
+                  ref={closeButtonRef}
+                  type="button"
+                  className="inline-flex h-11 min-w-11 items-center justify-center"
+                  aria-label="Close menu"
+                  onClick={() => setOpen(false)}
+                >
+                  <X className="size-5" strokeWidth={1.5} />
+                </button>
+              </div>
+
+              <nav className="mt-10 flex flex-1 flex-col overflow-y-auto" aria-label="Primary">
+                <CmsNavLinks items={navItems} variant="mobile" onNavigate={() => setOpen(false)} />
+              </nav>
+
+              <Link
+                to="/cart"
+                className="mt-8 flex min-h-12 items-center justify-between border-t border-border/40 pt-5 text-[11px] font-medium uppercase tracking-[0.18em]"
                 onClick={() => setOpen(false)}
               >
-                {item.label}
-              </a>
-            ))
-          ) : (
-            <Link to="/build-your-trip" className="py-2" onClick={() => setOpen(false)}>
-              Build your trip
-            </Link>
-          )}
-          <Link to="/cart" className="py-2" onClick={() => setOpen(false)}>
-            Cart
-          </Link>
-        </nav>
-      )}
+                <span>Cart</span>
+                <span>{total}</span>
+              </Link>
+            </div>
+          </div>,
+          document.body,
+        )}
     </header>
   );
 }
 
-export function PublicPage({ children }: { children: React.ReactNode }) {
+export type PublicPageWidth = "readable" | "wide" | "full";
+
+/** Horizontal padding for the public shell. Width is chosen per page. */
+export function PublicPage({
+  children,
+  width = "readable",
+}: {
+  children: React.ReactNode;
+  width?: PublicPageWidth;
+}) {
   return (
     <div className="public-theme min-h-screen bg-background text-foreground">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl px-4 pb-16 pt-6">{children}</main>
+      <main
+        className={cn(
+          "px-4 pb-20 pt-8 sm:px-6 sm:pt-10 lg:px-10",
+          width === "readable" && "mx-auto w-full max-w-3xl",
+          width === "wide" && "mx-auto w-full max-w-6xl",
+          width === "full" && "w-full",
+        )}
+      >
+        {children}
+      </main>
     </div>
   );
 }

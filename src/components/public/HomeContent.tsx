@@ -87,19 +87,23 @@ function PromoCodeEntry() {
 /** The configured Home content, shared by the site root and /home. */
 export function HomeContent({ page }: { page: PublicWebsitePage | null }) {
   return (
-    <div className="py-8">
-      <h1 className="text-3xl font-semibold tracking-tight">
-        {page?.title ?? "Surf, travel and local experiences in Cimaja"}
-      </h1>
-      <p className="mt-3 text-sm text-muted-foreground">
-        {page?.subtitle ??
-          "West Java's warm-water pointbreaks, local guides and trips built exactly the way you want them."}
-      </p>
+    <div className="py-4 sm:py-8">
+      <div className="mx-auto max-w-3xl">
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+          {page?.title ?? "Surf, travel and local experiences in Cimaja"}
+        </h1>
+        <p className="mt-3 text-sm text-muted-foreground sm:text-base">
+          {page?.subtitle ??
+            "West Java's warm-water pointbreaks, local guides and trips built exactly the way you want them."}
+        </p>
+      </div>
 
       {page && page.sections.length > 0 ? (
-        <WebsiteRenderer page={page} showHeading={false} />
+        <div className="mt-10">
+          <WebsiteRenderer page={page} showHeading={false} />
+        </div>
       ) : (
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mx-auto mt-8 flex max-w-3xl flex-wrap gap-3">
           <Button asChild>
             <Link to="/build-your-trip">Build your trip</Link>
           </Button>
@@ -109,7 +113,7 @@ export function HomeContent({ page }: { page: PublicWebsitePage | null }) {
         </div>
       )}
 
-      <div className="mt-10 space-y-2">
+      <div className="mx-auto mt-12 max-w-3xl space-y-2">
         <PromoCodeEntry />
         <p className="text-xs text-muted-foreground">
           <Link to="/admin" className="underline underline-offset-2">

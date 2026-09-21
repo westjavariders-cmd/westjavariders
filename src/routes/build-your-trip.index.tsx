@@ -43,47 +43,48 @@ function BuildYourTrip() {
   const hasConfigured = Boolean(page && page.sections.length > 0);
 
   return (
-    <PublicPage>
-      <h1 className="text-2xl font-semibold tracking-tight">{page?.title ?? "Build your trip"}</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        {page?.subtitle ?? "Pick an experience, choose your options and see your price straight away."}
+    <PublicPage width="full">
+      <h1 className="mx-auto max-w-3xl text-2xl font-semibold tracking-tight">
+        {page?.title ?? "Build your trip"}
+      </h1>
+      <p className="mx-auto mt-2 max-w-3xl text-sm text-muted-foreground">
+        {page?.subtitle ??
+          "Pick an experience, choose your options and see your price straight away."}
       </p>
 
       {hasConfigured && page && <WebsiteRenderer page={page} showHeading={false} />}
 
       {!hasConfigured && (
-      <div className="mt-6 space-y-3">
-        {(products.isPending || configured.isPending) && (
-          <p className="text-sm text-muted-foreground">Loading…</p>
-        )}
-        {products.data?.products.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            Nothing is open for booking right now. Please check back soon.
-          </p>
-        )}
-        {products.data?.products.map((p) => (
-          <Link
-            key={p.id}
-            to="/build-your-trip/$productId"
-            params={{ productId: p.id }}
-            className="block"
-          >
-            <Card className="transition-colors hover:border-primary">
-              <CardContent className="p-4">
-                {p.categories.length > 0 && (
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                    {p.categories.join(" · ")}
-                  </p>
-                )}
-                <h2 className="mt-1 text-base font-medium">{p.title}</h2>
-                {p.summary && (
-                  <p className="mt-1 text-sm text-muted-foreground">{p.summary}</p>
-                )}
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+        <div className="mx-auto mt-6 max-w-3xl space-y-3">
+          {(products.isPending || configured.isPending) && (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          )}
+          {products.data?.products.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              Nothing is open for booking right now. Please check back soon.
+            </p>
+          )}
+          {products.data?.products.map((p) => (
+            <Link
+              key={p.id}
+              to="/build-your-trip/$productId"
+              params={{ productId: p.id }}
+              className="block"
+            >
+              <Card className="transition-colors hover:border-primary">
+                <CardContent className="p-4">
+                  {p.categories.length > 0 && (
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                      {p.categories.join(" · ")}
+                    </p>
+                  )}
+                  <h2 className="mt-1 text-base font-medium">{p.title}</h2>
+                  {p.summary && <p className="mt-1 text-sm text-muted-foreground">{p.summary}</p>}
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
       )}
     </PublicPage>
   );
