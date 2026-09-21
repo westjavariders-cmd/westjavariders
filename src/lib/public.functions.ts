@@ -15,13 +15,6 @@ export const getPublicProduct = createServerFn({ method: "POST" })
     return publicProductBundle(data.productId);
   });
 
-export const getPublicProductIntro = createServerFn({ method: "POST" })
-  .inputValidator((data) => z.object({ productId: z.string().uuid() }).parse(data))
-  .handler(async ({ data }) => {
-    const { publicProductIntro } = await import("@/lib/public-catalog.server");
-    return publicProductIntro(data.productId);
-  });
-
 export const getPublicCart = createServerFn({ method: "POST" }).handler(async () => {
   const { publicCart } = await import("@/lib/public-catalog.server");
   return publicCart();

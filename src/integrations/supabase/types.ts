@@ -1815,53 +1815,38 @@ export type Database = {
         Row: {
           body: string | null
           created_at: string
-          how_it_works_body: string | null
-          how_it_works_title: string | null
           id: string
           language_code: string
           product_id: string
           seo_description: string | null
           seo_title: string | null
-          start_cta_label: string | null
           summary: string | null
           title: string | null
           updated_at: string
-          what_includes_body: string | null
-          what_includes_title: string | null
         }
         Insert: {
           body?: string | null
           created_at?: string
-          how_it_works_body?: string | null
-          how_it_works_title?: string | null
           id?: string
           language_code: string
           product_id: string
           seo_description?: string | null
           seo_title?: string | null
-          start_cta_label?: string | null
           summary?: string | null
           title?: string | null
           updated_at?: string
-          what_includes_body?: string | null
-          what_includes_title?: string | null
         }
         Update: {
           body?: string | null
           created_at?: string
-          how_it_works_body?: string | null
-          how_it_works_title?: string | null
           id?: string
           language_code?: string
           product_id?: string
           seo_description?: string | null
           seo_title?: string | null
-          start_cta_label?: string | null
           summary?: string | null
           title?: string | null
           updated_at?: string
-          what_includes_body?: string | null
-          what_includes_title?: string | null
         }
         Relationships: [
           {
@@ -1884,7 +1869,6 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          image_path: string | null
           internal_name: string
           internal_ref: string | null
           kind: Database["public"]["Enums"]["product_kind"]
@@ -1896,7 +1880,6 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          image_path?: string | null
           internal_name: string
           internal_ref?: string | null
           kind: Database["public"]["Enums"]["product_kind"]
@@ -1908,7 +1891,6 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          image_path?: string | null
           internal_name?: string
           internal_ref?: string | null
           kind?: Database["public"]["Enums"]["product_kind"]

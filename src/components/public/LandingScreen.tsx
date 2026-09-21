@@ -101,7 +101,7 @@ export function LandingScreen({ landing }: { landing: PublicLanding }) {
       />
 
       <main className="relative flex h-full min-h-[100svh] flex-col justify-end px-5 pb-[max(2.75rem,env(safe-area-inset-bottom))] pt-16 sm:px-10 sm:pb-16 lg:px-16 lg:pb-20">
-        <div className="flex w-full max-w-2xl flex-col items-start sm:max-w-3xl">
+        <div className="flex w-full max-w-2xl flex-col items-start gap-6 sm:max-w-3xl sm:gap-8">
           <div className="space-y-3 sm:space-y-4">
             {landing.title && (
               <h1 className="text-balance text-[2.125rem] font-semibold leading-[1.12] tracking-tight sm:text-5xl lg:text-6xl">
@@ -119,10 +119,10 @@ export function LandingScreen({ landing }: { landing: PublicLanding }) {
             <a
               href={landing.cta.href}
               {...(landing.cta.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-              className="mt-8 inline-flex min-h-12 max-w-full items-center justify-center bg-neutral-50 px-7 text-sm font-medium tracking-wide text-neutral-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-50 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 sm:mt-10 sm:min-h-14 sm:px-8 sm:text-base"
+              className="inline-flex min-h-12 min-w-[2.75rem] items-center py-2 text-[11px] font-medium uppercase tracking-[0.2em] text-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-50 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 sm:text-xs"
             >
-              <span className="truncate">{landing.cta.label}</span>
-              <span aria-hidden="true" className="ml-2 shrink-0">
+              {landing.cta.label}
+              <span aria-hidden="true" className="ml-2 inline-block">
                 →
               </span>
             </a>

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/admin/AdminLayout";
@@ -10,7 +10,6 @@ import { setProductStatus } from "@/lib/catalog.functions";
 import { recordAdminAction } from "@/lib/admin-audit";
 import {
   MASTER_LANGUAGE,
-  PRODUCT_MEDIA_BUCKET,
   PRODUCT_STATUSES,
   validateBundle,
   type ProductBundle,
@@ -123,113 +122,6 @@ function ProductEditor() {
 
 type TabProps = { bundle: ProductBundle; canEdit: boolean; reload: () => void };
 
-function ProductHeroImage({
-  productId,
-  imagePath,
-  canEdit,
-  reload,
-}: {
-  productId: string;
-  imagePath: string | null;
-  canEdit: boolean;
-  reload: () => void;
-}) {
-  const fileInput = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const [preview, setPreview] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      if (!imagePath) {
-        setPreview(null);
-        return;
-      }
-      const { data } = await supabase.storage
-        .from(PRODUCT_MEDIA_BUCKET)
-        .createSignedUrl(imagePath, 3600);
-      if (!cancelled) setPreview(data?.signedUrl ?? null);
-    }
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [imagePath]);
-
-  async function upload(files: FileList | null) {
-    const file = files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-      const path = `${productId}/${Date.now()}-${safeName}`;
-      const { error } = await supabase.storage.from(PRODUCT_MEDIA_BUCKET).upload(path, file);
-      if (error) throw new Error(error.message);
-      const { error: saveError } = await supabase
-        .from("products")
-        .update({ image_path: path })
-        .eq("id", productId);
-      if (saveError) throw new Error(saveError.message);
-      await recordAdminAction("product_image_updated", "products", productId);
-      toast.success("Hero image saved.");
-      reload();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "This file could not be uploaded.");
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  async function remove() {
-    const { error } = await supabase
-      .from("products")
-      .update({ image_path: null })
-      .eq("id", productId);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    setPreview(null);
-    await recordAdminAction("product_image_removed", "products", productId);
-    toast.success("Hero image removed.");
-    reload();
-  }
-
-  return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-medium">Intro hero image</h3>
-      <p className="text-xs text-muted-foreground">
-        Shown on the public screen before the configurator. You can replace it at any time.
-      </p>
-      <input
-        ref={fileInput}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => void upload(e.target.files)}
-      />
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={!canEdit || uploading}
-          onClick={() => fileInput.current?.click()}
-        >
-          {uploading ? "Uploading…" : imagePath ? "Replace image" : "Upload image"}
-        </Button>
-        {imagePath && canEdit && (
-          <Button size="sm" variant="outline" onClick={() => void remove()}>
-            Remove image
-          </Button>
-        )}
-      </div>
-      {preview && (
-        <img src={preview} alt="" className="h-32 w-auto rounded-md border object-cover" />
-      )}
-    </div>
-  );
-}
-
 function DetailsTab({ bundle, canEdit, reload }: TabProps) {
   const [draft, setDraft] = useState({
     internal_name: bundle.product.internal_name,
@@ -271,10 +163,7 @@ function DetailsTab({ bundle, canEdit, reload }: TabProps) {
         sort_order: Number(draft.sort_order || 0),
       })
       .eq("id", bundle.product.id);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    if (error) { toast.error(error.message); return; }
     await recordAdminAction("product_updated", "products", draft.internal_name);
     toast.success("Product saved.");
     reload();
@@ -282,19 +171,14 @@ function DetailsTab({ bundle, canEdit, reload }: TabProps) {
 
   async function toggleCategory(categoryId: string, on: boolean) {
     const q = on
-      ? supabase
-          .from("product_categories")
-          .insert({ product_id: bundle.product.id, category_id: categoryId })
+      ? supabase.from("product_categories").insert({ product_id: bundle.product.id, category_id: categoryId })
       : supabase
           .from("product_categories")
           .delete()
           .eq("product_id", bundle.product.id)
           .eq("category_id", categoryId);
     const { error } = await q;
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    if (error) { toast.error(error.message); return; }
     reload();
   }
 
@@ -311,10 +195,7 @@ function DetailsTab({ bundle, canEdit, reload }: TabProps) {
           .eq("product_id", bundle.product.id)
           .eq("placement_id", placementId);
     const { error } = await q;
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    if (error) { toast.error(error.message); return; }
     reload();
   }
 
@@ -324,10 +205,7 @@ function DetailsTab({ bundle, canEdit, reload }: TabProps) {
       .update({ display_order: Number(order || 0) })
       .eq("product_id", bundle.product.id)
       .eq("placement_id", placementId);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    if (error) { toast.error(error.message); return; }
     reload();
   }
 
@@ -376,13 +254,6 @@ function DetailsTab({ bundle, canEdit, reload }: TabProps) {
           Save details
         </Button>
       )}
-
-      <ProductHeroImage
-        productId={bundle.product.id}
-        imagePath={bundle.product.image_path}
-        canEdit={canEdit}
-        reload={reload}
-      />
 
       <div>
         <h3 className="mb-2 text-sm font-medium">Categories</h3>
@@ -449,11 +320,6 @@ function ContentTab({ bundle, canEdit, reload }: TabProps) {
     body: t?.body ?? "",
     seo_title: t?.seo_title ?? "",
     seo_description: t?.seo_description ?? "",
-    how_it_works_title: t?.how_it_works_title ?? "",
-    how_it_works_body: t?.how_it_works_body ?? "",
-    what_includes_title: t?.what_includes_title ?? "",
-    what_includes_body: t?.what_includes_body ?? "",
-    start_cta_label: t?.start_cta_label ?? "",
   });
 
   async function save() {
@@ -465,27 +331,14 @@ function ContentTab({ bundle, canEdit, reload }: TabProps) {
       body: draft.body.trim() || null,
       seo_title: draft.seo_title.trim() || null,
       seo_description: draft.seo_description.trim() || null,
-      how_it_works_title: draft.how_it_works_title.trim() || null,
-      how_it_works_body: draft.how_it_works_body.trim() || null,
-      what_includes_title: draft.what_includes_title.trim() || null,
-      what_includes_body: draft.what_includes_body.trim() || null,
-      start_cta_label: draft.start_cta_label.trim() || null,
     };
     const { error } = t
       ? await supabase.from("product_translations").update(payload).eq("id", t.id)
       : await supabase.from("product_translations").insert(payload);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    await recordAdminAction(
-      "product_content_updated",
-      "product_translations",
-      bundle.product.internal_name,
-      {
-        language: MASTER_LANGUAGE,
-      },
-    );
+    if (error) { toast.error(error.message); return; }
+    await recordAdminAction("product_content_updated", "product_translations", bundle.product.internal_name, {
+      language: MASTER_LANGUAGE,
+    });
     toast.success("Content saved.");
     reload();
   }
@@ -519,52 +372,6 @@ function ContentTab({ bundle, canEdit, reload }: TabProps) {
           value={draft.body}
           disabled={!canEdit}
           onChange={(e) => setDraft({ ...draft, body: e.target.value })}
-        />
-      </div>
-      <h3 className="pt-2 text-sm font-medium">Before the configurator</h3>
-      <p className="text-xs text-muted-foreground">
-        Shown on the public intro screen after the visitor picks this experience.
-      </p>
-      <div>
-        <Label className="text-xs">How it works — title</Label>
-        <Input
-          value={draft.how_it_works_title}
-          disabled={!canEdit}
-          onChange={(e) => setDraft({ ...draft, how_it_works_title: e.target.value })}
-        />
-      </div>
-      <div>
-        <Label className="text-xs">How it works — text</Label>
-        <Textarea
-          rows={4}
-          value={draft.how_it_works_body}
-          disabled={!canEdit}
-          onChange={(e) => setDraft({ ...draft, how_it_works_body: e.target.value })}
-        />
-      </div>
-      <div>
-        <Label className="text-xs">What includes — title</Label>
-        <Input
-          value={draft.what_includes_title}
-          disabled={!canEdit}
-          onChange={(e) => setDraft({ ...draft, what_includes_title: e.target.value })}
-        />
-      </div>
-      <div>
-        <Label className="text-xs">What includes — text</Label>
-        <Textarea
-          rows={4}
-          value={draft.what_includes_body}
-          disabled={!canEdit}
-          onChange={(e) => setDraft({ ...draft, what_includes_body: e.target.value })}
-        />
-      </div>
-      <div>
-        <Label className="text-xs">Start button label</Label>
-        <Input
-          value={draft.start_cta_label}
-          disabled={!canEdit}
-          onChange={(e) => setDraft({ ...draft, start_cta_label: e.target.value })}
         />
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -657,9 +464,7 @@ function StatusTab({ bundle, canEdit, reload }: TabProps) {
               key={s}
               size="sm"
               variant={bundle.product.status === s ? "default" : "outline"}
-              disabled={
-                busy || bundle.product.status === s || (s === "active" && errors.length > 0)
-              }
+              disabled={busy || bundle.product.status === s || (s === "active" && errors.length > 0)}
               onClick={() => apply(s)}
             >
               {s}

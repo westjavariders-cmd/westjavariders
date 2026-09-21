@@ -141,68 +141,6 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
   };
 }
 
-export type PublicProductIntro = {
-  id: string;
-  title: string;
-  image_url: string | null;
-  how_it_works_title: string | null;
-  how_it_works_body: string | null;
-  what_includes_title: string | null;
-  what_includes_body: string | null;
-  start_cta_label: string | null;
-};
-
-const PRODUCT_MEDIA_SIGNED_SECONDS = 60 * 60;
-
-/** Customer-safe intro for the screen before the configurator. No pricing. */
-export async function publicProductIntro(productId: string): Promise<PublicProductIntro> {
-  const db = await admin();
-  const { data: product } = await db
-    .from("products")
-    .select("id, internal_name, voucher_name, status, kind, image_path")
-    .eq("id", productId)
-    .maybeSingle();
-  if (!product) fail("This product could not be found.");
-
-  const { data: pricing } = await db
-    .from("product_pricing")
-    .select("status")
-    .eq("product_id", productId)
-    .maybeSingle();
-  if (!isPurchasable(product.status, pricing?.status)) {
-    fail("This product is not available for booking right now.");
-  }
-
-  const { data: translation } = await db
-    .from("product_translations")
-    .select(
-      "title, how_it_works_title, how_it_works_body, what_includes_title, what_includes_body, start_cta_label",
-    )
-    .eq("product_id", productId)
-    .eq("language_code", MASTER_LANGUAGE)
-    .maybeSingle();
-
-  let image_url: string | null = null;
-  if (product.image_path) {
-    const { PRODUCT_MEDIA_BUCKET } = await import("@/lib/catalog");
-    const { data } = await db.storage
-      .from(PRODUCT_MEDIA_BUCKET)
-      .createSignedUrl(product.image_path, PRODUCT_MEDIA_SIGNED_SECONDS);
-    image_url = data?.signedUrl ?? null;
-  }
-
-  return {
-    id: product.id,
-    title: product.voucher_name?.trim() || translation?.title || product.internal_name,
-    image_url,
-    how_it_works_title: translation?.how_it_works_title ?? null,
-    how_it_works_body: translation?.how_it_works_body ?? null,
-    what_includes_title: translation?.what_includes_title ?? null,
-    what_includes_body: translation?.what_includes_body ?? null,
-    start_cta_label: translation?.start_cta_label ?? null,
-  };
-}
-
 export type PublicCartPackage = {
   id: string;
   /** Null on direct catalogue bookings, which have no product. */
