@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DoorCard } from "@/components/public/DoorCard";
 import { cn } from "@/lib/utils";
+import { HOME_SLUG } from "@/lib/website";
 import type { PublicBlock, PublicSection, PublicWebsitePage } from "@/lib/website.server";
 
 function Cta({ cta }: { cta: NonNullable<PublicBlock["cta"]> }) {
@@ -137,7 +138,7 @@ function CatalogueList({ items }: { items: PublicBlock["catalogue_items"] }) {
   );
 }
 
-function doorsLayoutClass(count: number) {
+function homeDoorsLayoutClass(count: number) {
   return cn(
     "mx-auto grid max-w-6xl gap-3 md:gap-4",
     "grid-cols-1",
@@ -149,13 +150,20 @@ function doorsLayoutClass(count: number) {
   );
 }
 
-function doorPlacementClass(index: number, count: number) {
+function internalDoorsLayoutClass(count: number) {
+  return cn(
+    "mx-auto grid w-full max-w-6xl grid-cols-1 gap-4 md:grid-cols-2 md:gap-5",
+    count >= 3 && "lg:grid-cols-3",
+  );
+}
+
+function homeDoorPlacementClass(index: number, count: number) {
   if (count === 5 && index === 0) return "md:col-span-2 lg:col-span-2 lg:row-span-2";
   if (count >= 7 && index === 0) return "lg:col-span-2";
   return undefined;
 }
 
-function isFeaturedDoor(index: number, count: number) {
+function isHomeFeaturedDoor(index: number, count: number) {
   return index === 0 && (count === 5 || count >= 7);
 }
 
@@ -191,9 +199,16 @@ function Block({ block }: { block: PublicBlock }) {
   );
 }
 
-function Section({ section }: { section: PublicSection }) {
+function Section({
+  section,
+  doorLayout,
+}: {
+  section: PublicSection;
+  doorLayout: "mosaic" | "selection";
+}) {
   const doors = section.blocks.filter((b) => b.kind === "door");
   const others = section.blocks.filter((b) => b.kind !== "door");
+  const isHomeMosaic = doorLayout === "mosaic";
 
   return (
     <section className="space-y-6">
@@ -209,10 +224,26 @@ function Section({ section }: { section: PublicSection }) {
       )}
 
       {doors.length > 0 && (
-        <div className={doorsLayoutClass(doors.length)}>
+        <div
+          className={
+            isHomeMosaic
+              ? homeDoorsLayoutClass(doors.length)
+              : internalDoorsLayoutClass(doors.length)
+          }
+        >
           {doors.map((block, index) => (
-            <div key={block.id} className={cn("h-full", doorPlacementClass(index, doors.length))}>
-              <DoorCard block={block} featured={isFeaturedDoor(index, doors.length)} />
+            <div
+              key={block.id}
+              className={cn(
+                "h-full",
+                isHomeMosaic ? homeDoorPlacementClass(index, doors.length) : undefined,
+              )}
+            >
+              <DoorCard
+                block={block}
+                layout={doorLayout}
+                featured={isHomeMosaic && isHomeFeaturedDoor(index, doors.length)}
+              />
             </div>
           ))}
         </div>
@@ -236,6 +267,8 @@ export function WebsiteRenderer({
   page: PublicWebsitePage;
   showHeading?: boolean;
 }) {
+  const doorLayout = page.slug === HOME_SLUG ? "mosaic" : "selection";
+
   return (
     <div className="space-y-14 py-2 sm:py-4">
       {showHeading && (page.title || page.subtitle) && (
@@ -247,7 +280,7 @@ export function WebsiteRenderer({
         </header>
       )}
       {page.sections.map((section) => (
-        <Section key={section.id} section={section} />
+        <Section key={section.id} section={section} doorLayout={doorLayout} />
       ))}
     </div>
   );

@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils";
 type DoorCardProps = {
   block: PublicBlock;
   featured?: boolean;
+  /** Home keeps the mosaic. Internal pages use equal selection tiles. */
+  layout?: "mosaic" | "selection";
 };
 
 function DoorMedia({
@@ -34,12 +36,16 @@ function DoorMedia({
   return <img src={media.url} alt={title ?? ""} className={frame} loading="lazy" />;
 }
 
-export function DoorCard({ block, featured = false }: DoorCardProps) {
+export function DoorCard({ block, featured = false, layout = "mosaic" }: DoorCardProps) {
+  const mosaicFeatured = layout === "mosaic" && featured;
+
   const inner = (
     <div
       className={cn(
-        "group relative isolate flex h-full min-h-[62vw] overflow-hidden bg-secondary md:min-h-[18rem]",
-        featured && "md:min-h-[22rem] lg:min-h-[32rem]",
+        "group relative isolate flex h-full min-h-[62vw] overflow-hidden bg-secondary",
+        layout === "mosaic" && "md:min-h-[18rem]",
+        mosaicFeatured && "md:min-h-[22rem] lg:min-h-[32rem]",
+        layout === "selection" && "md:min-h-[22rem] lg:min-h-[24rem]",
       )}
     >
       {block.media ? (
