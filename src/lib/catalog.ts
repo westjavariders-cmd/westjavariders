@@ -88,6 +88,9 @@ export type ProductBundle = {
 
 export const MASTER_LANGUAGE = "en";
 
+/** Product hero photo for the public intro screen. Not website CMS media. */
+export const PRODUCT_MEDIA_BUCKET = "product-media";
+
 /**
  * Activation check for one choice question, shared by the browser and the
  * server. A manual question needs at least one active option of its own; a

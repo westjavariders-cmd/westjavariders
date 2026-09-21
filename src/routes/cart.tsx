@@ -193,7 +193,7 @@ function CartPage() {
                     size="sm"
                     onClick={() =>
                       navigate({
-                        to: "/build-your-trip/$productId",
+                        to: "/build-your-trip/$productId/configure",
                         params: { productId: draft.product_id as string },
                       })
                     }
