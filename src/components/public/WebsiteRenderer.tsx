@@ -9,6 +9,8 @@ import { Link } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { DoorCard } from "@/components/public/DoorCard";
+import { cn } from "@/lib/utils";
 import type { PublicBlock, PublicSection, PublicWebsitePage } from "@/lib/website.server";
 
 function Cta({ cta }: { cta: NonNullable<PublicBlock["cta"]> }) {
@@ -135,6 +137,28 @@ function CatalogueList({ items }: { items: PublicBlock["catalogue_items"] }) {
   );
 }
 
+function doorsLayoutClass(count: number) {
+  return cn(
+    "mx-auto grid max-w-6xl gap-3 md:gap-4",
+    "grid-cols-1",
+    count === 2 && "md:grid-cols-2",
+    count === 3 && "md:grid-cols-2 lg:grid-cols-3",
+    count === 4 && "md:grid-cols-2",
+    count === 5 && "md:grid-cols-2 lg:grid-cols-4 lg:grid-rows-2",
+    count >= 6 && "md:grid-cols-2 lg:grid-cols-3",
+  );
+}
+
+function doorPlacementClass(index: number, count: number) {
+  if (count === 5 && index === 0) return "md:col-span-2 lg:col-span-2 lg:row-span-2";
+  if (count >= 7 && index === 0) return "lg:col-span-2";
+  return undefined;
+}
+
+function isFeaturedDoor(index: number, count: number) {
+  return index === 0 && (count === 5 || count >= 7);
+}
+
 function Block({ block }: { block: PublicBlock }) {
   const heading =
     block.kind === "hero" ? (
@@ -142,35 +166,6 @@ function Block({ block }: { block: PublicBlock }) {
     ) : (
       <h2 className="text-lg font-medium tracking-tight">{block.title}</h2>
     );
-
-  if (block.kind === "door") {
-    const inner = (
-      <Card className="h-full transition-colors hover:border-primary">
-        <CardContent className="p-4">
-          {block.media && <Media media={block.media} />}
-          {block.title && (
-            <h2 className="mt-3 text-base font-semibold tracking-tight">{block.title}</h2>
-          )}
-          {block.body && <p className="mt-1 text-sm text-muted-foreground">{block.body}</p>}
-          {block.cta?.label && (
-            <p className="mt-3 text-xs font-medium uppercase tracking-[0.14em]">
-              {block.cta.label}
-            </p>
-          )}
-        </CardContent>
-      </Card>
-    );
-    if (!block.cta) return inner;
-    return block.cta.external ? (
-      <a href={block.cta.href} target="_blank" rel="noopener noreferrer" className="block">
-        {inner}
-      </a>
-    ) : (
-      <a href={block.cta.href} className="block">
-        {inner}
-      </a>
-    );
-  }
 
   return (
     <div className="space-y-3">
@@ -214,9 +209,11 @@ function Section({ section }: { section: PublicSection }) {
       )}
 
       {doors.length > 0 && (
-        <div className="mx-auto grid max-w-6xl gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {doors.map((block) => (
-            <Block key={block.id} block={block} />
+        <div className={doorsLayoutClass(doors.length)}>
+          {doors.map((block, index) => (
+            <div key={block.id} className={cn("h-full", doorPlacementClass(index, doors.length))}>
+              <DoorCard block={block} featured={isFeaturedDoor(index, doors.length)} />
+            </div>
           ))}
         </div>
       )}
