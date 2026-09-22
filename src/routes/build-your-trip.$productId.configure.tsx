@@ -59,6 +59,7 @@ function ConfigurePage() {
       const created = await start({ data: { productId } });
       return { draft: created.pkg, otherDraft: null };
     },
+    enabled: product.isSuccess,
     retry: false,
   });
 
@@ -77,7 +78,7 @@ function ConfigurePage() {
 
   if (product.isError) {
     return (
-      <PublicPage>
+      <PublicPage width="wide">
         <p className="text-sm text-muted-foreground">
           {product.error instanceof Error
             ? product.error.message
@@ -92,7 +93,7 @@ function ConfigurePage() {
 
   if (product.isPending || session.isPending) {
     return (
-      <PublicPage>
+      <PublicPage width="wide">
         <p className="text-sm text-muted-foreground">Loading…</p>
       </PublicPage>
     );
@@ -101,7 +102,7 @@ function ConfigurePage() {
   const other = session.data?.otherDraft;
 
   return (
-    <PublicPage>
+    <PublicPage width="wide">
       <Link
         to="/build-your-trip/$productId"
         params={{ productId }}
@@ -109,12 +110,8 @@ function ConfigurePage() {
       >
         ← Back
       </Link>
-      <h1 className="mt-3 text-2xl font-semibold tracking-tight">{product.data?.product.title}</h1>
-      {product.data?.product.summary && (
-        <p className="mt-2 text-sm text-muted-foreground">{product.data.product.summary}</p>
-      )}
 
-      <div className="mt-6">
+      <div className="mt-8">
         {other ? (
           <Card>
             <CardContent className="space-y-3 p-4">
@@ -154,6 +151,9 @@ function ConfigurePage() {
               savedAnswers={(session.data.draft.answers ?? null) as PreviewValues | null}
               savedPromo={session.data.draft.promo_code ?? null}
               catalogue={product.data?.catalogue ?? {}}
+              productTitle={product.data!.product.title}
+              productSummary={product.data!.product.summary}
+              imageUrl={product.data!.product.image_url}
             />
           )
         )}

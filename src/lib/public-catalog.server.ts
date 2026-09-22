@@ -14,7 +14,7 @@ import {
 import { resolveCatalogues } from "@/lib/catalogue-bridge.server";
 import { isPurchasable } from "@/lib/pricing";
 import { fail, listCart } from "@/lib/cart.server";
-import type { AnswerSummaryLine } from "@/lib/public-catalog";
+import { getPublicProductTitle, type AnswerSummaryLine } from "@/lib/public-catalog";
 import { orderedAnswerSummary } from "@/lib/answer-summary.server";
 
 async function admin() {
@@ -76,7 +76,7 @@ export async function listPurchasableProducts(): Promise<PublicProduct[]> {
       .filter((p: any) => isPurchasable(p.status, pricingStatus.get(p.id)))
       .map(async (p: any) => ({
         id: p.id,
-        title: p.voucher_name?.trim() || translation.get(p.id)?.title || p.internal_name,
+        title: getPublicProductTitle(translation.get(p.id)?.title, p.internal_name),
         summary: translation.get(p.id)?.summary ?? null,
         categories: (links.data ?? [])
           .filter((l: any) => l.product_id === p.id)
@@ -152,7 +152,7 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
     catalogue,
     product: {
       id: product.id,
-      title: (product as any).voucher_name?.trim() || translation.data?.title || product.internal_name,
+      title: getPublicProductTitle(translation.data?.title, product.internal_name),
       summary: translation.data?.summary ?? null,
       body: translation.data?.body ?? null,
       image_url,
@@ -184,6 +184,8 @@ export type PublicCartPackage = {
   /** Null on direct catalogue bookings, which have no product. */
   product_id: string | null;
   product_title: string;
+  /** Signed public URL; null when the product has no image. */
+  image_url: string | null;
   status: string;
   total_idr: number;
   subtotal_idr: number;
@@ -223,7 +225,7 @@ export async function publicCart(token?: string): Promise<PublicCartView> {
     new Set(rows.map((r) => r.product_id).filter((id): id is string => Boolean(id))),
   );
   const [products, translations, fields] = await Promise.all([
-    db.from("products").select("id, internal_name, voucher_name").in("id", productIds),
+    db.from("products").select("id, internal_name, voucher_name, image_path").in("id", productIds),
     db
       .from("product_translations")
       .select("product_id, title")
@@ -245,6 +247,12 @@ export async function publicCart(token?: string): Promise<PublicCartView> {
     if (display) titles.set(p.id, display);
   }
 
+  const imageUrls = new Map<string, string | null>();
+  await Promise.all(
+    (products.data ?? []).map(async (p: { id: string; image_path?: string | null }) => {
+      imageUrls.set(p.id, await signedProductImage(db, p.image_path));
+    }),
+  );
 
   const view = async (row: any): Promise<PublicCartPackage> => ({
     id: row.id,
@@ -253,6 +261,7 @@ export async function publicCart(token?: string): Promise<PublicCartView> {
       row.line_kind === "catalogue_item"
         ? (row.item_title ?? "Item")
         : (titles.get(row.product_id) ?? "Package"),
+    image_url: row.product_id ? (imageUrls.get(row.product_id) ?? null) : null,
     status: row.status,
     total_idr: Number(row.total_idr),
     subtotal_idr: Number(row.subtotal_idr),

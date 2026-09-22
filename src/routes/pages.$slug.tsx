@@ -14,15 +14,15 @@ export const Route = createFileRoute("/pages/$slug")({
     if (!loaderData) {
       return {
         meta: [
-          { title: "Page unavailable | Cimaja Boardriders" },
+          { title: "Page unavailable | West Java Riders" },
           { name: "robots", content: "noindex" },
         ],
       };
     }
-    const title = `${loaderData.page.title ?? "Cimaja Boardriders"} | Cimaja Boardriders`;
+    const title = `${loaderData.page.title ?? "West Java Riders"} | West Java Riders`;
     const description =
       loaderData.page.subtitle ??
-      "Surf, travel and local experiences in Cimaja, West Java, Indonesia.";
+      "West Java Riders — surf, travel and local experiences in Cimaja, West Java, Indonesia.";
     return {
       meta: [
         { title },

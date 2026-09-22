@@ -5,8 +5,11 @@ import {
   stripInactiveAnswers,
   visibleStepFields,
   visibleSteps,
+  type Field,
+  type FieldEffect,
   type ProductBundle,
 } from "@/lib/catalog";
+import { isMissingRequiredAnswer, missingRequiredFields } from "@/lib/configurator-step-validation";
 
 const step = (id: string, order: number) => ({
   id,
@@ -74,8 +77,22 @@ function bundle(): ProductBundle {
       field({ id: "f4", step: "s4", n: "notes", t: "text" }),
     ],
     options: [
-      { id: "o1", field_id: "f1", internal_value: "YES", is_active: true, is_default: false, display_order: 0 },
-      { id: "o2", field_id: "f1", internal_value: "NO", is_active: true, is_default: false, display_order: 1 },
+      {
+        id: "o1",
+        field_id: "f1",
+        internal_value: "YES",
+        is_active: true,
+        is_default: false,
+        display_order: 0,
+      },
+      {
+        id: "o2",
+        field_id: "f1",
+        internal_value: "NO",
+        is_active: true,
+        is_default: false,
+        display_order: 1,
+      },
     ],
     dependencies: [
       dep({ id: "d1", src: "f1", op: "is_false", action: "hide", tgt: "f2" }),
@@ -129,5 +146,67 @@ describe("configurator navigation skips hidden questions", () => {
     expect(
       stripInactiveAnswers(bundle(), { accommodation: "NO", room: "r1", nights: 3 } as never),
     ).toEqual({ accommodation: "NO", room: "", nights: "" });
+  });
+});
+
+function effect(over: Partial<FieldEffect> = {}): FieldEffect {
+  return {
+    hidden: false,
+    forcedVisible: false,
+    required: true,
+    disabled: false,
+    min: null,
+    max: null,
+    forcedValue: null,
+    reset: false,
+    ...over,
+  };
+}
+
+describe("configurator step required answers", () => {
+  it("blocks Next when a visible required field is empty", () => {
+    const f = field({ id: "f2", step: "s2", n: "room", req: true }) as Field;
+    expect(isMissingRequiredAnswer(f, effect(), {})).toBe(true);
+  });
+
+  it("allows Next once the required field has a value", () => {
+    const f = field({ id: "f2", step: "s2", n: "room", req: true }) as Field;
+    expect(isMissingRequiredAnswer(f, effect(), { room: "r1" })).toBe(false);
+  });
+
+  it("does not block on optional empty fields in the same step", () => {
+    const required = field({ id: "f2", step: "s1", n: "room", req: true }) as Field;
+    const optional = field({ id: "f4", step: "s1", n: "notes", t: "text", req: false }) as Field;
+    const effects = { f2: effect(), f4: effect({ required: false }) };
+    expect(missingRequiredFields([required, optional], effects, {})).toEqual([required]);
+  });
+
+  it("treats numeric 0 as answered", () => {
+    const f = field({ id: "f3", step: "s3", n: "nights", t: "quantity", req: true }) as Field;
+    expect(isMissingRequiredAnswer(f, effect(), { nights: 0 })).toBe(false);
+    expect(isMissingRequiredAnswer(f, effect(), { nights: "0" })).toBe(false);
+  });
+
+  it("treats explicit boolean false as answered", () => {
+    const f = field({ id: "fb", step: "s1", n: "extra", t: "boolean", req: true }) as Field;
+    expect(isMissingRequiredAnswer(f, effect(), { extra: false })).toBe(false);
+    expect(isMissingRequiredAnswer(f, effect(), { extra: true })).toBe(false);
+    expect(isMissingRequiredAnswer(f, effect(), {})).toBe(true);
+  });
+
+  it("does not block Next for a hidden required field", () => {
+    const b = bundle();
+    const values = { accommodation: "NO" } as never;
+    const evaluated = evaluateDependencies(b, values);
+    const hidden = b.fields.find((f) => f.id === "f2")!;
+    expect(isMissingRequiredAnswer(hidden, evaluated.fields["f2"], values)).toBe(false);
+    expect(
+      missingRequiredFields(visibleStepFields(b, "s2", evaluated), evaluated.fields, values),
+    ).toEqual([]);
+  });
+
+  it("never requires date_range, even when the field is marked required", () => {
+    const f = field({ id: "fd", step: "s1", n: "when", t: "date_range", req: true }) as Field;
+    expect(isMissingRequiredAnswer(f, effect({ required: true }), {})).toBe(false);
   });
 });

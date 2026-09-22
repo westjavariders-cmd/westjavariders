@@ -182,7 +182,7 @@
 @keyframes cbr-step-next {
   from {
     opacity: 0;
-    transform: translateX(24px);
+    transform: translateX(8px);
   }
   to {
     opacity: 1;
@@ -193,7 +193,7 @@
 @keyframes cbr-step-prev {
   from {
     opacity: 0;
-    transform: translateX(-24px);
+    transform: translateX(-8px);
   }
   to {
     opacity: 1;
@@ -206,11 +206,11 @@
 }
 
 .cbr-step-next {
-  animation: cbr-step-next 0.3s ease-out both;
+  animation: cbr-step-next 0.2s ease-out both;
 }
 
 .cbr-step-prev {
-  animation: cbr-step-prev 0.3s ease-out both;
+  animation: cbr-step-prev 0.2s ease-out both;
 }
 
 @keyframes cbr-nav-overlay {

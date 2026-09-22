@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatIdr, payableTotal, summarizeAnswers } from "@/lib/public-catalog";
+import { formatIdr, getPublicProductTitle, payableTotal, summarizeAnswers } from "@/lib/public-catalog";
 import { initialValues } from "@/components/public/ConfiguratorForm";
 import type { ProductBundle } from "@/lib/catalog";
 
@@ -40,6 +40,17 @@ const option = (over: Partial<any> = {}): any => ({
 describe("public money display", () => {
   it("formats whole rupiah", () => {
     expect(formatIdr(1500000)).toBe("Rp 1,500,000");
+  });
+});
+
+describe("getPublicProductTitle", () => {
+  it("uses the editorial translation, not voucher_name", () => {
+    expect(getPublicProductTitle("Cimaja Surf Trip", "cimaja-surf")).toBe("Cimaja Surf Trip");
+  });
+
+  it("falls back to internal_name when the translation title is empty", () => {
+    expect(getPublicProductTitle("", "cimaja-surf")).toBe("cimaja-surf");
+    expect(getPublicProductTitle("   ", "cimaja-surf")).toBe("cimaja-surf");
   });
 });
 
