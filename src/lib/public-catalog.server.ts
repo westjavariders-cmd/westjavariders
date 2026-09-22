@@ -5,7 +5,7 @@
  * every read here is performed server-side and stripped of internal data
  * (supplier costs, internal notes, margins are never returned).
  */
-import { MASTER_LANGUAGE, type ProductBundle } from "@/lib/catalog";
+import { MASTER_LANGUAGE, PRODUCT_MEDIA_BUCKET, type ProductBundle } from "@/lib/catalog";
 import {
   fieldCatalogueRefs,
   type CatalogueItem,
@@ -24,6 +24,19 @@ async function admin() {
 
 import { fxContext, displayAmount } from "@/lib/fx.server";
 import { toPublicFx, type PublicFxContext } from "@/lib/fx.functions";
+
+const SIGNED_URL_SECONDS = 60 * 60;
+
+async function signedProductImage(
+  db: any,
+  path: string | null | undefined,
+): Promise<string | null> {
+  if (!path) return null;
+  const { data } = await db.storage
+    .from(PRODUCT_MEDIA_BUCKET)
+    .createSignedUrl(path, SIGNED_URL_SECONDS);
+  return data?.signedUrl ?? null;
+}
 
 export type PublicProduct = {
   id: string;
@@ -68,7 +81,13 @@ export async function listPurchasableProducts(): Promise<PublicProduct[]> {
 }
 
 export type PublicBundle = {
-  product: { id: string; title: string; summary: string | null; body: string | null };
+  product: {
+    id: string;
+    title: string;
+    summary: string | null;
+    body: string | null;
+    image_url: string | null;
+  };
   bundle: ProductBundle;
   /** Active, customer-safe catalogue items per catalogue type used by the fields. */
   catalogue: CatalogueItemsByKey;
@@ -79,7 +98,7 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
   const db = await admin();
   const { data: product } = await db
     .from("products")
-    .select("id, internal_name, voucher_name, status, kind")
+    .select("id, internal_name, voucher_name, status, kind, image_path")
     .eq("id", productId)
     .maybeSingle();
   if (!product) fail("This product could not be found.");
@@ -117,6 +136,11 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
     fieldCatalogueRefs((fields.data ?? []).filter((f: any) => f.is_active) as never),
   );
 
+  const image_url = await signedProductImage(
+    db,
+    (product as { image_path?: string | null }).image_path,
+  );
+
   return {
     catalogue,
     product: {
@@ -124,9 +148,16 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
       title: (product as any).voucher_name?.trim() || translation.data?.title || product.internal_name,
       summary: translation.data?.summary ?? null,
       body: translation.data?.body ?? null,
+      image_url,
     },
     bundle: {
-      product,
+      product: {
+        id: product.id,
+        internal_name: product.internal_name,
+        voucher_name: (product as { voucher_name?: string | null }).voucher_name ?? null,
+        status: product.status,
+        kind: product.kind,
+      } as ProductBundle["product"],
       translation: null,
       categoryIds: [],
       placements: [],

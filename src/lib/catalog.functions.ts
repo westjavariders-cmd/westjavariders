@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { PRODUCT_MEDIA_BUCKET } from "@/lib/catalog";
 
 /**
  * Catalog server operations that must be atomic or validated server-side:
@@ -137,7 +138,7 @@ export const deleteProduct = createServerFn({ method: "POST" })
 
     const { data: product, error } = await supabase
       .from("products")
-      .select("internal_name")
+      .select("internal_name, image_path")
       .eq("id", data.productId)
       .maybeSingle();
     if (error || !product) fail("This product could not be found.");
@@ -156,7 +157,68 @@ export const deleteProduct = createServerFn({ method: "POST" })
       .eq("id", data.productId);
     if (delError) fail(SAFE_ERROR);
 
+    const previous = product.image_path as string | null | undefined;
+    if (previous) {
+      const stillUsed = await supabase
+        .from("products")
+        .select("id", { count: "exact", head: true })
+        .eq("image_path", previous);
+      if ((stillUsed.count ?? 0) === 0) {
+        await supabase.storage.from(PRODUCT_MEDIA_BUCKET).remove([previous]);
+      }
+    }
+
     await audit(supabase, userId, "product_deleted", data.productId, product.internal_name, {});
+    return { ok: true };
+  });
+
+/** Records or clears the optional package hero image. */
+export const setProductImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        productId: z.string().uuid(),
+        image_path: z.string().min(1).max(500).nullable(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = ctx(context);
+    await assertAdmin(supabase);
+
+    const { data: row } = await supabase
+      .from("products")
+      .select("image_path, internal_name")
+      .eq("id", data.productId)
+      .maybeSingle();
+    if (!row) fail("This product could not be found.");
+
+    const { error } = await supabase
+      .from("products")
+      .update({ image_path: data.image_path })
+      .eq("id", data.productId);
+    if (error) fail(SAFE_ERROR);
+
+    const previous = row.image_path as string | null | undefined;
+    if (previous && previous !== data.image_path) {
+      const stillUsed = await supabase
+        .from("products")
+        .select("id", { count: "exact", head: true })
+        .eq("image_path", previous);
+      if ((stillUsed.count ?? 0) === 0) {
+        await supabase.storage.from(PRODUCT_MEDIA_BUCKET).remove([previous]);
+      }
+    }
+
+    await audit(
+      supabase,
+      userId,
+      data.image_path ? "product_image_set" : "product_image_removed",
+      data.productId,
+      row.internal_name,
+      {},
+    );
     return { ok: true };
   });
 

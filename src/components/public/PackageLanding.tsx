@@ -7,6 +7,7 @@ type PackageLandingProps = {
   title: string;
   summary: string | null;
   body: string | null;
+  imageUrl: string | null;
 };
 
 function ConfigureCta({ productId }: { productId: string }) {
@@ -23,7 +24,7 @@ function ConfigureCta({ productId }: { productId: string }) {
 }
 
 /** Informational screen before the configurator. Does not start a draft. */
-export function PackageLanding({ productId, title, summary, body }: PackageLandingProps) {
+export function PackageLanding({ productId, title, summary, body, imageUrl }: PackageLandingProps) {
   return (
     <div className="mx-auto max-w-2xl">
       <Link
@@ -33,7 +34,17 @@ export function PackageLanding({ productId, title, summary, body }: PackageLandi
         ← Back
       </Link>
 
-      <header className="mt-10 space-y-5 sm:mt-14">
+      {imageUrl && (
+        <div className="mt-8 overflow-hidden rounded-lg sm:mt-10">
+          <img
+            src={imageUrl}
+            alt={title}
+            className="aspect-[4/5] w-full object-cover sm:aspect-[16/10]"
+          />
+        </div>
+      )}
+
+      <header className={`${imageUrl ? "mt-8" : "mt-10 sm:mt-14"} space-y-5`}>
         <h1 className="text-balance text-3xl font-semibold leading-tight tracking-tight sm:text-4xl lg:text-5xl">
           {title}
         </h1>

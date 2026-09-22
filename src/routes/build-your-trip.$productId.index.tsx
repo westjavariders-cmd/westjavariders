@@ -34,7 +34,13 @@ function PackageLandingPage() {
 
   return (
     <PublicPage>
-      <PackageLanding productId={p.id} title={p.title} summary={p.summary} body={p.body} />
+      <PackageLanding
+        productId={p.id}
+        title={p.title}
+        summary={p.summary}
+        body={p.body}
+        imageUrl={p.image_url}
+      />
     </PublicPage>
   );
 }
