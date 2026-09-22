@@ -1869,7 +1869,6 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          image_path: string | null
           internal_name: string
           internal_ref: string | null
           kind: Database["public"]["Enums"]["product_kind"]
@@ -1881,7 +1880,6 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          image_path?: string | null
           internal_name: string
           internal_ref?: string | null
           kind: Database["public"]["Enums"]["product_kind"]
@@ -1893,7 +1891,6 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          image_path?: string | null
           internal_name?: string
           internal_ref?: string | null
           kind?: Database["public"]["Enums"]["product_kind"]
