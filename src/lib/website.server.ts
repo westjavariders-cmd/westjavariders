@@ -5,6 +5,7 @@
  * here, stripped to what is safe to publish, and joined to the existing
  * product system for product references. No pricing happens in this file.
  */
+import { PRODUCT_MEDIA_BUCKET } from "@/lib/catalog";
 import { isPurchasable } from "@/lib/pricing";
 import {
   WEBSITE_MEDIA_BUCKET,
@@ -29,6 +30,17 @@ async function signedMedia(db: any, path: string | null): Promise<string | null>
   return data?.signedUrl ?? null;
 }
 
+async function signedProductImage(
+  db: any,
+  path: string | null | undefined,
+): Promise<string | null> {
+  if (!path) return null;
+  const { data } = await db.storage
+    .from(PRODUCT_MEDIA_BUCKET)
+    .createSignedUrl(path, SIGNED_URL_SECONDS);
+  return data?.signedUrl ?? null;
+}
+
 /** The configured default language; content falls back to it. */
 export async function defaultLanguage(db: any): Promise<string> {
   const { data } = await db
@@ -46,6 +58,7 @@ export type PublicBlockProduct = {
   summary: string | null;
   href: string;
   bookable: boolean;
+  image_url: string | null;
 };
 
 export type PublicBlockCatalogueItem = {
@@ -153,7 +166,7 @@ async function resolveProducts(db: any, productIds: string[]) {
 
   const language = await defaultLanguage(db);
   const [products, pricing, translations] = await Promise.all([
-    db.from("products").select("id, internal_name, status").in("id", productIds),
+    db.from("products").select("id, internal_name, status, image_path").in("id", productIds),
     db.from("product_pricing").select("product_id, status").in("product_id", productIds),
     db
       .from("product_translations")
@@ -169,8 +182,12 @@ async function resolveProducts(db: any, productIds: string[]) {
     (translations.data ?? []).map((t: any) => [t.product_id, t]),
   );
 
-  for (const product of products.data ?? []) {
-    if (!isPubliclyListable(product.status)) continue;
+  const listed = (products.data ?? []).filter((p: any) => isPubliclyListable(p.status));
+  const images = await Promise.all(
+    listed.map((p: any) => signedProductImage(db, p.image_path as string | null | undefined)),
+  );
+
+  listed.forEach((product: any, index: number) => {
     const bookable = isPurchasable(product.status, pricingStatus.get(product.id));
     resolved.set(product.id, {
       id: product.id,
@@ -178,8 +195,9 @@ async function resolveProducts(db: any, productIds: string[]) {
       summary: translation.get(product.id)?.summary ?? null,
       href: `/build-your-trip/${product.id}`,
       bookable,
+      image_url: images[index] ?? null,
     });
-  }
+  });
   return resolved;
 }
 

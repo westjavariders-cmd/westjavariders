@@ -1,12 +1,12 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
 import { PublicPage } from "@/components/public/SiteHeader";
+import { ProductCard } from "@/components/public/ProductCard";
 import { WebsiteRenderer } from "@/components/public/WebsiteRenderer";
 import { listPublicProducts } from "@/lib/public.functions";
 import { getWebsitePage } from "@/lib/website.functions";
-import { Card, CardContent } from "@/components/ui/card";
 
 export const Route = createFileRoute("/build-your-trip/")({
   head: () => ({
@@ -55,7 +55,7 @@ function BuildYourTrip() {
       {hasConfigured && page && <WebsiteRenderer page={page} showHeading={false} />}
 
       {!hasConfigured && (
-        <div className="mx-auto mt-6 max-w-3xl space-y-3">
+        <div className="mx-auto mt-6 w-full max-w-6xl">
           {(products.isPending || configured.isPending) && (
             <p className="text-sm text-muted-foreground">Loading…</p>
           )}
@@ -64,26 +64,20 @@ function BuildYourTrip() {
               Nothing is open for booking right now. Please check back soon.
             </p>
           )}
-          {products.data?.products.map((p) => (
-            <Link
-              key={p.id}
-              to="/build-your-trip/$productId"
-              params={{ productId: p.id }}
-              className="block"
-            >
-              <Card className="transition-colors hover:border-primary">
-                <CardContent className="p-4">
-                  {p.categories.length > 0 && (
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                      {p.categories.join(" · ")}
-                    </p>
-                  )}
-                  <h2 className="mt-1 text-base font-medium">{p.title}</h2>
-                  {p.summary && <p className="mt-1 text-sm text-muted-foreground">{p.summary}</p>}
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+          {products.data?.products && products.data.products.length > 0 && (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-3">
+              {products.data.products.map((p) => (
+                <ProductCard
+                  key={p.id}
+                  productId={p.id}
+                  title={p.title}
+                  summary={p.summary}
+                  imageUrl={p.image_url}
+                  bookable
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </PublicPage>

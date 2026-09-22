@@ -10,6 +10,7 @@ import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DoorCard } from "@/components/public/DoorCard";
+import { ProductCard } from "@/components/public/ProductCard";
 import { cn } from "@/lib/utils";
 import { HOME_SLUG } from "@/lib/website";
 import type { PublicBlock, PublicSection, PublicWebsitePage } from "@/lib/website.server";
@@ -56,38 +57,17 @@ function Media({ media }: { media: NonNullable<PublicBlock["media"]> }) {
 function ProductList({ products }: { products: PublicBlock["products"] }) {
   if (products.length === 0) return null;
   return (
-    <div className="mt-4 space-y-3">
-      {products.map((product) =>
-        product.bookable ? (
-          <Link
-            key={product.id}
-            to="/build-your-trip/$productId"
-            params={{ productId: product.id }}
-            className="block"
-          >
-            <Card className="transition-colors hover:border-primary">
-              <CardContent className="p-4">
-                <h3 className="text-base font-medium">{product.title}</h3>
-                {product.summary && (
-                  <p className="mt-1 text-sm text-muted-foreground">{product.summary}</p>
-                )}
-              </CardContent>
-            </Card>
-          </Link>
-        ) : (
-          <Card key={product.id} className="opacity-70">
-            <CardContent className="p-4">
-              <h3 className="text-base font-medium">{product.title}</h3>
-              {product.summary && (
-                <p className="mt-1 text-sm text-muted-foreground">{product.summary}</p>
-              )}
-              <p className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">
-                Not available for booking right now
-              </p>
-            </CardContent>
-          </Card>
-        ),
-      )}
+    <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-3">
+      {products.map((product) => (
+        <ProductCard
+          key={product.id}
+          productId={product.id}
+          title={product.title}
+          summary={product.summary}
+          imageUrl={product.image_url}
+          bookable={product.bookable}
+        />
+      ))}
     </div>
   );
 }
@@ -250,10 +230,18 @@ function Section({
       )}
 
       {others.length > 0 && (
-        <div className="mx-auto max-w-3xl space-y-8">
-          {others.map((block) => (
-            <Block key={block.id} block={block} />
-          ))}
+        <div className="space-y-8">
+          {others.map((block) => {
+            const wide = block.kind === "product_selection" || block.kind === "people";
+            return (
+              <div
+                key={block.id}
+                className={wide ? "mx-auto w-full max-w-6xl" : "mx-auto max-w-3xl"}
+              >
+                <Block block={block} />
+              </div>
+            );
+          })}
         </div>
       )}
     </section>

@@ -43,13 +43,17 @@ export type PublicProduct = {
   title: string;
   summary: string | null;
   categories: string[];
+  image_url: string | null;
 };
 
 /** Products that are commercially purchasable (active product + active pricing). */
 export async function listPurchasableProducts(): Promise<PublicProduct[]> {
   const db = await admin();
   const [products, pricing, translations, links, categories] = await Promise.all([
-    db.from("products").select("id, internal_name, voucher_name, status, kind").order("sort_order"),
+    db
+      .from("products")
+      .select("id, internal_name, voucher_name, status, kind, image_path")
+      .order("sort_order"),
     db.from("product_pricing").select("product_id, status"),
     db
       .from("product_translations")
@@ -67,17 +71,20 @@ export async function listPurchasableProducts(): Promise<PublicProduct[]> {
     (categories.data ?? []).filter((c: any) => c.is_active).map((c: any) => [c.id, c.name]),
   );
 
-  return (products.data ?? [])
-    .filter((p: any) => isPurchasable(p.status, pricingStatus.get(p.id)))
-    .map((p: any) => ({
-      id: p.id,
-      title: p.voucher_name?.trim() || translation.get(p.id)?.title || p.internal_name,
-      summary: translation.get(p.id)?.summary ?? null,
-      categories: (links.data ?? [])
-        .filter((l: any) => l.product_id === p.id)
-        .map((l: any) => categoryName.get(l.category_id))
-        .filter((n: unknown): n is string => typeof n === "string"),
-    }));
+  return Promise.all(
+    (products.data ?? [])
+      .filter((p: any) => isPurchasable(p.status, pricingStatus.get(p.id)))
+      .map(async (p: any) => ({
+        id: p.id,
+        title: p.voucher_name?.trim() || translation.get(p.id)?.title || p.internal_name,
+        summary: translation.get(p.id)?.summary ?? null,
+        categories: (links.data ?? [])
+          .filter((l: any) => l.product_id === p.id)
+          .map((l: any) => categoryName.get(l.category_id))
+          .filter((n: unknown): n is string => typeof n === "string"),
+        image_url: await signedProductImage(db, p.image_path),
+      })),
+  );
 }
 
 export type PublicBundle = {
