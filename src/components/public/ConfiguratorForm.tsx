@@ -31,10 +31,10 @@ import { completePackage, savePackageConfiguration } from "@/lib/cart.functions"
 import { PUBLIC_CART_KEY, usePublicCart } from "@/components/public/SiteHeader";
 import { ConfiguratorOptionList } from "@/components/public/ConfiguratorOptionList";
 import { ConfiguratorSummary } from "@/components/public/ConfiguratorSummary";
-import { ConfiguratorYesNo } from "@/components/public/ConfiguratorYesNo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
 
 type Quote = {
@@ -597,13 +597,12 @@ export function ConfiguratorForm({
                     )}
 
                     {f.field_type === "boolean" && (
-                      <ConfiguratorYesNo
-                        value={values[f.variable_name] === true}
+                      <Switch
+                        checked={values[f.variable_name] === true}
                         disabled={e.disabled}
-                        error={!!errorMessage}
-                        errorId={errorMessage ? errorId : undefined}
-                        labelledBy={`${f.id}-label`}
-                        onChange={(v) => set(f, v)}
+                        aria-invalid={errorMessage ? true : undefined}
+                        aria-describedby={errorMessage ? errorId : undefined}
+                        onCheckedChange={(v) => set(f, v)}
                       />
                     )}
                     {errorMessage ? (
@@ -620,10 +619,10 @@ export function ConfiguratorForm({
               )}
             </div>
 
-            <div className="flex items-stretch justify-between gap-3 border-t border-border pt-5 sm:gap-4">
+            <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
               <Button
                 variant="outline"
-                className="h-auto min-h-12 min-w-[7rem] px-5 text-sm font-medium"
+                className="min-h-11 min-w-[5.5rem]"
                 disabled={stepIndex === 0}
                 onClick={() => {
                   setFieldErrors({});
@@ -634,7 +633,7 @@ export function ConfiguratorForm({
                 Back
               </Button>
               <Button
-                className="h-auto min-h-12 min-w-[8.5rem] flex-1 px-6 text-sm font-semibold sm:flex-none sm:px-8"
+                className="min-h-11 min-w-[5.5rem]"
                 disabled={stepIndex >= activeSteps.length - 1}
                 onClick={() => {
                   const missing = missingRequiredFields(stepFields, evaluated.fields, values);
@@ -661,9 +660,6 @@ export function ConfiguratorForm({
                 }}
               >
                 Next
-                <span aria-hidden="true" className="ml-1">
-                  →
-                </span>
               </Button>
             </div>
           </section>
