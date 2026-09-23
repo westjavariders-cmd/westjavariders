@@ -241,6 +241,28 @@
   animation: cbr-nav-drawer 0.28s ease-out both;
 }
 
+/* Editorial CTA for the public showcase (doors, cards, package landing, CMS). */
+.public-theme .cbr-editorial-cta {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  transition: color 150ms ease-out;
+}
+
+.public-theme .cbr-editorial-cta:hover {
+  color: var(--muted-foreground);
+}
+
+.public-theme .cbr-editorial-cta:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cbr-page-enter,
   .cbr-step-next,

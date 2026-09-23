@@ -11,13 +11,13 @@ import { getWebsitePage } from "@/lib/website.functions";
 export const Route = createFileRoute("/build-your-trip/")({
   head: () => ({
     meta: [
-      { title: "Build Your Trip | Cimaja Boardriders" },
+      { title: "Build Your Trip | West Java Riders" },
       {
         name: "description",
         content:
           "Choose a surf, travel or local experience in Cimaja, West Java, configure it your way and see your price instantly.",
       },
-      { property: "og:title", content: "Build Your Trip — Cimaja Boardriders" },
+      { property: "og:title", content: "Build Your Trip — West Java Riders" },
       {
         property: "og:description",
         content:
@@ -44,18 +44,24 @@ function BuildYourTrip() {
 
   return (
     <PublicPage width="full">
-      <h1 className="mx-auto max-w-3xl text-2xl font-semibold tracking-tight">
-        {page?.title ?? "Build your trip"}
-      </h1>
-      <p className="mx-auto mt-2 max-w-3xl text-sm text-muted-foreground">
-        {page?.subtitle ??
-          "Pick an experience, choose your options and see your price straight away."}
-      </p>
+      <header className="mx-auto max-w-6xl">
+        <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl">
+          {page?.title ?? "Build your trip"}
+        </h1>
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+          {page?.subtitle ??
+            "Pick an experience, choose your options and see your price straight away."}
+        </p>
+      </header>
 
-      {hasConfigured && page && <WebsiteRenderer page={page} showHeading={false} />}
+      {hasConfigured && page && (
+        <div className="mt-8 sm:mt-10">
+          <WebsiteRenderer page={page} showHeading={false} />
+        </div>
+      )}
 
       {!hasConfigured && (
-        <div className="mx-auto mt-6 w-full max-w-6xl">
+        <div className="mx-auto mt-8 w-full max-w-6xl sm:mt-10">
           {(products.isPending || configured.isPending) && (
             <p className="text-sm text-muted-foreground">Loading…</p>
           )}
@@ -65,7 +71,7 @@ function BuildYourTrip() {
             </p>
           )}
           {products.data?.products && products.data.products.length > 0 && (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3">
               {products.data.products.map((p) => (
                 <ProductCard
                   key={p.id}

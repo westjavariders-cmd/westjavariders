@@ -12,7 +12,7 @@ export const Route = createFileRoute("/build-your-trip/$productId/")({
     const title = loaderData?.product.title;
     return {
       meta: [
-        { title: title ? `${title} | Cimaja Boardriders` : "Experience | Cimaja Boardriders" },
+        { title: title ? `${title} | West Java Riders` : "Experience | West Java Riders" },
         { property: "og:type", content: "website" },
       ],
     };
@@ -33,7 +33,7 @@ function PackageLandingPage() {
   const p = data.product;
 
   return (
-    <PublicPage>
+    <PublicPage width="full">
       <PackageLanding
         productId={p.id}
         title={p.title}

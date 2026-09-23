@@ -87,33 +87,35 @@ function PromoCodeEntry() {
 /** The configured Home content, shared by the site root and /home. */
 export function HomeContent({ page }: { page: PublicWebsitePage | null }) {
   return (
-    <div className="py-4 sm:py-8">
-      <div className="mx-auto max-w-3xl">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+    <div className="py-2 sm:py-4">
+      <div className="mx-auto max-w-6xl">
+        <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
           {page?.title ?? "Surf, travel and local experiences in Cimaja"}
         </h1>
-        <p className="mt-3 text-sm text-muted-foreground sm:text-base">
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
           {page?.subtitle ??
             "West Java's warm-water pointbreaks, local guides and trips built exactly the way you want them."}
         </p>
       </div>
 
       {page && page.sections.length > 0 ? (
-        <div className="mt-10">
+        <div className="mt-8 sm:mt-10">
           <WebsiteRenderer page={page} showHeading={false} />
         </div>
       ) : (
-        <div className="mx-auto mt-8 flex max-w-3xl flex-wrap gap-3">
-          <Button asChild>
-            <Link to="/build-your-trip">Build your trip</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link to="/cart">View your cart</Link>
-          </Button>
+        <div className="mx-auto mt-8 flex max-w-6xl flex-wrap gap-x-6">
+          <Link to="/build-your-trip" className="cbr-editorial-cta">
+            Build your trip
+            <span aria-hidden="true">→</span>
+          </Link>
+          <Link to="/cart" className="cbr-editorial-cta text-muted-foreground">
+            View your cart
+            <span aria-hidden="true">→</span>
+          </Link>
         </div>
       )}
 
-      <div className="mx-auto mt-12 max-w-3xl space-y-2">
+      <div className="mx-auto mt-16 max-w-6xl space-y-2 sm:mt-20">
         <PromoCodeEntry />
         <p className="text-xs text-muted-foreground">
           <Link to="/admin" className="underline underline-offset-2">

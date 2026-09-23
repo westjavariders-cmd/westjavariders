@@ -6,9 +6,8 @@
  * the existing Build your trip flow.
  */
 import { Link } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { DoorCard } from "@/components/public/DoorCard";
 import { ProductCard } from "@/components/public/ProductCard";
 import { cn } from "@/lib/utils";
@@ -16,19 +15,20 @@ import { HOME_SLUG } from "@/lib/website";
 import type { PublicBlock, PublicSection, PublicWebsitePage } from "@/lib/website.server";
 
 function Cta({ cta }: { cta: NonNullable<PublicBlock["cta"]> }) {
+  const className = "cbr-editorial-cta";
   if (cta.external) {
     return (
-      <Button asChild variant="outline" size="sm">
-        <a href={cta.href} target="_blank" rel="noopener noreferrer">
-          {cta.label}
-        </a>
-      </Button>
+      <a href={cta.href} target="_blank" rel="noopener noreferrer" className={className}>
+        {cta.label}
+        <span aria-hidden="true">→</span>
+      </a>
     );
   }
   return (
-    <Button asChild size="sm">
-      <a href={cta.href}>{cta.label}</a>
-    </Button>
+    <a href={cta.href} className={className}>
+      {cta.label}
+      <span aria-hidden="true">→</span>
+    </a>
   );
 }
 
@@ -40,7 +40,7 @@ function Media({ media }: { media: NonNullable<PublicBlock["media"]> }) {
         controls
         playsInline
         preload="metadata"
-        className="w-full rounded-lg border border-border/60"
+        className="aspect-[16/9] w-full bg-secondary object-cover object-center"
       />
     );
   }
@@ -49,7 +49,7 @@ function Media({ media }: { media: NonNullable<PublicBlock["media"]> }) {
       src={media.url}
       alt=""
       loading="lazy"
-      className="aspect-[16/9] w-full rounded-lg border border-border/60 object-cover"
+      className="aspect-[16/10] w-full bg-secondary object-cover object-center sm:aspect-[16/9]"
     />
   );
 }
@@ -57,7 +57,7 @@ function Media({ media }: { media: NonNullable<PublicBlock["media"]> }) {
 function ProductList({ products }: { products: PublicBlock["products"] }) {
   if (products.length === 0) return null;
   return (
-    <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-3">
+    <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3">
       {products.map((product) => (
         <ProductCard
           key={product.id}
@@ -75,43 +75,58 @@ function ProductList({ products }: { products: PublicBlock["products"] }) {
 function CatalogueList({ items }: { items: PublicBlock["catalogue_items"] }) {
   if (items.length === 0) return null;
   return (
-    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+    <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
       {items.map((item) => (
         <Link
           key={`${item.catalogue_id}-${item.item_id}`}
           to="/book/$catalogueId/$itemId"
           params={{ catalogueId: item.catalogue_id, itemId: item.item_id }}
-          className="block"
+          className="group relative isolate flex min-h-[52vw] overflow-hidden bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:min-h-[18rem] md:min-h-[20rem]"
         >
-          <Card className="h-full transition-colors hover:border-primary">
-            <CardContent className="space-y-2 p-4">
-              {item.photo_url && (
+          {item.photo_url ? (
+            <div className="absolute inset-0 overflow-hidden">
+              <div className="size-full origin-center transition-transform duration-700 ease-out group-hover:scale-[1.04] motion-reduce:transform-none motion-reduce:transition-none">
                 <img
                   src={item.photo_url}
                   alt={item.name}
                   loading="lazy"
-                  className="aspect-[16/9] w-full rounded-md object-cover"
+                  className="absolute inset-0 size-full object-cover object-center"
                 />
-              )}
-              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                {item.catalogue_name}
+              </div>
+            </div>
+          ) : (
+            <div className="absolute inset-0 bg-secondary" aria-hidden="true" />
+          )}
+          <div
+            className={cn(
+              "absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-black/15",
+              "transition-colors duration-500 group-hover:from-black/70 group-hover:via-black/35",
+              "motion-reduce:transition-none",
+            )}
+          />
+          <div className="relative z-10 mt-auto flex w-full flex-col justify-end gap-2 p-5 sm:p-6">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-neutral-200/80">
+              {item.catalogue_name}
+            </p>
+            <h3 className="text-balance text-2xl font-semibold tracking-tight text-neutral-50">
+              {item.name}
+            </h3>
+            {item.description && (
+              <p className="max-w-md line-clamp-2 text-sm leading-relaxed text-neutral-200/90">
+                {item.description}
               </p>
-              <h3 className="text-base font-medium">{item.name}</h3>
-              {item.description && (
-                <p className="text-sm text-muted-foreground">{item.description}</p>
-              )}
-              {item.from_price_idr != null && (
-                <p className="text-sm font-semibold">
-                  From{" "}
-                  {new Intl.NumberFormat("id-ID", {
-                    style: "currency",
-                    currency: "IDR",
-                    maximumFractionDigits: 0,
-                  }).format(item.from_price_idr)}
-                </p>
-              )}
-            </CardContent>
-          </Card>
+            )}
+            {item.from_price_idr != null && (
+              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-neutral-50">
+                From{" "}
+                {new Intl.NumberFormat("id-ID", {
+                  style: "currency",
+                  currency: "IDR",
+                  maximumFractionDigits: 0,
+                }).format(item.from_price_idr)}
+              </p>
+            )}
+          </div>
         </Link>
       ))}
     </div>
@@ -147,23 +162,20 @@ function isHomeFeaturedDoor(index: number, count: number) {
   return index === 0 && (count === 5 || count >= 7);
 }
 
-function Block({ block }: { block: PublicBlock }) {
-  const heading =
-    block.kind === "hero" ? (
-      <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{block.title}</h2>
-    ) : (
-      <h2 className="text-lg font-medium tracking-tight">{block.title}</h2>
-    );
-
+function BlockCopy({
+  block,
+  heading,
+}: {
+  block: PublicBlock;
+  heading: ReactNode;
+}) {
   return (
-    <div className="space-y-3">
-      {block.media &&
-        (block.kind === "hero" || block.kind === "image_text" || block.kind === "video") && (
-          <Media media={block.media} />
-        )}
+    <>
       {block.title && heading}
       {block.body && (
-        <p className="whitespace-pre-line text-sm text-muted-foreground">{block.body}</p>
+        <p className="max-w-2xl whitespace-pre-line text-sm leading-relaxed text-muted-foreground sm:text-base">
+          {block.body}
+        </p>
       )}
       {block.kind === "product_selection" && <ProductList products={block.products} />}
       {block.kind === "people" && block.products.length > 0 && (
@@ -175,6 +187,37 @@ function Block({ block }: { block: PublicBlock }) {
           <Cta cta={block.cta} />
         </div>
       )}
+    </>
+  );
+}
+
+function Block({ block }: { block: PublicBlock }) {
+  const heading =
+    block.kind === "hero" ? (
+      <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">{block.title}</h2>
+    ) : (
+      <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">{block.title}</h2>
+    );
+
+  if (block.kind === "image_text" && block.media) {
+    return (
+      <div className="grid gap-6 md:gap-8 lg:grid-cols-12 lg:items-center lg:gap-12">
+        <div className="lg:col-span-7">
+          <Media media={block.media} />
+        </div>
+        <div className="space-y-4 lg:col-span-5">
+          <BlockCopy block={block} heading={heading} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {block.media && (block.kind === "hero" || block.kind === "video") && (
+        <Media media={block.media} />
+      )}
+      <BlockCopy block={block} heading={heading} />
     </div>
   );
 }
@@ -193,12 +236,14 @@ function Section({
   return (
     <section className="space-y-6">
       {(section.title || section.subtitle) && (
-        <div className="mx-auto max-w-3xl">
+        <div className="mx-auto max-w-6xl">
           {section.title && (
-            <h2 className="text-xl font-semibold tracking-tight">{section.title}</h2>
+            <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">{section.title}</h2>
           )}
           {section.subtitle && (
-            <p className="mt-1 text-sm text-muted-foreground">{section.subtitle}</p>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+              {section.subtitle}
+            </p>
           )}
         </div>
       )}
@@ -232,7 +277,13 @@ function Section({
       {others.length > 0 && (
         <div className="space-y-8">
           {others.map((block) => {
-            const wide = block.kind === "product_selection" || block.kind === "people";
+            const wide =
+              block.kind === "product_selection" ||
+              block.kind === "people" ||
+              block.kind === "catalogue" ||
+              block.kind === "hero" ||
+              block.kind === "image_text" ||
+              block.kind === "video";
             return (
               <div
                 key={block.id}
@@ -258,13 +309,19 @@ export function WebsiteRenderer({
   const doorLayout = page.slug === HOME_SLUG ? "mosaic" : "selection";
 
   return (
-    <div className="space-y-14 py-2 sm:py-4">
+    <div className="space-y-16 py-2 sm:space-y-20 sm:py-4">
       {showHeading && (page.title || page.subtitle) && (
-        <header className="mx-auto max-w-3xl space-y-2">
+        <header className="mx-auto max-w-6xl space-y-3">
           {page.title && (
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{page.title}</h1>
+            <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl">
+              {page.title}
+            </h1>
           )}
-          {page.subtitle && <p className="text-sm text-muted-foreground">{page.subtitle}</p>}
+          {page.subtitle && (
+            <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+              {page.subtitle}
+            </p>
+          )}
         </header>
       )}
       {page.sections.map((section) => (

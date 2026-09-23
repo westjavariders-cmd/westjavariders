@@ -187,14 +187,14 @@ export function SiteHeader() {
           <button
             ref={openButtonRef}
             type="button"
-            className="inline-flex min-h-11 max-w-[min(100%,18rem)] items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-left text-[10px] font-medium uppercase leading-tight tracking-[0.12em] transition-colors hover:bg-muted sm:max-w-none sm:text-[11px] sm:tracking-[0.14em] xl:hidden"
+            className="inline-flex min-h-11 max-w-[8.5rem] items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-left text-[10px] font-medium uppercase leading-tight tracking-[0.12em] transition-colors hover:bg-muted sm:max-w-[16rem] md:max-w-[18rem] sm:text-[11px] sm:tracking-[0.14em] xl:hidden"
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
             aria-controls={menuId}
             onClick={() => setOpen((value) => !value)}
           >
             {open ? <X className="size-4 shrink-0" strokeWidth={1.5} /> : null}
-            <span>Surf, Explore, Experience West Java</span>
+            <span className="truncate">Surf, Explore, Experience West Java</span>
           </button>
           <Link
             to="/home"
@@ -206,7 +206,7 @@ export function SiteHeader() {
 
         <Link
           to="/home"
-          className="justify-self-center text-center text-[12px] font-semibold uppercase tracking-[0.22em] xl:hidden"
+          className="justify-self-center whitespace-nowrap text-center text-[12px] font-semibold uppercase tracking-[0.22em] xl:hidden"
         >
           West Java Riders
         </Link>
@@ -219,7 +219,7 @@ export function SiteHeader() {
           <CurrencySelector />
           <Link
             to="/cart"
-            className="inline-flex min-h-11 items-center text-[11px] font-medium uppercase tracking-[0.18em]"
+            className="inline-flex min-h-11 items-center whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.18em]"
           >
             <span className="sr-only">Cart </span>
             <span className="hidden sm:inline">TOTAL PRICE — </span>
@@ -296,7 +296,7 @@ export function PublicPage({
       <SiteHeader />
       <main
         className={cn(
-          "px-4 pb-20 pt-8 sm:px-6 sm:pt-10 lg:px-10",
+          "px-4 pb-20 pt-8 md:px-8 md:pt-10 lg:px-10 lg:pt-12 xl:px-12",
           width === "readable" && "mx-auto w-full max-w-3xl",
           width === "wide" && "mx-auto w-full max-w-6xl",
           width === "full" && "w-full",
