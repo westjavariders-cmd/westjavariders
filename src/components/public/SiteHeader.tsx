@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Menu, X } from "lucide-react";
+import { X } from "lucide-react";
 
 import { getPublicCart } from "@/lib/public.functions";
 import { getWebsiteNav } from "@/lib/website.functions";
@@ -187,18 +187,14 @@ export function SiteHeader() {
           <button
             ref={openButtonRef}
             type="button"
-            className="inline-flex h-11 min-w-11 items-center justify-center gap-2 text-[11px] font-medium uppercase tracking-[0.22em] xl:hidden"
+            className="inline-flex min-h-11 max-w-[min(100%,18rem)] items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-left text-[10px] font-medium uppercase leading-tight tracking-[0.12em] transition-colors hover:bg-muted sm:max-w-none sm:text-[11px] sm:tracking-[0.14em] xl:hidden"
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
             aria-controls={menuId}
             onClick={() => setOpen((value) => !value)}
           >
-            {open ? (
-              <X className="size-5" strokeWidth={1.5} />
-            ) : (
-              <Menu className="size-5" strokeWidth={1.5} />
-            )}
-            <span className="hidden sm:inline">Menu</span>
+            {open ? <X className="size-4 shrink-0" strokeWidth={1.5} /> : null}
+            <span>Surf, Explore, Experience West Java</span>
           </button>
           <Link
             to="/home"

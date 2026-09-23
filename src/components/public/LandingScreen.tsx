@@ -119,12 +119,10 @@ export function LandingScreen({ landing }: { landing: PublicLanding }) {
             <a
               href={landing.cta.href}
               {...(landing.cta.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-              className="inline-flex min-h-12 min-w-[2.75rem] items-center py-2 text-[11px] font-medium uppercase tracking-[0.2em] text-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-50 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 sm:text-xs"
+              className="inline-flex min-h-12 min-w-[2.75rem] items-center justify-center gap-2 rounded-md border border-neutral-50 bg-neutral-50 px-6 py-2 text-[11px] font-medium uppercase tracking-[0.18em] text-neutral-950 transition-colors duration-150 hover:bg-neutral-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-50 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 sm:text-xs"
             >
               {landing.cta.label}
-              <span aria-hidden="true" className="ml-2 inline-block">
-                →
-              </span>
+              <span aria-hidden="true">→</span>
             </a>
           )}
         </div>
