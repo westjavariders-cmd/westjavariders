@@ -268,7 +268,7 @@ export const savePeoplePrices = createServerFn({ method: "POST" })
         if (previous.length > 0) {
           await supabase
             .from("transport_people_prices")
-            .insert(previous.map((row) => ({ ...row, transport_id: data.transport_id })));
+            .insert(previous.map((row: Record<string, unknown>) => ({ ...row, transport_id: data.transport_id })));
         }
         fail(SAFE_ERROR);
       }
@@ -324,7 +324,7 @@ export const saveTimePrices = createServerFn({ method: "POST" })
         if (previous.length > 0) {
           await supabase
             .from("transport_time_prices")
-            .insert(previous.map((row) => ({ ...row, transport_id: data.transport_id })));
+            .insert(previous.map((row: Record<string, unknown>) => ({ ...row, transport_id: data.transport_id })));
         }
         fail(SAFE_ERROR);
       }
