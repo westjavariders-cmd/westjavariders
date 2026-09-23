@@ -12,7 +12,7 @@ import { DoorCard } from "@/components/public/DoorCard";
 import { ProductCard } from "@/components/public/ProductCard";
 import { cn } from "@/lib/utils";
 import { applyHomeTripDoors, applyNavImagesToHomeDoors, type HomeNavImage } from "@/lib/home-trip-doors";
-import { HOME_SLUG } from "@/lib/website";
+import { HOME_SLUG, assignGroupKeys } from "@/lib/website";
 import type { PublicBlock, PublicSection, PublicWebsitePage } from "@/lib/website.server";
 
 function Cta({ cta }: { cta: NonNullable<PublicBlock["cta"]> }) {
@@ -307,36 +307,152 @@ function Section({
   );
 }
 
+function isCatalogueSection(section: PublicSection): boolean {
+  return section.blocks.some((block) => block.kind === "catalogue");
+}
+
+function sectionCover(section: PublicSection): { url: string; alt: string } | null {
+  for (const block of section.blocks) {
+    const item = block.catalogue_items.find((entry) => entry.photo_url);
+    if (item?.photo_url) return { url: item.photo_url, alt: section.title ?? item.name };
+    if (block.media?.kind === "image") return { url: block.media.url, alt: section.title ?? "" };
+  }
+  return null;
+}
+
+function CatalogueGroupCard({
+  pageSlug,
+  groupKey,
+  section,
+}: {
+  pageSlug: string;
+  groupKey: string;
+  section: PublicSection;
+}) {
+  const cover = sectionCover(section);
+  return (
+    <a
+      href={`/pages/${pageSlug}/${groupKey}`}
+      className="group block h-full rounded-[1.35rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    >
+      <div className="cbr-photo-tile group relative isolate flex h-full min-h-[52vw] overflow-hidden bg-secondary sm:min-h-[18rem] md:min-h-[22rem]">
+        {cover ? (
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="size-full origin-center transition-transform duration-700 ease-out group-hover:scale-[1.04] motion-reduce:transform-none motion-reduce:transition-none">
+              <img src={cover.url} alt={cover.alt} className="absolute inset-0 size-full object-cover" loading="lazy" />
+            </div>
+          </div>
+        ) : (
+          <div className="absolute inset-0 bg-secondary" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-black/15" />
+        <div className="relative z-10 mt-auto flex w-full flex-col justify-end gap-2 p-5 sm:p-6">
+          {section.title && (
+            <h2 className="text-balance text-2xl font-semibold tracking-tight text-neutral-50 sm:text-3xl">
+              {section.title}
+            </h2>
+          )}
+          {section.subtitle && (
+            <p className="max-w-md text-sm leading-relaxed text-neutral-200/90">{section.subtitle}</p>
+          )}
+          <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.22em] text-neutral-50">
+            View
+            <span aria-hidden="true" className="ml-2">
+              →
+            </span>
+          </p>
+        </div>
+      </div>
+    </a>
+  );
+}
+
 export function WebsiteRenderer({
   page,
   showHeading = true,
   navItems = [],
+  groupKey = null,
 }: {
   page: PublicWebsitePage;
   showHeading?: boolean;
   navItems?: HomeNavImage[];
+  groupKey?: string | null;
 }) {
   const doorLayout = page.slug === HOME_SLUG ? "mosaic" : "selection";
+  const groupKeys = assignGroupKeys(page.sections);
+  const catalogueGroups = page.sections.filter(isCatalogueSection);
+  const selected =
+    groupKey == null ? null : (page.sections.find((section) => groupKeys.get(section.id) === groupKey) ?? null);
+
+  const heading = showHeading && (page.title || page.subtitle) && (
+    <header className="mx-auto max-w-6xl space-y-3">
+      {page.title && (
+        <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl">{page.title}</h1>
+      )}
+      {page.subtitle && (
+        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+          {page.subtitle}
+        </p>
+      )}
+    </header>
+  );
+
+  if (groupKey) {
+    if (!selected) return null;
+    return (
+      <div className="space-y-10 py-0 sm:space-y-14 sm:py-1">
+        <div className="mx-auto max-w-6xl">
+          <a href={`/pages/${page.slug}`} className="cbr-editorial-cta text-muted-foreground">
+            ← Back
+          </a>
+          {selected.title && (
+            <h1 className="mt-6 max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl">
+              {selected.title}
+            </h1>
+          )}
+          {selected.subtitle && (
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+              {selected.subtitle}
+            </p>
+          )}
+        </div>
+        <Section
+          section={{ ...selected, title: null, subtitle: null }}
+          doorLayout={doorLayout}
+          navItems={navItems}
+        />
+      </div>
+    );
+  }
+
+  const useGroupIndex = page.slug !== HOME_SLUG && catalogueGroups.length >= 2;
 
   return (
     <div className="space-y-10 py-0 sm:space-y-14 sm:py-1">
-      {showHeading && (page.title || page.subtitle) && (
-        <header className="mx-auto max-w-6xl space-y-3">
-          {page.title && (
-            <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl">
-              {page.title}
-            </h1>
-          )}
-          {page.subtitle && (
-            <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-              {page.subtitle}
-            </p>
-          )}
-        </header>
+      {heading}
+      {useGroupIndex ? (
+        <>
+          {page.sections
+            .filter((section) => !isCatalogueSection(section))
+            .map((section) => (
+              <Section key={section.id} section={section} doorLayout={doorLayout} navItems={navItems} />
+            ))}
+          <div className={internalDoorsLayoutClass(catalogueGroups.length)}>
+            {catalogueGroups.map((section) => (
+              <CatalogueGroupCard
+                key={section.id}
+                pageSlug={page.slug}
+                groupKey={groupKeys.get(section.id) ?? section.id}
+                section={section}
+              />
+            ))}
+          </div>
+        </>
+      ) : (
+        page.sections.map((section) => (
+          <Section key={section.id} section={section} doorLayout={doorLayout} navItems={navItems} />
+        ))
       )}
-      {page.sections.map((section) => (
-        <Section key={section.id} section={section} doorLayout={doorLayout} navItems={navItems} />
-      ))}
     </div>
   );
 }

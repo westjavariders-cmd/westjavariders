@@ -199,6 +199,24 @@ export function isPubliclyListable(productStatus: string | null | undefined): bo
   return productStatus === "active";
 }
 
+/** Stable public path segment for a CMS section used as a catalogue group. */
+export function assignGroupKeys(sections: { id: string; title: string | null }[]): Map<string, string> {
+  const keys = new Map<string, string>();
+  const used = new Set<string>();
+  for (const section of sections) {
+    const base = slugify(section.title ?? "") || section.id.replace(/[^a-z0-9]+/gi, "-").slice(0, 12);
+    let key = base;
+    let n = 2;
+    while (used.has(key)) {
+      key = `${base}-${n}`;
+      n += 1;
+    }
+    used.add(key);
+    keys.set(section.id, key);
+  }
+  return keys;
+}
+
 /**
  * The products a configured page shows, in configured order, taken only from
  * its active product selection blocks. Nothing is added that the block does

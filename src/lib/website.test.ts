@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  assignGroupKeys,
   isChromeImagePath,
   isSafeSlug,
   isSiteBackgroundPath,
@@ -127,5 +128,18 @@ describe("chrome background storage paths", () => {
     expect(isChromeImagePath("header", "site-background/123-cimaja.jpg")).toBe(false);
     expect(isSiteBackgroundPath("landing/image.jpg")).toBe(false);
     expect(isSiteBackgroundPath("../secret")).toBe(false);
+  });
+});
+
+describe("catalogue group keys", () => {
+  it("slugs the section title and disambiguates duplicates", () => {
+    const keys = assignGroupKeys([
+      { id: "a", title: "Surf lessons" },
+      { id: "b", title: "Surf lessons" },
+      { id: "c", title: "Transfers" },
+    ]);
+    expect(keys.get("a")).toBe("surf-lessons");
+    expect(keys.get("b")).toBe("surf-lessons-2");
+    expect(keys.get("c")).toBe("transfers");
   });
 });
