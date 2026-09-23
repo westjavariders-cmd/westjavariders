@@ -110,8 +110,8 @@ export function HomeContent({ page }: { page: PublicWebsitePage | null }) {
         </div>
       ) : (
         <div className="mx-auto mt-6 flex max-w-6xl flex-wrap gap-x-6">
-          <Link to="/build-your-trip" className="cbr-editorial-cta">
-            Build your trip
+          <Link to="/home" className="cbr-editorial-cta">
+            Where do you want to start?
             <span aria-hidden="true">→</span>
           </Link>
           <Link to="/cart" className="cbr-editorial-cta text-muted-foreground">

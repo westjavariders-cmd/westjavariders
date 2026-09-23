@@ -78,7 +78,7 @@ describe("multilingual fallback", () => {
 describe("destination resolution", () => {
   it("resolves the controlled internal destinations", () => {
     expect(resolveDestination({ kind: "build_your_trip" })).toEqual({
-      href: "/build-your-trip",
+      href: "/pages/firstwaves",
       external: false,
     });
     expect(resolveDestination({ kind: "book_individually" })).toEqual({

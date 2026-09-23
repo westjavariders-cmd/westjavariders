@@ -99,7 +99,7 @@ function CmsNavLinks({
   if (items.length === 0) {
     return (
       <Link
-        to="/build-your-trip"
+        to="/home"
         className={
           variant === "desktop"
             ? "text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground"
@@ -108,7 +108,7 @@ function CmsNavLinks({
         activeProps={{ className: "text-foreground" }}
         onClick={onNavigate}
       >
-        Build your trip
+        Home
       </Link>
     );
   }

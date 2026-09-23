@@ -25,7 +25,7 @@ function ConfigureCta({ productId }: { productId: string }) {
 export function PackageLanding({ productId, title, summary, body, imageUrl }: PackageLandingProps) {
   return (
     <div className="mx-auto w-full max-w-[90rem]">
-      <Link to="/build-your-trip" className="cbr-editorial-cta text-muted-foreground">
+      <Link to="/home" className="cbr-editorial-cta text-muted-foreground">
         ← Back
       </Link>
 

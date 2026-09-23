@@ -65,7 +65,7 @@ export const DESTINATION_LABELS: Record<DestinationKind, string> = {
   none: "No button",
   page: "Website page",
   product: "Product",
-  build_your_trip: "Build your trip",
+  build_your_trip: "First Waves",
   book_individually: "Book individually",
   external: "External link",
 };
@@ -75,6 +75,7 @@ export type MediaKind = (typeof MEDIA_KINDS)[number];
 
 export const HOME_SLUG = "home";
 export const BOOK_INDIVIDUALLY_SLUG = "book-individually";
+export const FIRST_WAVES_SLUG = "firstwaves";
 /**
  * Home has its own address so it stays reachable when the entry screen owns
  * the site root. Buttons pointing at Home therefore never loop back.
@@ -155,7 +156,7 @@ export type ResolvedDestination = { href: string; external: boolean };
 export function resolveDestination(destination: Destination): ResolvedDestination | null {
   switch (destination.kind) {
     case "build_your_trip":
-      return { href: "/build-your-trip", external: false };
+      return { href: `/pages/${FIRST_WAVES_SLUG}`, external: false };
     case "book_individually":
       return { href: `/pages/${BOOK_INDIVIDUALLY_SLUG}`, external: false };
     case "page": {
