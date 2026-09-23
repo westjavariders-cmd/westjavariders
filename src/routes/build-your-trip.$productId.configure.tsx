@@ -9,19 +9,17 @@ import { ConfiguratorForm } from "@/components/public/ConfiguratorForm";
 import { getPublicProduct } from "@/lib/public.functions";
 import { continueDraftPackage, discardDraftPackage, startPackage } from "@/lib/cart.functions";
 import type { PreviewValues, ProductBundle } from "@/lib/catalog";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 
 export const Route = createFileRoute("/build-your-trip/$productId/configure")({
   head: () => ({
     meta: [
-      { title: "Configure your experience | Cimaja Boardriders" },
+      { title: "Configure your experience | West Java Riders" },
       {
         name: "description",
         content:
-          "Choose your options for this Cimaja Boardriders experience and see your price before adding it to your cart.",
+          "Choose your options for this West Java Riders experience and see your price before adding it to your cart.",
       },
-      { property: "og:title", content: "Configure your experience — Cimaja Boardriders" },
+      { property: "og:title", content: "Configure your experience — West Java Riders" },
       {
         property: "og:description",
         content:
@@ -84,7 +82,7 @@ function ConfigurePage() {
             ? product.error.message
             : "This experience is not available."}
         </p>
-        <Link to="/build-your-trip" className="mt-4 inline-block text-sm underline">
+        <Link to="/build-your-trip" className="cbr-editorial-cta mt-4">
           ← Back
         </Link>
       </PublicPage>
@@ -106,37 +104,41 @@ function ConfigurePage() {
       <Link
         to="/build-your-trip/$productId"
         params={{ productId }}
-        className="text-xs uppercase tracking-[0.18em] text-muted-foreground"
+        className="cbr-editorial-cta text-muted-foreground"
       >
         ← Back
       </Link>
 
       <div className="mt-8">
         {other ? (
-          <Card>
-            <CardContent className="space-y-3 p-4">
-              <p className="text-sm">
-                You already have a package in progress. Finish it first, or discard it to start this
-                one.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    navigate({
-                      to: "/build-your-trip/$productId/configure",
-                      params: { productId: other.product_id as string },
-                    })
-                  }
-                >
-                  Continue current package
-                </Button>
-                <Button size="sm" variant="outline" disabled={busy} onClick={discardOther}>
-                  Discard it and start this one
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="space-y-5 border-t border-border pt-6">
+            <p className="text-sm leading-relaxed">
+              You already have a package in progress. Finish it first, or discard it to start this
+              one.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                className="cbr-config-primary !w-auto px-5"
+                onClick={() =>
+                  navigate({
+                    to: "/build-your-trip/$productId/configure",
+                    params: { productId: other.product_id as string },
+                  })
+                }
+              >
+                Continue current package
+              </button>
+              <button
+                type="button"
+                className="cbr-config-nav"
+                disabled={busy}
+                onClick={discardOther}
+              >
+                Discard it and start this one
+              </button>
+            </div>
+          </div>
         ) : session.isError ? (
           <p className="text-sm text-destructive">
             {session.error instanceof Error

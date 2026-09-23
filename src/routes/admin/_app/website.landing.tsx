@@ -329,7 +329,7 @@ function WebsiteLandingScreen() {
               value={form.title}
               disabled={!canEdit}
               maxLength={200}
-              placeholder="CIMAJA BOARDRIDERS"
+              placeholder="WEST JAVA RIDERS"
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             />
           </div>
@@ -362,7 +362,7 @@ function WebsiteLandingScreen() {
               value={form.cta_label}
               disabled={!canEdit}
               maxLength={80}
-              placeholder="ENTER CIMAJA BOARDRIDERS"
+              placeholder="ENTER WEST JAVA RIDERS"
               onChange={(e) => setForm((f) => ({ ...f, cta_label: e.target.value }))}
             />
           </div>

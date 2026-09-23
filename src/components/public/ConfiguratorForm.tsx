@@ -32,10 +32,8 @@ import { PUBLIC_CART_KEY, usePublicCart } from "@/components/public/SiteHeader";
 import { ConfiguratorOptionList } from "@/components/public/ConfiguratorOptionList";
 import { QuoteNotes, QuoteTotal } from "@/components/public/ConfiguratorSummary";
 import { ConfiguratorYesNo } from "@/components/public/ConfiguratorYesNo";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
 
 type Quote = {
   purchasable: boolean;
@@ -263,38 +261,38 @@ export function ConfiguratorForm({
   }
 
   return (
-    <div className="space-y-8">
-      <header className="flex items-start gap-4 sm:gap-5">
+    <div className="space-y-10">
+      <header className="flex items-start gap-4 sm:gap-6">
         {imageUrl ? (
           <img
             src={imageUrl}
             alt=""
-            className="size-16 shrink-0 rounded-md object-cover sm:size-20"
+            className="size-20 shrink-0 object-cover object-center sm:size-24"
           />
         ) : null}
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{productTitle}</h1>
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{productTitle}</h1>
           {productSummary ? (
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
               {productSummary}
             </p>
           ) : null}
         </div>
       </header>
 
-      <div className="min-w-0 space-y-6">
-          <section aria-labelledby="configurator-step-title" className="space-y-6">
+      <div className="min-w-0 space-y-10">
+          <section aria-labelledby="configurator-step-title" className="space-y-8">
             <div
               key={stepIndex}
-              className={`space-y-5 ${dir === 1 ? "cbr-step-next" : "cbr-step-prev"}`}
+              className={`space-y-8 ${dir === 1 ? "cbr-step-next" : "cbr-step-prev"}`}
             >
-              <div>
+              <div className="space-y-3">
                 {step.customer_title?.trim() ? (
                   <h2
                     id="configurator-step-title"
                     ref={stepHeadingRef}
                     tabIndex={-1}
-                    className="text-xl font-medium tracking-tight outline-none"
+                    className="text-2xl font-semibold tracking-tight outline-none"
                   >
                     {step.customer_title.trim()}
                   </h2>
@@ -309,7 +307,9 @@ export function ConfiguratorForm({
                   </h2>
                 )}
                 {step.customer_description && (
-                  <p className="mt-1 text-sm text-muted-foreground">{step.customer_description}</p>
+                  <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+                    {step.customer_description}
+                  </p>
                 )}
               </div>
 
@@ -339,9 +339,9 @@ export function ConfiguratorForm({
                 if (f.field_type === "info_block") {
                   if (!fieldLabel && !f.help_text) return null;
                   return (
-                    <div key={f.id} className="rounded-md bg-muted/50 p-3 text-sm">
+                    <div key={f.id} className="border-l border-border py-1 pl-4 text-sm">
                       {fieldLabel ? <p className="font-medium">{fieldLabel}</p> : null}
-                      {f.help_text && <p className="text-muted-foreground">{f.help_text}</p>}
+                      {f.help_text && <p className="mt-1 leading-relaxed text-muted-foreground">{f.help_text}</p>}
                     </div>
                   );
                 }
@@ -430,30 +430,51 @@ export function ConfiguratorForm({
                         ].filter((g) => g.choices.length > 0);
 
                         return (
-                          <div className="space-y-3 rounded-md border p-3">
+                          <div className="space-y-5">
                             {groups.map((g) => {
                               const current = String(values[g.name] ?? "");
                               return (
-                                <div key={g.name} className="space-y-1.5">
+                                <div key={g.name} className="space-y-2">
                                   <Label className="text-sm">
                                     {g.label}
                                     <span className="ml-1 text-destructive">*</span>
                                   </Label>
-                                  <div className="flex flex-wrap gap-2">
-                                    {g.choices.map((c) => (
-                                      <Button
-                                        key={c.value}
-                                        type="button"
-                                        size="sm"
-                                        disabled={e.disabled}
-                                        variant={
-                                          current === String(c.value) ? "default" : "outline"
-                                        }
-                                        onClick={() => setVar(g.name, String(c.value))}
-                                      >
-                                        {c.value}
-                                      </Button>
-                                    ))}
+                                  <div
+                                    role="radiogroup"
+                                    className="divide-y divide-border border-y border-border"
+                                  >
+                                    {g.choices.map((c) => {
+                                      const selected = current === String(c.value);
+                                      return (
+                                        <button
+                                          key={c.value}
+                                          type="button"
+                                          role="radio"
+                                          aria-checked={selected}
+                                          disabled={e.disabled}
+                                          onClick={() => setVar(g.name, String(c.value))}
+                                          className={
+                                            selected
+                                              ? "flex min-h-12 w-full items-center justify-between px-0 py-3 text-left text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                              : "flex min-h-12 w-full items-center justify-between px-0 py-3 text-left text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                          }
+                                        >
+                                          <span>{c.value}</span>
+                                          <span
+                                            aria-hidden
+                                            className={
+                                              selected
+                                                ? "grid size-5 place-content-center rounded-full border border-foreground bg-foreground"
+                                                : "grid size-5 place-content-center rounded-full border border-muted-foreground/40"
+                                            }
+                                          >
+                                            {selected ? (
+                                              <span className="size-2 rounded-full bg-background" />
+                                            ) : null}
+                                          </span>
+                                        </button>
+                                      );
+                                    })}
                                   </div>
                                 </div>
                               );
@@ -499,6 +520,7 @@ export function ConfiguratorForm({
                         max={e.max ?? undefined}
                         aria-invalid={errorMessage ? true : undefined}
                         aria-describedby={errorMessage ? errorId : undefined}
+                        className="cbr-config-field"
                         onChange={(ev) => set(f, ev.target.value)}
                       />
                     )}
@@ -510,6 +532,7 @@ export function ConfiguratorForm({
                         value={String(value)}
                         aria-invalid={errorMessage ? true : undefined}
                         aria-describedby={errorMessage ? errorId : undefined}
+                        className="cbr-config-field"
                         onChange={(ev) => set(f, ev.target.value)}
                       />
                     )}
@@ -524,6 +547,7 @@ export function ConfiguratorForm({
                         aria-describedby={
                           f.field_type === "date" && errorMessage ? errorId : undefined
                         }
+                        className="cbr-config-field"
                         onChange={(ev) => set(f, ev.target.value)}
                       />
                     )}
@@ -558,10 +582,10 @@ export function ConfiguratorForm({
               )}
             </div>
 
-            <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
-              <Button
-                variant="outline"
-                className="min-h-11 min-w-[5.5rem]"
+            <div className="flex items-center justify-between gap-3 border-t border-border pt-6">
+              <button
+                type="button"
+                className="cbr-config-nav"
                 disabled={stepIndex === 0}
                 onClick={() => {
                   setFieldErrors({});
@@ -570,9 +594,10 @@ export function ConfiguratorForm({
                 }}
               >
                 Back
-              </Button>
-              <Button
-                className="min-h-11 min-w-[5.5rem]"
+              </button>
+              <button
+                type="button"
+                className="cbr-config-nav"
                 disabled={stepIndex >= activeSteps.length - 1}
                 onClick={() => {
                   const missing = missingRequiredFields(stepFields, evaluated.fields, values);
@@ -599,12 +624,11 @@ export function ConfiguratorForm({
                 }}
               >
                 Next
-              </Button>
+              </button>
             </div>
           </section>
 
-          <Card>
-            <CardContent className="space-y-3 p-4">
+          <div className="space-y-5 border-t border-border pt-8">
               <QuoteTotal
                 quote={quote}
                 display={display}
@@ -613,19 +637,19 @@ export function ConfiguratorForm({
                 showCustomer={showCustomer}
               />
               <QuoteNotes quote={quote} />
-              <Button
-                className="min-h-11 w-full"
+              <button
+                type="button"
+                className="cbr-config-primary"
                 disabled={!ready || booking}
                 aria-busy={booking || undefined}
                 onClick={book}
               >
                 {booking ? "Adding…" : "Add to cart"}
-              </Button>
+              </button>
               <p className="text-center text-[11px] text-muted-foreground">
                 Prices set in IDR (RP). Your bank sets the final exchange rate.
               </p>
-            </CardContent>
-          </Card>
+          </div>
       </div>
     </div>
   );
@@ -642,12 +666,12 @@ function CatalogueGallery({ photos, name }: { photos: string[]; name: string }) 
 
   return (
     <div className="space-y-2">
-      <div className="relative overflow-hidden rounded-md border border-border bg-muted/30">
+      <div className="relative isolate overflow-hidden bg-secondary">
         <img
           src={photos[i]}
           alt={name}
           loading="lazy"
-          className="aspect-[4/3] w-full object-cover"
+          className="aspect-[4/3] w-full object-cover object-center"
         />
         {photos.length > 1 && (
           <>
@@ -655,7 +679,7 @@ function CatalogueGallery({ photos, name }: { photos: string[]; name: string }) 
               type="button"
               aria-label="Previous photo"
               onClick={() => go(-1)}
-              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 px-2 py-1 text-sm"
+              className="absolute left-2 top-1/2 -translate-y-1/2 min-h-11 min-w-11 bg-background/70 px-2 text-sm"
             >
               ‹
             </button>
@@ -663,11 +687,11 @@ function CatalogueGallery({ photos, name }: { photos: string[]; name: string }) 
               type="button"
               aria-label="Next photo"
               onClick={() => go(1)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 px-2 py-1 text-sm"
+              className="absolute right-2 top-1/2 -translate-y-1/2 min-h-11 min-w-11 bg-background/70 px-2 text-sm"
             >
               ›
             </button>
-            <span className="absolute bottom-2 right-2 rounded-full bg-background/80 px-2 py-0.5 text-[11px]">
+            <span className="absolute bottom-2 right-2 bg-background/70 px-2 py-0.5 text-[11px] uppercase tracking-[0.14em]">
               {i + 1} / {photos.length}
             </span>
           </>

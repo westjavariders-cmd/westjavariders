@@ -7,6 +7,7 @@
  * here prices, re-quotes, pays or issues anything.
  */
 import { currentCart, fail } from "@/lib/cart.server";
+import { DEFAULT_BUSINESS_NAME } from "@/lib/voucher-delivery";
 
 async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -126,7 +127,7 @@ export async function submitContactRequest(input: ContactInput): Promise<{
     .in("key", ["contact_email", "business_name"]);
   const map = new Map<string, string>((settings ?? []).map((r: any) => [r.key, r.value]));
   const to = map.get("contact_email") ?? "";
-  const business = map.get("business_name") ?? "West Java Riders";
+  const business = map.get("business_name") ?? DEFAULT_BUSINESS_NAME;
 
   const detail = voucherText(vouchers);
   const subject = codes.length

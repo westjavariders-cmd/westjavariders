@@ -60,15 +60,25 @@ export function QuoteTotal({
   showCustomer: boolean;
 }) {
   const status = priceStatusText(quoting, quote, unsaved, display, showCustomer);
-  const showIdrUnderCustomer = !quoting && !!quote && showCustomer;
+  const amount = quote ? quoteAmount(quote, display, showCustomer) : null;
+  const showIdrUnderCustomer = !!quote && showCustomer;
   const showDiscount =
-    !quoting && !!quote && (quote.season_discount_idr > 0 || quote.promo_discount_idr > 0);
+    !!quote && (quote.season_discount_idr > 0 || quote.promo_discount_idr > 0);
 
   return (
     <div className="space-y-1">
-      <p aria-live="polite" aria-atomic="true" className="text-2xl font-semibold tracking-tight">
-        {status}
+      <p className="text-3xl font-semibold tracking-tight sm:text-4xl">
+        {amount ?? (quoting ? "—" : status)}
       </p>
+      {quoting ? (
+        <p aria-live="polite" aria-atomic="true" className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+          {status}
+        </p>
+      ) : (
+        <p aria-live="polite" aria-atomic="true" className="sr-only">
+          {status}
+        </p>
+      )}
       {showIdrUnderCustomer ? (
         <p className="text-xs text-muted-foreground">{formatIdr(quote!.total_idr)}</p>
       ) : null}

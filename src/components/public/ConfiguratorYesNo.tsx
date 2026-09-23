@@ -15,14 +15,12 @@ function Choice({
   selected,
   disabled,
   error,
-  emphasize,
   onSelect,
 }: {
   label: string;
   selected: boolean;
   disabled: boolean;
   error: boolean;
-  emphasize: boolean;
   onSelect: () => void;
 }) {
   return (
@@ -33,25 +31,24 @@ function Choice({
       disabled={disabled}
       onClick={onSelect}
       className={cn(
-        "flex min-h-11 w-full items-center justify-center gap-2 rounded-md border px-3 text-sm font-medium",
+        "flex min-h-12 w-full items-center justify-center gap-2 border px-3 text-sm font-medium",
         "transition-colors duration-150 ease-out motion-reduce:transition-none",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-        emphasize && !selected && "border-foreground/30 bg-muted/40 hover:bg-muted/55",
-        emphasize && selected && "border-foreground bg-muted",
-        !emphasize && !selected && "border-border bg-background hover:border-foreground/25 hover:bg-muted/20",
-        !emphasize && selected && "border-foreground/55 bg-muted/30",
+        selected
+          ? "border-foreground bg-foreground text-background"
+          : "border-border bg-transparent text-foreground hover:border-foreground/50",
         error && !selected && "border-destructive/50",
-        disabled && "cursor-not-allowed opacity-50 hover:border-border hover:bg-background",
+        disabled && "cursor-not-allowed opacity-50 hover:border-border",
       )}
     >
       <span
         aria-hidden
         className={cn(
           "grid size-3.5 shrink-0 place-content-center rounded-full border",
-          selected ? "border-foreground bg-foreground" : "border-muted-foreground/35 bg-background",
+          selected ? "border-background bg-background" : "border-muted-foreground/40 bg-transparent",
         )}
       >
-        {selected ? <span className="size-1.5 rounded-full bg-background" /> : null}
+        {selected ? <span className="size-1.5 rounded-full bg-foreground" /> : null}
       </span>
       {label}
     </button>
@@ -79,14 +76,13 @@ export function ConfiguratorYesNo({
       aria-invalid={error ? true : undefined}
       aria-describedby={error ? errorId : undefined}
       aria-disabled={disabled || undefined}
-      className="grid grid-cols-2 gap-2"
+      className="grid grid-cols-2 gap-3"
     >
       <Choice
         label="Yes"
         selected={yesSelected}
         disabled={disabled}
         error={error}
-        emphasize
         onSelect={() => onSelect(true)}
       />
       <Choice
@@ -94,7 +90,6 @@ export function ConfiguratorYesNo({
         selected={noSelected}
         disabled={disabled}
         error={error}
-        emphasize={false}
         onSelect={() => onSelect(false)}
       />
     </div>

@@ -263,6 +263,77 @@
   outline-offset: 4px;
 }
 
+/* Configurator controls: functional, not showcase CTAs. */
+.public-theme .cbr-config-nav {
+  display: inline-flex;
+  min-height: 2.75rem;
+  min-width: 5.5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1.25rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  transition:
+    color 150ms ease-out,
+    border-color 150ms ease-out,
+    opacity 150ms ease-out;
+}
+
+.public-theme .cbr-config-nav:hover:not(:disabled) {
+  border-color: var(--foreground);
+}
+
+.public-theme .cbr-config-nav:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.public-theme .cbr-config-nav:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+}
+
+.public-theme .cbr-config-primary {
+  display: inline-flex;
+  min-height: 2.75rem;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1.25rem;
+  border: 1px solid var(--foreground);
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  transition: opacity 150ms ease-out;
+}
+
+.public-theme .cbr-config-primary:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.public-theme .cbr-config-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.public-theme .cbr-config-primary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+}
+
+.public-theme .cbr-config-field {
+  height: 2.75rem;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cbr-page-enter,
   .cbr-step-next,

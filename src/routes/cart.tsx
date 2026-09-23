@@ -66,13 +66,13 @@ function CartConfigSummary({
 export const Route = createFileRoute("/cart")({
   head: () => ({
     meta: [
-      { title: "Your Cart | Cimaja Boardriders" },
+      { title: "Your Cart | West Java Riders" },
       {
         name: "description",
         content:
           "Review the packages you have built for your Cimaja surf and travel trip before booking.",
       },
-      { property: "og:title", content: "Your Cart — Cimaja Boardriders" },
+      { property: "og:title", content: "Your Cart — West Java Riders" },
       {
         property: "og:description",
         content: "Review the packages you have built for your Cimaja surf and travel trip.",

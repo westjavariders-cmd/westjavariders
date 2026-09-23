@@ -46,7 +46,7 @@ export function ConfiguratorOptionList({
       aria-invalid={error ? true : undefined}
       aria-describedby={error ? errorId : undefined}
       aria-disabled={disabled || undefined}
-      className="grid grid-cols-1 gap-2"
+      className="divide-y divide-border border-y border-border"
     >
       {options.map((option) => {
         const selected = isSelected(value, option.internal_value);
@@ -61,20 +61,17 @@ export function ConfiguratorOptionList({
             disabled={disabled}
             onClick={() => onSelect(option.internal_value)}
             className={cn(
-              "flex min-h-11 w-full items-start gap-3 rounded-md border px-3.5 py-3 text-left",
-              "transition-colors duration-150 ease-out",
-              "motion-reduce:transition-none",
+              "flex min-h-12 w-full items-start gap-3 px-0 py-3.5 text-left",
+              "transition-colors duration-150 ease-out motion-reduce:transition-none",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-              selected
-                ? "border-foreground bg-muted/50"
-                : "border-border bg-background hover:border-foreground/35 hover:bg-muted/30",
-              disabled && "cursor-not-allowed opacity-50 hover:border-border hover:bg-background",
-              error && !selected && "border-destructive/50",
+              selected ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+              disabled && "cursor-not-allowed opacity-50 hover:text-muted-foreground",
+              error && !selected && "text-destructive",
             )}
           >
             <span className="min-w-0 flex-1">
               {label ? (
-                <span className="block text-sm font-medium leading-snug">{label}</span>
+                <span className="block text-sm font-medium leading-snug text-foreground">{label}</span>
               ) : null}
               {description ? (
                 <span className="mt-1 block text-sm font-normal leading-relaxed text-muted-foreground">
@@ -89,7 +86,7 @@ export function ConfiguratorOptionList({
                 multiple ? "rounded-sm" : "rounded-full",
                 selected
                   ? "border-foreground bg-foreground text-background"
-                  : "border-muted-foreground/40 bg-background",
+                  : "border-muted-foreground/40 bg-transparent",
               )}
             >
               {selected && multiple ? (

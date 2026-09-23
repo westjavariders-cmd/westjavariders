@@ -31,12 +31,12 @@ import { bookCatalogueItem, getBookableItem } from "@/lib/direct-booking.functio
 export const Route = createFileRoute("/book/$catalogueId/$itemId")({
   head: () => ({
     meta: [
-      { title: "Book individually — Cimaja Boardriders" },
+      { title: "Book individually — West Java Riders" },
       {
         name: "description",
         content: "Book one item directly: accommodation, transport or motorbike in Cimaja.",
       },
-      { property: "og:title", content: "Book individually — Cimaja Boardriders" },
+      { property: "og:title", content: "Book individually — West Java Riders" },
       {
         property: "og:description",
         content: "Book one item directly: accommodation, transport or motorbike in Cimaja.",

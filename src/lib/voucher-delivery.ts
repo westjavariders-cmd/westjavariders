@@ -30,6 +30,9 @@ export const EMAIL_STATUS_LABELS: Record<EmailStatus, string> = {
 /* Contact configuration (Admin settings, never hardcoded)             */
 /* ------------------------------------------------------------------ */
 
+/** Official commercial brand. Proper name: do not translate when public i18n lands. */
+export const DEFAULT_BUSINESS_NAME = "West Java Riders";
+
 export type ContactSettings = {
   business_name: string;
   contact_email: string;
@@ -55,7 +58,7 @@ function value(raw: unknown): string {
 export function readContactSettings(rows: { key: string; value: string }[] | null | undefined): ContactCheck {
   const map = new Map((rows ?? []).map((r) => [r.key, value(r.value)]));
   const contact: ContactSettings = {
-    business_name: map.get("business_name") || "Cimaja Boardriders",
+    business_name: map.get("business_name") || DEFAULT_BUSINESS_NAME,
     contact_email: map.get("contact_email") ?? "",
     contact_whatsapp: map.get("contact_whatsapp") ?? "",
     contact_location: map.get("contact_location") ?? "",
@@ -335,7 +338,6 @@ ${item.total ? `<tr><td style="padding:3px 0;font-weight:bold">Package total</td
 ${item.people != null ? `<tr><td style="padding:3px 0;color:#6b7280">People</td><td style="padding:3px 0;text-align:right">${item.people}</td></tr>` : ""}
 ${item.quantity != null ? `<tr><td style="padding:3px 0;color:#6b7280">Quantity</td><td style="padding:3px 0;text-align:right">${item.quantity}</td></tr>` : ""}
 </table></div>`,
-    )
     )
     .join("")}
 ${isGift && model.gift?.message ? `<p style="font-size:15px;line-height:1.6;font-style:italic;background:#f9fafb;padding:12px;border-radius:8px;margin:0 0 16px">${escape(model.gift.message)}</p>` : ""}
