@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { applyHomeTripDoors, HOME_TRIP_DOORS } from "@/lib/home-trip-doors";
+import { applyHomeTripDoors, applyNavImagesToHomeDoors, HOME_TRIP_DOORS } from "@/lib/home-trip-doors";
 import type { PublicBlock } from "@/lib/website.server";
 
 function door(partial: Partial<PublicBlock> & Pick<PublicBlock, "id" | "title">): PublicBlock {
@@ -75,5 +75,51 @@ describe("applyHomeTripDoors", () => {
       },
     ];
     expect(applyHomeTripDoors(blocks)).toEqual(blocks);
+  });
+});
+
+describe("applyNavImagesToHomeDoors", () => {
+  it("paints each door with the Navigation photo that shares its href", () => {
+    const doors = applyHomeTripDoors([
+      door({
+        id: "epic",
+        title: "Epic Trips",
+        cta: { label: "", href: "/pages/epictrips", external: false },
+      }),
+      door({
+        id: "byt",
+        title: "BUILD YOUR TRIP",
+        cta: { label: "", href: "/build-your-trip", external: false },
+      }),
+      door({
+        id: "explore",
+        title: "Explore West Java",
+        cta: { label: "", href: "/pages/explore-west-java", external: false },
+      }),
+    ]);
+
+    const painted = applyNavImagesToHomeDoors(doors, [
+      { label: "My First Waves", href: "/pages/firstwaves", image_url: "https://cdn/waves.jpg" },
+      { label: "Intermediates and Pros", href: "/pages/intermediatepro", image_url: "https://cdn/pro.jpg" },
+      { label: "Family Adventures", href: "/pages/familyadventures", image_url: "https://cdn/family.jpg" },
+      { label: "Explore West Java", href: "/pages/explore-west-java", image_url: "https://cdn/explore.jpg" },
+    ]);
+
+    expect(painted.find((b) => b.title === "First Waves")?.media).toEqual({
+      kind: "image",
+      url: "https://cdn/waves.jpg",
+    });
+    expect(painted.find((b) => b.title === "Intermediate & Pro")?.media).toEqual({
+      kind: "image",
+      url: "https://cdn/pro.jpg",
+    });
+    expect(painted.find((b) => b.title === "Family Adventures")?.media).toEqual({
+      kind: "image",
+      url: "https://cdn/family.jpg",
+    });
+    expect(painted.find((b) => b.title === "Explore West Java")?.media).toEqual({
+      kind: "image",
+      url: "https://cdn/explore.jpg",
+    });
   });
 });

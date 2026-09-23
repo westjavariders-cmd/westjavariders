@@ -11,7 +11,7 @@ import type { ReactNode } from "react";
 import { DoorCard } from "@/components/public/DoorCard";
 import { ProductCard } from "@/components/public/ProductCard";
 import { cn } from "@/lib/utils";
-import { applyHomeTripDoors } from "@/lib/home-trip-doors";
+import { applyHomeTripDoors, applyNavImagesToHomeDoors, type HomeNavImage } from "@/lib/home-trip-doors";
 import { HOME_SLUG } from "@/lib/website";
 import type { PublicBlock, PublicSection, PublicWebsitePage } from "@/lib/website.server";
 
@@ -227,11 +227,16 @@ function Block({ block }: { block: PublicBlock }) {
 function Section({
   section,
   doorLayout,
+  navItems,
 }: {
   section: PublicSection;
   doorLayout: "mosaic" | "selection";
+  navItems: HomeNavImage[];
 }) {
-  const sectionBlocks = doorLayout === "mosaic" ? applyHomeTripDoors(section.blocks) : section.blocks;
+  const sectionBlocks =
+    doorLayout === "mosaic"
+      ? applyNavImagesToHomeDoors(applyHomeTripDoors(section.blocks), navItems)
+      : section.blocks;
   const doors = sectionBlocks.filter((b) => b.kind === "door");
   const others = sectionBlocks.filter((b) => b.kind !== "door");
   const isHomeMosaic = doorLayout === "mosaic";
@@ -305,9 +310,11 @@ function Section({
 export function WebsiteRenderer({
   page,
   showHeading = true,
+  navItems = [],
 }: {
   page: PublicWebsitePage;
   showHeading?: boolean;
+  navItems?: HomeNavImage[];
 }) {
   const doorLayout = page.slug === HOME_SLUG ? "mosaic" : "selection";
 
@@ -328,7 +335,7 @@ export function WebsiteRenderer({
         </header>
       )}
       {page.sections.map((section) => (
-        <Section key={section.id} section={section} doorLayout={doorLayout} />
+        <Section key={section.id} section={section} doorLayout={doorLayout} navItems={navItems} />
       ))}
     </div>
   );

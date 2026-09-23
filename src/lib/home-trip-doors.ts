@@ -130,3 +130,39 @@ export function applyHomeTripDoors(blocks: PublicBlock[]): PublicBlock[] {
 
   return [...[firstWaves, intermediate, family].filter(Boolean) as PublicBlock[], ...rest, ...others];
 }
+
+export type HomeNavImage = {
+  label: string;
+  href: string;
+  image_url: string | null;
+};
+
+function pathOf(href: string): string {
+  const trimmed = href.trim();
+  try {
+    const url = trimmed.includes("://") ? new URL(trimmed) : new URL(trimmed, "https://westjavariders.invalid");
+    return (url.pathname.replace(/\/+$/, "") || "/") as string;
+  } catch {
+    return trimmed.replace(/\/+$/, "") || "/";
+  }
+}
+
+function navImageForDoor(block: PublicBlock, nav: HomeNavImage[]): string | null {
+  const doorPath = pathOf(hrefOf(block));
+  const doorTitle = norm(block.title);
+  const byHref = nav.find((item) => item.image_url && pathOf(item.href) === doorPath);
+  if (byHref?.image_url) return byHref.image_url;
+  const byLabel = nav.find((item) => item.image_url && norm(item.label) === doorTitle);
+  return byLabel?.image_url ?? null;
+}
+
+/** Fill Home door tiles with the same photos Admin set on Navigation. */
+export function applyNavImagesToHomeDoors(blocks: PublicBlock[], nav: HomeNavImage[]): PublicBlock[] {
+  if (nav.length === 0) return blocks;
+  return blocks.map((block) => {
+    if (block.kind !== "door") return block;
+    const imageUrl = navImageForDoor(block, nav);
+    if (!imageUrl) return block;
+    return { ...block, media: { kind: "image", url: imageUrl } };
+  });
+}
