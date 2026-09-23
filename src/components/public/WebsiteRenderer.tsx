@@ -141,7 +141,8 @@ function homeDoorsLayoutClass(count: number) {
     count === 3 && "md:grid-cols-2",
     count === 4 && "md:grid-cols-2",
     count === 5 && "md:grid-cols-2 lg:grid-cols-4 lg:grid-rows-2",
-    count >= 6 && "md:grid-cols-2",
+    count === 6 && "md:grid-cols-2 lg:grid-cols-3",
+    count >= 7 && "md:grid-cols-2",
   );
 }
 
