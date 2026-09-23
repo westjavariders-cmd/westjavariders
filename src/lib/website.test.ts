@@ -76,7 +76,7 @@ describe("multilingual fallback", () => {
 describe("destination resolution", () => {
   it("resolves the controlled internal destinations", () => {
     expect(resolveDestination({ kind: "build_your_trip" })).toEqual({
-      href: "/build-your-trip",
+      href: "/choose-your-level",
       external: false,
     });
     expect(resolveDestination({ kind: "book_individually" })).toEqual({
@@ -89,6 +89,10 @@ describe("destination resolution", () => {
     });
     expect(resolveDestination({ kind: "page", pageSlug: "home" })).toEqual({
       href: "/home",
+      external: false,
+    });
+    expect(resolveDestination({ kind: "page", pageSlug: "epic-trips" })).toEqual({
+      href: "/choose-your-level",
       external: false,
     });
   });

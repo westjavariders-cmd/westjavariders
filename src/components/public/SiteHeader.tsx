@@ -94,7 +94,7 @@ function CmsNavLinks({
   if (items.length === 0) {
     return (
       <Link
-        to="/build-your-trip"
+        to="/choose-your-level"
         className={
           variant === "desktop"
             ? "text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground"
