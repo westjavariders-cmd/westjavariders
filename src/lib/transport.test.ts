@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  expandTransportPriceChoices,
   moveItem,
   otherLocationQuote,
   otherLocationQuoteMultiplied,
   parseIdr,
+  publicTransportHourChoices,
+  publicTransportPeopleChoices,
   transportMargin,
   validatePeoplePrices,
   validateTimePrices,
@@ -140,5 +143,34 @@ describe("otherLocationQuoteMultiplied", () => {
         peoplePrice: { supplier_cost_idr: 1, customer_price_idr: 1 },
       }),
     ).toBeNull();
+  });
+});
+
+describe("public transport pickers", () => {
+  it("opens a 1–4 people table to 1–7", () => {
+    const rows = [1, 2, 3, 4].map((value) => ({ value, price_idr: value * 1000 }));
+    expect(publicTransportPeopleChoices(rows).map((r) => r.value)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(publicTransportPeopleChoices(rows)[6]).toEqual({ value: 7, price_idr: 0 });
+  });
+
+  it("leaves a sparse people table unchanged", () => {
+    expect(publicTransportPeopleChoices([{ value: 2, price_idr: 10 }])).toEqual([
+      { value: 2, price_idr: 10 },
+    ]);
+  });
+
+  it("opens a 1–9 hour table to 1–14 even when max travel time is still 9", () => {
+    const rows = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => ({ value, price_idr: value }));
+    const hours = publicTransportHourChoices(rows, 1, 9);
+    expect(hours.map((r) => r.value)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
+  });
+
+  it("still respects a shorter max travel time", () => {
+    const rows = [1, 2, 3, 4].map((value) => ({ value, price_idr: 1 }));
+    expect(publicTransportHourChoices(rows, null, 3).map((r) => r.value)).toEqual([1, 2, 3]);
+  });
+
+  it("does not invent rows for an empty table", () => {
+    expect(expandTransportPriceChoices([], 4, 7)).toEqual([]);
   });
 });

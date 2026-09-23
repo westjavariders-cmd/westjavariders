@@ -201,3 +201,47 @@ export function moveItem<T>(items: T[], index: number, direction: -1 | 1): T[] {
   next.splice(target, 0, item as T);
   return next;
 }
+
+const OLD_MAX_TRANSPORT_PEOPLE = 4;
+const OLD_MAX_TRAVEL_HOURS = 9;
+
+/**
+ * Public people/hours pickers follow the Admin grid, not only rows already
+ * stored. A consecutive 1..oldMax table is opened out to the new max; other
+ * sparse tables are left as stored. Missing slots keep price 0 until Admin saves.
+ */
+export function expandTransportPriceChoices(
+  rows: { value: number; price_idr: number }[],
+  oldFullMax: number,
+  newMax: number,
+): { value: number; price_idr: number }[] {
+  if (rows.length === 0) return [];
+  const byValue = new Map(rows.map((row) => [row.value, row.price_idr]));
+  const values = [...byValue.keys()].sort((a, b) => a - b);
+  const consecutiveFromOne = values.every((value, i) => value === i + 1);
+  const currentMax = values[values.length - 1]!;
+  if (!consecutiveFromOne || currentMax < oldFullMax) {
+    return values.map((value) => ({ value, price_idr: byValue.get(value) ?? 0 }));
+  }
+  return Array.from({ length: newMax }, (_, i) => {
+    const value = i + 1;
+    return { value, price_idr: byValue.get(value) ?? 0 };
+  });
+}
+
+export function publicTransportPeopleChoices(rows: { value: number; price_idr: number }[]) {
+  return expandTransportPriceChoices(rows, OLD_MAX_TRANSPORT_PEOPLE, MAX_TRANSPORT_PEOPLE);
+}
+
+export function publicTransportHourChoices(
+  rows: { value: number; price_idr: number }[],
+  min: number | null,
+  max: number | null,
+) {
+  const expanded = expandTransportPriceChoices(rows, OLD_MAX_TRAVEL_HOURS, MAX_TRAVEL_HOURS);
+  // 9 was the previous catalogue ceiling; do not hide 10–14 on the customer picker.
+  const cap = max === OLD_MAX_TRAVEL_HOURS ? MAX_TRAVEL_HOURS : max;
+  return expanded.filter(
+    (row) => (min == null || row.value >= min) && (cap == null || row.value <= cap),
+  );
+}
