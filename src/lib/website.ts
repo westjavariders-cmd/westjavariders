@@ -56,16 +56,6 @@ export type MediaKind = (typeof MEDIA_KINDS)[number];
 
 export const HOME_SLUG = "home";
 export const BOOK_INDIVIDUALLY_SLUG = "book-individually";
-export const SURF_LEVEL_PAGE_SLUG = "choose-your-level";
-export const SURF_LEVEL_ROUTE = "/choose-your-level";
-
-/** Menu pages that should ask surf level before a product. */
-const SURF_LEVEL_ENTRY_SLUGS = new Set([
-  SURF_LEVEL_PAGE_SLUG,
-  "epic-trips",
-  "epic-trip",
-]);
-
 /**
  * Home has its own address so it stays reachable when the entry screen owns
  * the site root. Buttons pointing at Home therefore never loop back.
@@ -146,13 +136,12 @@ export type ResolvedDestination = { href: string; external: boolean };
 export function resolveDestination(destination: Destination): ResolvedDestination | null {
   switch (destination.kind) {
     case "build_your_trip":
-      return { href: SURF_LEVEL_ROUTE, external: false };
+      return { href: "/build-your-trip", external: false };
     case "book_individually":
       return { href: `/pages/${BOOK_INDIVIDUALLY_SLUG}`, external: false };
     case "page": {
       const slug = destination.pageSlug;
       if (!slug || !isSafeSlug(slug)) return null;
-      if (SURF_LEVEL_ENTRY_SLUGS.has(slug)) return { href: SURF_LEVEL_ROUTE, external: false };
       return { href: slug === HOME_SLUG ? HOME_ROUTE : `/pages/${slug}`, external: false };
     }
     case "product": {

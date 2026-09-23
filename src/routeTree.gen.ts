@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as CartRouteImport } from './routes/cart'
-import { Route as ChooseYourLevelRouteImport } from './routes/choose-your-level'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as AdminAppRouteRouteImport } from './routes/admin/_app/route'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
@@ -74,11 +73,6 @@ const AdminRouteRoute = AdminRouteRouteImport.update({
 const CartRoute = CartRouteImport.update({
   id: '/cart',
   path: '/cart',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ChooseYourLevelRoute = ChooseYourLevelRouteImport.update({
-  id: '/choose-your-level',
-  path: '/choose-your-level',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeRoute = HomeRouteImport.update({
@@ -332,7 +326,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
   '/cart': typeof CartRoute
-  '/choose-your-level': typeof ChooseYourLevelRoute
   '/home': typeof HomeRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/no-access': typeof AdminNoAccessRoute
@@ -384,7 +377,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminAppIndexRoute
   '/cart': typeof CartRoute
-  '/choose-your-level': typeof ChooseYourLevelRoute
   '/home': typeof HomeRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/no-access': typeof AdminNoAccessRoute
@@ -435,7 +427,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
   '/cart': typeof CartRoute
-  '/choose-your-level': typeof ChooseYourLevelRoute
   '/home': typeof HomeRoute
   '/admin/_app': typeof AdminAppRouteRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
@@ -490,7 +481,6 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/cart'
-    | '/choose-your-level'
     | '/home'
     | '/admin/login'
     | '/admin/no-access'
@@ -542,7 +532,6 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/cart'
-    | '/choose-your-level'
     | '/home'
     | '/admin/login'
     | '/admin/no-access'
@@ -592,7 +581,6 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/cart'
-    | '/choose-your-level'
     | '/home'
     | '/admin/_app'
     | '/admin/login'
@@ -646,7 +634,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   CartRoute: typeof CartRoute
-  ChooseYourLevelRoute: typeof ChooseYourLevelRoute
   HomeRoute: typeof HomeRoute
   BuildYourTripProductIdRoute: typeof BuildYourTripProductIdRouteWithChildren
   PagesSlugRoute: typeof PagesSlugRoute
@@ -678,13 +665,6 @@ declare module '@tanstack/react-router' {
       path: '/cart'
       fullPath: '/cart'
       preLoaderRoute: typeof CartRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/choose-your-level': {
-      id: '/choose-your-level'
-      path: '/choose-your-level'
-      fullPath: '/choose-your-level'
-      preLoaderRoute: typeof ChooseYourLevelRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/home': {
@@ -1133,7 +1113,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRouteRoute: AdminRouteRouteWithChildren,
   CartRoute: CartRoute,
-  ChooseYourLevelRoute: ChooseYourLevelRoute,
   HomeRoute: HomeRoute,
   BuildYourTripProductIdRoute: BuildYourTripProductIdRouteWithChildren,
   PagesSlugRoute: PagesSlugRoute,
