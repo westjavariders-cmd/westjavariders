@@ -2970,7 +2970,6 @@ export type Database = {
           destination_page_id: string | null
           destination_product_id: string | null
           id: string
-          image_path: string | null
           internal_name: string
           is_active: boolean
           sort_order: number
@@ -2983,7 +2982,6 @@ export type Database = {
           destination_page_id?: string | null
           destination_product_id?: string | null
           id?: string
-          image_path?: string | null
           internal_name: string
           is_active?: boolean
           sort_order?: number
@@ -2996,7 +2994,6 @@ export type Database = {
           destination_page_id?: string | null
           destination_product_id?: string | null
           id?: string
-          image_path?: string | null
           internal_name?: string
           is_active?: boolean
           sort_order?: number
