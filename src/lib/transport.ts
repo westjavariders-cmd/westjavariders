@@ -12,8 +12,10 @@ export const TRANSPORT_TYPE_LABELS: Record<TransportType, string> = {
   other_location: "Other location",
 };
 
-export const PEOPLE_OPTIONS = [1, 2, 3, 4] as const;
-export const TRAVEL_HOUR_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
+export const PEOPLE_OPTIONS = [1, 2, 3, 4, 5, 6, 7] as const;
+export const TRAVEL_HOUR_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14] as const;
+export const MAX_TRANSPORT_PEOPLE = 7;
+export const MAX_TRAVEL_HOURS = 14;
 
 export type Transport = {
   id: string;
@@ -86,8 +88,8 @@ export function validateTransport(input: {
     ["maximum", input.max_travel_hours],
   ] as const) {
     if (value == null) continue;
-    if (!Number.isInteger(value) || value < 1 || value > 9) {
-      issues.push(`The ${label} travel time must be between 1 and 9 hours.`);
+    if (!Number.isInteger(value) || value < 1 || value > MAX_TRAVEL_HOURS) {
+      issues.push(`The ${label} travel time must be between 1 and ${MAX_TRAVEL_HOURS} hours.`);
     }
   }
   const min = input.min_travel_hours;
@@ -104,8 +106,8 @@ export function validatePeoplePrices(
   const issues: string[] = [];
   const seen = new Set<number>();
   for (const row of rows) {
-    if (!Number.isInteger(row.people) || row.people < 1 || row.people > 4) {
-      issues.push("The number of people must be between 1 and 4.");
+    if (!Number.isInteger(row.people) || row.people < 1 || row.people > MAX_TRANSPORT_PEOPLE) {
+      issues.push(`The number of people must be between 1 and ${MAX_TRANSPORT_PEOPLE}.`);
     } else if (seen.has(row.people)) {
       issues.push(`There is more than one price for ${row.people} people.`);
     } else {
@@ -127,8 +129,8 @@ export function validateTimePrices(
   const issues: string[] = [];
   const seen = new Set<number>();
   for (const row of rows) {
-    if (!Number.isInteger(row.travel_hours) || row.travel_hours < 1 || row.travel_hours > 9) {
-      issues.push("Travel time must be between 1 and 9 hours.");
+    if (!Number.isInteger(row.travel_hours) || row.travel_hours < 1 || row.travel_hours > MAX_TRAVEL_HOURS) {
+      issues.push(`Travel time must be between 1 and ${MAX_TRAVEL_HOURS} hours.`);
     } else if (seen.has(row.travel_hours)) {
       issues.push(`There is more than one price for ${row.travel_hours} hours.`);
     } else {

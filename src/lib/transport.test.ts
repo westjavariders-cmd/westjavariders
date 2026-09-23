@@ -18,13 +18,13 @@ describe("transport validation", () => {
     expect(validateTransport({ internal_name: "X", transport_type: "boat" })).toHaveLength(1);
   });
 
-  it("keeps travel hours inside 1-9 and in order", () => {
+  it("keeps travel hours inside 1-14 and in order", () => {
     expect(
       validateTransport({
         internal_name: "Other",
         transport_type: "other_location",
         min_travel_hours: 1,
-        max_travel_hours: 9,
+        max_travel_hours: 14,
       }),
     ).toEqual([]);
     expect(
@@ -32,7 +32,7 @@ describe("transport validation", () => {
         internal_name: "Other",
         transport_type: "other_location",
         min_travel_hours: 0,
-        max_travel_hours: 10,
+        max_travel_hours: 15,
       }),
     ).toHaveLength(2);
     expect(
@@ -52,7 +52,7 @@ describe("transport validation", () => {
         { people: 2, supplier_cost_idr: 500000, customer_price_idr: 750000 },
       ]),
     ).toEqual([]);
-    expect(validatePeoplePrices([{ people: 5, supplier_cost_idr: 0, customer_price_idr: 0 }])).toHaveLength(1);
+    expect(validatePeoplePrices([{ people: 8, supplier_cost_idr: 0, customer_price_idr: 0 }])).toHaveLength(1);
     expect(
       validatePeoplePrices([
         { people: 2, supplier_cost_idr: 0, customer_price_idr: 0 },
@@ -64,8 +64,8 @@ describe("transport validation", () => {
   });
 
   it("rejects invalid or duplicate travel-hour prices", () => {
-    expect(validateTimePrices([{ travel_hours: 9, supplier_cost_idr: 0, customer_price_idr: 0 }])).toEqual([]);
-    expect(validateTimePrices([{ travel_hours: 10, supplier_cost_idr: 0, customer_price_idr: 0 }])).toHaveLength(1);
+    expect(validateTimePrices([{ travel_hours: 14, supplier_cost_idr: 0, customer_price_idr: 0 }])).toEqual([]);
+    expect(validateTimePrices([{ travel_hours: 15, supplier_cost_idr: 0, customer_price_idr: 0 }])).toHaveLength(1);
     expect(
       validateTimePrices([
         { travel_hours: 3, supplier_cost_idr: 0, customer_price_idr: 0 },

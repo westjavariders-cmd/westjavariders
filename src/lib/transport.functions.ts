@@ -2,7 +2,14 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { TRANSPORT_TYPES, validatePeoplePrices, validateTimePrices, validateTransport } from "@/lib/transport";
+import {
+  MAX_TRANSPORT_PEOPLE,
+  MAX_TRAVEL_HOURS,
+  TRANSPORT_TYPES,
+  validatePeoplePrices,
+  validateTimePrices,
+  validateTransport,
+} from "@/lib/transport";
 
 /**
  * Transport catalogue writes. Every mutation is Admin-only, validated
@@ -52,7 +59,7 @@ const nullableText = (max: number) =>
     .nullable()
     .optional();
 
-const nullableHours = z.number().int().min(1).max(9).nullable().optional();
+const nullableHours = z.number().int().min(1).max(MAX_TRAVEL_HOURS).nullable().optional();
 
 const transportInput = z.object({
   transport_type: z.enum(TRANSPORT_TYPES),
@@ -224,8 +231,8 @@ export const savePeoplePrices = createServerFn({ method: "POST" })
       .object({
         transport_id: z.string().uuid(),
         rows: z
-          .array(z.object({ people: z.number().int().min(1).max(4), ...moneyRow }))
-          .max(4),
+          .array(z.object({ people: z.number().int().min(1).max(MAX_TRANSPORT_PEOPLE), ...moneyRow }))
+          .max(MAX_TRANSPORT_PEOPLE),
       })
       .parse(data),
   )
@@ -269,8 +276,8 @@ export const saveTimePrices = createServerFn({ method: "POST" })
       .object({
         transport_id: z.string().uuid(),
         rows: z
-          .array(z.object({ travel_hours: z.number().int().min(1).max(9), ...moneyRow }))
-          .max(9),
+          .array(z.object({ travel_hours: z.number().int().min(1).max(MAX_TRAVEL_HOURS), ...moneyRow }))
+          .max(MAX_TRAVEL_HOURS),
       })
       .parse(data),
   )

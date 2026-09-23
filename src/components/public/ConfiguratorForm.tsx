@@ -31,10 +31,10 @@ import { completePackage, savePackageConfiguration } from "@/lib/cart.functions"
 import { PUBLIC_CART_KEY, usePublicCart } from "@/components/public/SiteHeader";
 import { ConfiguratorOptionList } from "@/components/public/ConfiguratorOptionList";
 import { QuoteNotes, QuoteTotal } from "@/components/public/ConfiguratorSummary";
+import { ConfiguratorYesNo } from "@/components/public/ConfiguratorYesNo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
 
 type Quote = {
@@ -262,10 +262,6 @@ export function ConfiguratorForm({
     );
   }
 
-  const stepCount = activeSteps.length;
-  const stepNumber = stepIndex + 1;
-  const progressPct = Math.round((stepNumber / Math.max(stepCount, 1)) * 100);
-
   return (
     <div className="space-y-8">
       <header className="flex items-start gap-4 sm:gap-5">
@@ -285,42 +281,6 @@ export function ConfiguratorForm({
           ) : null}
         </div>
       </header>
-
-      <div className="space-y-3">
-        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-          Step {stepNumber} of {stepCount}
-        </p>
-        <div
-          className="h-1 w-full overflow-hidden rounded-full bg-muted"
-          role="progressbar"
-          aria-valuemin={1}
-          aria-valuemax={stepCount}
-          aria-valuenow={stepNumber}
-          aria-label={`Step ${stepNumber} of ${stepCount}`}
-        >
-          <div
-            className="h-full bg-foreground transition-[width] duration-300"
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
-        <nav aria-label="Configuration steps" className="hidden md:block">
-          <ol className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-            {activeSteps.map((s, i) => {
-              const label = s.customer_title || s.internal_name;
-              const current = i === stepIndex;
-              return (
-                <li
-                  key={s.id}
-                  aria-current={current ? "step" : undefined}
-                  className={current ? "font-medium text-foreground" : "text-muted-foreground"}
-                >
-                  {label}
-                </li>
-              );
-            })}
-          </ol>
-        </nav>
-      </div>
 
       <div className="min-w-0 space-y-6">
           <section aria-labelledby="configurator-step-title" className="space-y-6">
@@ -553,12 +513,19 @@ export function ConfiguratorForm({
                     )}
 
                     {f.field_type === "boolean" && (
-                      <Switch
-                        checked={values[f.variable_name] === true}
+                      <ConfiguratorYesNo
+                        value={
+                          values[f.variable_name] === true
+                            ? true
+                            : values[f.variable_name] === false
+                              ? false
+                              : undefined
+                        }
                         disabled={e.disabled}
-                        aria-invalid={errorMessage ? true : undefined}
-                        aria-describedby={errorMessage ? errorId : undefined}
-                        onCheckedChange={(v) => set(f, v)}
+                        error={!!errorMessage}
+                        errorId={errorMessage ? errorId : undefined}
+                        labelledBy={`${f.id}-label`}
+                        onSelect={(v) => set(f, v)}
                       />
                     )}
                     {errorMessage ? (
