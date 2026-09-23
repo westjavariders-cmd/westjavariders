@@ -130,7 +130,17 @@ export const updateTransport = createServerFn({ method: "POST" })
     if (issues.length > 0) fail(issues[0]!);
 
     const { error } = await supabase.from("transports").update(fields).eq("id", id);
-    if (error) fail(SAFE_ERROR);
+    if (error) {
+      const hours =
+        (fields.min_travel_hours != null && fields.min_travel_hours > LEGACY_MAX_HOURS) ||
+        (fields.max_travel_hours != null && fields.max_travel_hours > LEGACY_MAX_HOURS);
+      if (hours) {
+        fail(
+          "Travel times of 10–14 hours cannot be saved until the database range update is applied in Lovable Cloud.",
+        );
+      }
+      fail(SAFE_ERROR);
+    }
     await audit(supabase, userId, "transport.updated", "transports", id, fields.internal_name);
     return { ok: true };
   });
@@ -228,37 +238,34 @@ const moneyRow = {
 const LEGACY_MAX_PEOPLE = 4;
 const LEGACY_MAX_HOURS = 9;
 
-function isRangeCheckError(error: { code?: string; message?: string } | null | undefined) {
-  if (!error) return false;
-  const message = String(error.message ?? "").toLowerCase();
-  return (
-    error.code === "23514" ||
-    message.includes("check constraint") ||
-    message.includes("_people_range") ||
-    message.includes("_hours_range")
-  );
-}
-
 function moneyUsed(row: { supplier_cost_idr: number; customer_price_idr: number }) {
   return row.supplier_cost_idr !== 0 || row.customer_price_idr !== 0;
 }
 
-async function replaceRows(
+async function restoreRows(
+  supabase: any,
+  table: "transport_people_prices" | "transport_time_prices",
+  transportId: string,
+  previous: Record<string, unknown>[],
+) {
+  if (previous.length === 0) return;
+  await supabase.from(table).insert(previous.map((row) => ({ ...row, transport_id: transportId })));
+}
+
+async function replacePriceRows(
   supabase: any,
   table: "transport_people_prices" | "transport_time_prices",
   transportId: string,
   rows: Record<string, unknown>[],
-  previous: Record<string, unknown>[] | null,
-) {
+  previous: Record<string, unknown>[],
+): Promise<{ code?: string; message?: string; details?: string; hint?: string } | null> {
   const { error: delError } = await supabase.from(table).delete().eq("transport_id", transportId);
   if (delError) fail(SAFE_ERROR);
-  if (rows.length === 0) return;
+  if (rows.length === 0) return null;
   const { error } = await supabase.from(table).insert(rows);
-  if (!error) return;
-  if (previous && previous.length > 0) {
-    await supabase.from(table).insert(previous.map((row) => ({ ...row, transport_id: transportId })));
-  }
-  fail(SAFE_ERROR);
+  if (!error) return null;
+  await restoreRows(supabase, table, transportId, previous);
+  return error;
 }
 
 export const savePeoplePrices = createServerFn({ method: "POST" })
@@ -291,39 +298,27 @@ export const savePeoplePrices = createServerFn({ method: "POST" })
       supplier_cost_idr: row.supplier_cost_idr,
       customer_price_idr: row.customer_price_idr,
     }));
-    const payload = data.rows.map((r) => ({ ...r, transport_id: data.transport_id }));
-    const { error: delError } = await supabase
-      .from("transport_people_prices")
-      .delete()
-      .eq("transport_id", data.transport_id);
-    if (delError) fail(SAFE_ERROR);
-
-    if (payload.length > 0) {
-      const { error } = await supabase.from("transport_people_prices").insert(payload);
-      if (error) {
-        if (previous.length > 0) {
-          await supabase
-            .from("transport_people_prices")
-            .insert(previous.map((row) => ({ ...row, transport_id: data.transport_id })));
-        }
-        if (isRangeCheckError(error)) {
-          const extras = data.rows.filter((row) => row.people > LEGACY_MAX_PEOPLE);
-          if (extras.some(moneyUsed)) {
-            fail(
-              "People 5–7 cannot be saved until the database range update is applied in Lovable Cloud. Leave those rows at 0 to save prices for 1–4 people.",
-            );
-          }
-          const legacy = payload.filter((row) => (row.people as number) <= LEGACY_MAX_PEOPLE);
-          await replaceRows(supabase, "transport_people_prices", data.transport_id, legacy, previous);
-        } else {
-          fail(SAFE_ERROR);
-        }
+    const extrasPriced = data.rows.filter((row) => row.people > LEGACY_MAX_PEOPLE).some(moneyUsed);
+    const rows = extrasPriced ? data.rows : data.rows.filter((row) => row.people <= LEGACY_MAX_PEOPLE);
+    const writeError = await replacePriceRows(
+      supabase,
+      "transport_people_prices",
+      data.transport_id,
+      rows.map((r) => ({ ...r, transport_id: data.transport_id })),
+      previous,
+    );
+    if (writeError) {
+      if (extrasPriced) {
+        fail(
+          "People 5–7 cannot be saved until the database range update is applied in Lovable Cloud. Leave those rows at 0 to save prices for 1–4 people.",
+        );
       }
+      fail(SAFE_ERROR);
     }
 
     await audit(supabase, userId, "transport.people_prices_changed", "transports", data.transport_id, null, {
       from: before ?? [],
-      to: data.rows,
+      to: rows,
     });
     return { ok: true };
   });
@@ -358,39 +353,27 @@ export const saveTimePrices = createServerFn({ method: "POST" })
       supplier_cost_idr: row.supplier_cost_idr,
       customer_price_idr: row.customer_price_idr,
     }));
-    const payload = data.rows.map((r) => ({ ...r, transport_id: data.transport_id }));
-    const { error: delError } = await supabase
-      .from("transport_time_prices")
-      .delete()
-      .eq("transport_id", data.transport_id);
-    if (delError) fail(SAFE_ERROR);
-
-    if (payload.length > 0) {
-      const { error } = await supabase.from("transport_time_prices").insert(payload);
-      if (error) {
-        if (previous.length > 0) {
-          await supabase
-            .from("transport_time_prices")
-            .insert(previous.map((row) => ({ ...row, transport_id: data.transport_id })));
-        }
-        if (isRangeCheckError(error)) {
-          const extras = data.rows.filter((row) => row.travel_hours > LEGACY_MAX_HOURS);
-          if (extras.some(moneyUsed)) {
-            fail(
-              "Travel times of 10–14 hours cannot be saved until the database range update is applied in Lovable Cloud. Leave those rows at 0 to save prices for 1–9 hours.",
-            );
-          }
-          const legacy = payload.filter((row) => (row.travel_hours as number) <= LEGACY_MAX_HOURS);
-          await replaceRows(supabase, "transport_time_prices", data.transport_id, legacy, previous);
-        } else {
-          fail(SAFE_ERROR);
-        }
+    const extrasPriced = data.rows.filter((row) => row.travel_hours > LEGACY_MAX_HOURS).some(moneyUsed);
+    const rows = extrasPriced ? data.rows : data.rows.filter((row) => row.travel_hours <= LEGACY_MAX_HOURS);
+    const writeError = await replacePriceRows(
+      supabase,
+      "transport_time_prices",
+      data.transport_id,
+      rows.map((r) => ({ ...r, transport_id: data.transport_id })),
+      previous,
+    );
+    if (writeError) {
+      if (extrasPriced) {
+        fail(
+          "Travel times of 10–14 hours cannot be saved until the database range update is applied in Lovable Cloud. Leave those rows at 0 to save prices for 1–9 hours.",
+        );
       }
+      fail(SAFE_ERROR);
     }
 
     await audit(supabase, userId, "transport.time_prices_changed", "transports", data.transport_id, null, {
       from: before ?? [],
-      to: data.rows,
+      to: rows,
     });
     return { ok: true };
   });

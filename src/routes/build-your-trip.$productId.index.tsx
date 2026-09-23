@@ -39,7 +39,7 @@ function PackageLandingPage() {
         title={p.title}
         summary={p.summary}
         body={p.body}
-        imageUrl={p.image_url}
+        imageUrl={p.landing_image_url}
       />
     </PublicPage>
   );

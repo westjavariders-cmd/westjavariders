@@ -143,6 +143,16 @@ export const deleteProduct = createServerFn({ method: "POST" })
       .maybeSingle();
     if (error || !product) fail("This product could not be found.");
 
+    const landingRead = await supabase
+      .from("products")
+      .select("landing_image_path")
+      .eq("id", data.productId)
+      .maybeSingle();
+    const previousLanding = landingRead.error
+      ? null
+      : ((landingRead.data as { landing_image_path?: string | null } | null)?.landing_image_path ??
+        null);
+
     const { count } = await supabase
       .from("packages")
       .select("id", { count: "exact", head: true })
@@ -158,14 +168,9 @@ export const deleteProduct = createServerFn({ method: "POST" })
     if (delError) fail(SAFE_ERROR);
 
     const previous = product.image_path as string | null | undefined;
-    if (previous) {
-      const stillUsed = await supabase
-        .from("products")
-        .select("id", { count: "exact", head: true })
-        .eq("image_path", previous);
-      if ((stillUsed.count ?? 0) === 0) {
-        await supabase.storage.from(PRODUCT_MEDIA_BUCKET).remove([previous]);
-      }
+    const toRemove = [previous, previousLanding].filter((p): p is string => Boolean(p));
+    if (toRemove.length > 0) {
+      await supabase.storage.from(PRODUCT_MEDIA_BUCKET).remove(toRemove);
     }
 
     await audit(supabase, userId, "product_deleted", data.productId, product.internal_name, {});
@@ -215,6 +220,57 @@ export const setProductImage = createServerFn({ method: "POST" })
       supabase,
       userId,
       data.image_path ? "product_image_set" : "product_image_removed",
+      data.productId,
+      row.internal_name,
+      {},
+    );
+    return { ok: true };
+  });
+
+/** Records or clears the optional intermediate-page photo. */
+export const setProductLandingImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        productId: z.string().uuid(),
+        landing_image_path: z.string().min(1).max(500).nullable(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = ctx(context);
+    await assertAdmin(supabase);
+
+    const { data: row, error: readError } = await supabase
+      .from("products")
+      .select("landing_image_path, internal_name")
+      .eq("id", data.productId)
+      .maybeSingle();
+    if (readError) fail("The intermediate-page photo could not be saved until the database update is applied.");
+    if (!row) fail("This product could not be found.");
+
+    const { error } = await supabase
+      .from("products")
+      .update({ landing_image_path: data.landing_image_path })
+      .eq("id", data.productId);
+    if (error) fail("The intermediate-page photo could not be saved until the database update is applied.");
+
+    const previous = row.landing_image_path as string | null | undefined;
+    if (previous && previous !== data.landing_image_path) {
+      const stillUsed = await supabase
+        .from("products")
+        .select("id", { count: "exact", head: true })
+        .eq("landing_image_path", previous);
+      if ((stillUsed.count ?? 0) === 0) {
+        await supabase.storage.from(PRODUCT_MEDIA_BUCKET).remove([previous]);
+      }
+    }
+
+    await audit(
+      supabase,
+      userId,
+      data.landing_image_path ? "product_landing_image_set" : "product_landing_image_removed",
       data.productId,
       row.internal_name,
       {},

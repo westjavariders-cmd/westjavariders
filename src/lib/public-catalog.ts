@@ -144,11 +144,31 @@ export function summarizeAnswers(
       continue;
     }
 
-    let value: string | null;
     if (Array.isArray(raw)) {
-      const parts = raw.map((v) => optionLabel(String(v))).filter((v): v is string => !!v);
-      value = parts.length > 0 ? parts.join(", ") : null;
-    } else if (f.field_type === "single_select" || f.field_type === "multi_select")
+      const ids = raw.map(String).filter((v) => v !== "");
+      const hasPerItem = ids.some((id) =>
+        QUANTITY_SUFFIXES.some(({ suffix }) => !isEmptyAnswer(all[`${f.variable_name}__${id}${suffix}`])),
+      );
+      if (hasPerItem) {
+        for (const id of ids) {
+          const name = optionLabel(id);
+          if (!name) continue;
+          lines.push({ label, value: name });
+          const itemLabels =
+            quantityLabels[`${f.variable_name}__${id}`] || quantityLabels[f.variable_name];
+          lines.push(...quantityLines(`${f.variable_name}__${id}`, all, itemLabels));
+        }
+        continue;
+      }
+      const parts = ids.map((id) => optionLabel(id)).filter((v): v is string => !!v);
+      if (parts.length === 0) continue;
+      lines.push({ label, value: parts.join(", ") });
+      lines.push(...quantityLines(f.variable_name, all, quantityLabels[f.variable_name]));
+      continue;
+    }
+
+    let value: string | null;
+    if (f.field_type === "single_select" || f.field_type === "multi_select")
       value = optionLabel(String(raw));
     else if (f.field_type === "date" || f.field_type === "date_range")
       value = formatCalendarDate(String(raw));

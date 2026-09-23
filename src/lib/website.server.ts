@@ -394,12 +394,10 @@ export async function websiteNav(language?: string): Promise<PublicNavItem[]> {
   const fallback = await defaultLanguage(db);
   const wanted = language && language.trim() !== "" ? language : fallback;
 
+  const navColumns =
+    "id, destination_kind, destination_page_id, destination_product_id, destination_external_url, is_active, sort_order";
   const [items, pages] = await Promise.all([
-    db
-      .from("website_nav_items")
-      .select(
-        "id, destination_kind, destination_page_id, destination_product_id, destination_external_url, is_active, sort_order, image_path",
-      ),
+    db.from("website_nav_items").select(navColumns),
     db.from("website_pages").select("id, slug, is_active"),
   ]);
 
@@ -408,6 +406,20 @@ export async function websiteNav(language?: string): Promise<PublicNavItem[]> {
   );
   const active = visibleSorted(items.data ?? []);
   const ids = active.map((i: any) => i.id);
+
+  const imageById = new Map<string, string | null>();
+  if (ids.length > 0) {
+    try {
+      const images = await db.from("website_nav_items").select("id, image_path").in("id", ids);
+      if (!images.error) {
+        for (const row of images.data ?? []) {
+          imageById.set(row.id as string, (row.image_path as string | null) ?? null);
+        }
+      }
+    } catch {
+      // image_path may not exist until the migration is applied
+    }
+  }
 
   const translations = ids.length
     ? await db
@@ -435,7 +447,7 @@ export async function websiteNav(language?: string): Promise<PublicNavItem[]> {
           id: item.id,
           label: text.label,
           ...destination,
-          image_url: await signedMedia(db, item.image_path ?? null),
+          image_url: await signedMedia(db, imageById.get(item.id) ?? null),
         };
       }),
     )

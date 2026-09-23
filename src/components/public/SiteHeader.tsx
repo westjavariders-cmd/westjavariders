@@ -83,11 +83,14 @@ function CmsNavLinks({
   items,
   variant,
   onNavigate,
+  ready,
 }: {
   items: CmsNavItem[];
   variant: "desktop" | "mobile";
   onNavigate?: () => void;
+  ready: boolean;
 }) {
+  if (!ready) return null;
   if (items.length === 0) {
     return (
       <Link
@@ -159,6 +162,7 @@ export function SiteHeader() {
   const cart = usePublicCart();
   const nav = useWebsiteNav();
   const navItems = nav.data?.items ?? [];
+  const navReady = nav.isSuccess;
   const hasNavImages = navItems.some((item) => Boolean(item.image_url));
   const total = displayTotal(
     cart.data?.payable_total_idr ?? 0,
@@ -261,7 +265,7 @@ export function SiteHeader() {
           )}
           aria-label="Primary"
         >
-          <CmsNavLinks items={navItems} variant="desktop" />
+          <CmsNavLinks items={navItems} variant="desktop" ready={navReady} />
         </nav>
 
         <div className="flex items-center justify-end gap-3 sm:gap-4">
@@ -311,7 +315,7 @@ export function SiteHeader() {
               </div>
 
               <nav className="mt-10 flex flex-1 flex-col overflow-y-auto" aria-label="Primary">
-                <CmsNavLinks items={navItems} variant="mobile" onNavigate={() => setOpen(false)} />
+                <CmsNavLinks items={navItems} variant="mobile" ready={navReady} onNavigate={() => setOpen(false)} />
               </nav>
 
               <Link

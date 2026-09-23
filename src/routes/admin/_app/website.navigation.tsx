@@ -77,14 +77,25 @@ function WebsiteNavigationScreen() {
   const items = useQuery({
     queryKey: ["website-nav-items"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("website_nav_items")
-        .select(
-          "id, internal_name, destination_kind, destination_page_id, destination_product_id, destination_external_url, is_active, image_path, sort_order",
-        )
-        .order("sort_order");
+      const columns =
+        "id, internal_name, destination_kind, destination_page_id, destination_product_id, destination_external_url, is_active, sort_order";
+      const { data, error } = await supabase.from("website_nav_items").select(columns).order("sort_order");
       if (error) throw new Error(error.message);
-      return (data ?? []) as NavRow[];
+      const rows = (data ?? []) as Omit<NavRow, "image_path">[];
+      const ids = rows.map((row) => row.id);
+      const imageById = new Map<string, string | null>();
+      if (ids.length > 0) {
+        const images = await supabase.from("website_nav_items").select("id, image_path").in("id", ids);
+        if (!images.error) {
+          for (const row of images.data ?? []) {
+            imageById.set(row.id as string, (row.image_path as string | null) ?? null);
+          }
+        }
+      }
+      return rows.map((row) => ({
+        ...row,
+        image_path: imageById.get(row.id) ?? null,
+      })) as NavRow[];
     },
   });
 
