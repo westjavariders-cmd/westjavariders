@@ -1,14 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 
 import { PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { deleteNavItem, reorderNavItems, saveNavItem } from "@/lib/website.functions";
-import { DESTINATION_KINDS, DESTINATION_LABELS, moveInOrder, type DestinationKind } from "@/lib/website";
+import {
+  DESTINATION_KINDS,
+  DESTINATION_LABELS,
+  WEBSITE_MEDIA_BUCKET,
+  moveInOrder,
+  type DestinationKind,
+} from "@/lib/website";
 import {
   LanguagePicker,
   useWebsiteLanguages,
@@ -34,6 +40,7 @@ type NavRow = {
   destination_product_id: string | null;
   destination_external_url: string | null;
   is_active: boolean;
+  image_path: string | null;
   sort_order: number;
 };
 
@@ -45,6 +52,7 @@ type Draft = {
   destination_product_id: string | null;
   destination_external_url: string;
   is_active: boolean;
+  image_path: string | null;
   label: string;
 };
 
@@ -72,7 +80,7 @@ function WebsiteNavigationScreen() {
       const { data, error } = await supabase
         .from("website_nav_items")
         .select(
-          "id, internal_name, destination_kind, destination_page_id, destination_product_id, destination_external_url, is_active, sort_order",
+          "id, internal_name, destination_kind, destination_page_id, destination_product_id, destination_external_url, is_active, image_path, sort_order",
         )
         .order("sort_order");
       if (error) throw new Error(error.message);
@@ -94,6 +102,25 @@ function WebsiteNavigationScreen() {
   });
 
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const imageInput = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function sign(path: string | null) {
+      if (!path) return null;
+      const { data } = await supabase.storage.from(WEBSITE_MEDIA_BUCKET).createSignedUrl(path, 3600);
+      return data?.signedUrl ?? null;
+    }
+    void (async () => {
+      const url = await sign(draft?.image_path ?? null);
+      if (!cancelled) setImagePreview(url);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [draft?.image_path]);
 
   function refresh() {
     void queryClient.invalidateQueries({ queryKey: ["website-nav-items"] });
@@ -112,6 +139,7 @@ function WebsiteNavigationScreen() {
           destination_product_id: draft.destination_product_id,
           destination_external_url: draft.destination_external_url,
           is_active: draft.is_active,
+          image_path: draft.image_path,
           language: activeLanguage,
           label: draft.label,
         },
@@ -169,6 +197,25 @@ function WebsiteNavigationScreen() {
     }
   }
 
+  async function uploadImage(files: FileList | null) {
+    const file = files?.[0];
+    if (!file || !draft?.id) return;
+    setUploading(true);
+    try {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+      const path = `nav/${draft.id}/${Date.now()}-${safeName}`;
+      const { error } = await supabase.storage.from(WEBSITE_MEDIA_BUCKET).upload(path, file);
+      if (error) throw new Error(error.message);
+      setDraft({ ...draft, image_path: path });
+      toast.success("Uploaded. Save to keep it.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "This file could not be uploaded.");
+    } finally {
+      setUploading(false);
+      if (imageInput.current) imageInput.current.value = "";
+    }
+  }
+
   return (
     <>
       <PageHeader
@@ -187,6 +234,7 @@ function WebsiteNavigationScreen() {
                   destination_product_id: null,
                   destination_external_url: "",
                   is_active: true,
+                  image_path: null,
                   label: "",
                 })
               }
@@ -309,6 +357,54 @@ function WebsiteNavigationScreen() {
               <Label htmlFor="nav-active">Shown in the menu</Label>
             </div>
 
+            <div className="space-y-2">
+              <Label>Menu image (optional)</Label>
+              <p className="text-xs text-muted-foreground">
+                Shown in the public header. Independent of the destination page image.
+              </p>
+              {imagePreview && (
+                <img
+                  src={imagePreview}
+                  alt=""
+                  className="h-28 w-full max-w-sm object-cover"
+                />
+              )}
+              {draft.id ? (
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    ref={imageInput}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => void uploadImage(e.target.files)}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={uploading}
+                    onClick={() => imageInput.current?.click()}
+                  >
+                    {draft.image_path ? "Replace image" : "Upload image"}
+                  </Button>
+                  {draft.image_path && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setDraft({ ...draft, image_path: null })}
+                    >
+                      Remove image
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Save the menu item first, then you can add an image.
+                </p>
+              )}
+            </div>
+
             <div className="flex gap-2">
               <Button size="sm" onClick={() => void submit()}>
                 Save menu item
@@ -379,6 +475,7 @@ function WebsiteNavigationScreen() {
                         destination_product_id: item.destination_product_id,
                         destination_external_url: item.destination_external_url ?? "",
                         is_active: item.is_active,
+                        image_path: item.image_path,
                         label: label ?? "",
                       })
                     }

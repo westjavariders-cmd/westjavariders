@@ -98,7 +98,13 @@ export type PublicWebsitePage = {
   sections: PublicSection[];
 };
 
-export type PublicNavItem = { id: string; label: string; href: string; external: boolean };
+export type PublicNavItem = {
+  id: string;
+  label: string;
+  href: string;
+  external: boolean;
+  image_url: string | null;
+};
 
 export type PublicLanding = {
   title: string | null;
@@ -392,7 +398,7 @@ export async function websiteNav(language?: string): Promise<PublicNavItem[]> {
     db
       .from("website_nav_items")
       .select(
-        "id, destination_kind, destination_page_id, destination_product_id, destination_external_url, is_active, sort_order",
+        "id, destination_kind, destination_page_id, destination_product_id, destination_external_url, is_active, sort_order, image_path",
       ),
     db.from("website_pages").select("id, slug, is_active"),
   ]);
@@ -410,21 +416,28 @@ export async function websiteNav(language?: string): Promise<PublicNavItem[]> {
         .in("nav_item_id", ids)
     : { data: [] };
 
-  return active
-    .map((item: any) => {
-      const destination = resolveDestination({
-        kind: item.destination_kind,
-        pageSlug: item.destination_page_id ? (slug.get(item.destination_page_id) ?? null) : null,
-        productId: item.destination_product_id,
-        externalUrl: item.destination_external_url,
-      });
-      const text = pickTranslation<any>(
-        ((translations.data ?? []) as any[]).filter((t: any) => t.nav_item_id === item.id),
-        wanted,
-        fallback,
-      );
-      if (!destination || !text?.label) return null;
-      return { id: item.id, label: text.label, ...destination };
-    })
-    .filter((i: unknown): i is PublicNavItem => Boolean(i));
+  return (
+    await Promise.all(
+      active.map(async (item: any) => {
+        const destination = resolveDestination({
+          kind: item.destination_kind,
+          pageSlug: item.destination_page_id ? (slug.get(item.destination_page_id) ?? null) : null,
+          productId: item.destination_product_id,
+          externalUrl: item.destination_external_url,
+        });
+        const text = pickTranslation<any>(
+          ((translations.data ?? []) as any[]).filter((t: any) => t.nav_item_id === item.id),
+          wanted,
+          fallback,
+        );
+        if (!destination || !text?.label) return null;
+        return {
+          id: item.id,
+          label: text.label,
+          ...destination,
+          image_url: await signedMedia(db, item.image_path ?? null),
+        };
+      }),
+    )
+  ).filter((i: unknown): i is PublicNavItem => Boolean(i));
 }

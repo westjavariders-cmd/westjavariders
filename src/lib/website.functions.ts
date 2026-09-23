@@ -10,7 +10,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { BLOCK_KINDS, DESTINATION_KINDS, MEDIA_KINDS, isSafeSlug } from "@/lib/website";
+import { BLOCK_KINDS, DESTINATION_KINDS, MEDIA_KINDS, WEBSITE_MEDIA_BUCKET, isSafeSlug } from "@/lib/website";
 
 const SAFE_ERROR = "This action could not be completed. Please check your input and try again.";
 
@@ -451,6 +451,7 @@ export const saveNavItem = createServerFn({ method: "POST" })
         destination_product_id: z.string().uuid().nullable().optional(),
         destination_external_url: z.string().max(2000).nullable().optional(),
         is_active: z.boolean(),
+        image_path: z.string().max(500).nullable().optional(),
         language,
         label: text(80),
       })
@@ -468,7 +469,7 @@ export const saveNavItem = createServerFn({ method: "POST" })
       fail("An external link must start with https://");
     }
 
-    const row = {
+    const row: Record<string, unknown> = {
       internal_name: data.internal_name,
       destination_kind: data.destination_kind,
       destination_page_id: data.destination_kind === "page" ? (data.destination_page_id ?? null) : null,
@@ -477,9 +478,19 @@ export const saveNavItem = createServerFn({ method: "POST" })
       destination_external_url: external,
       is_active: data.is_active,
     };
+    if (data.image_path !== undefined) row["image_path"] = data.image_path;
 
     let itemId = data.id ?? null;
+    let previousImage: string | null = null;
     if (itemId) {
+      if (data.image_path !== undefined) {
+        const { data: current } = await supabase
+          .from("website_nav_items")
+          .select("image_path")
+          .eq("id", itemId)
+          .maybeSingle();
+        previousImage = (current?.image_path as string | null) ?? null;
+      }
       const { error } = await supabase.from("website_nav_items").update(row).eq("id", itemId);
       if (error) fail("This menu item could not be saved.");
     } else {
@@ -490,6 +501,16 @@ export const saveNavItem = createServerFn({ method: "POST" })
         .single();
       if (error || !created) fail("This menu item could not be created.");
       itemId = created.id as string;
+    }
+
+    if (previousImage && previousImage !== (data.image_path ?? null)) {
+      const stillUsed = await supabase
+        .from("website_nav_items")
+        .select("id", { count: "exact", head: true })
+        .eq("image_path", previousImage);
+      if ((stillUsed.count ?? 0) === 0) {
+        await supabase.storage.from(WEBSITE_MEDIA_BUCKET).remove([previousImage]);
+      }
     }
 
     await upsertTranslation(
@@ -517,8 +538,16 @@ export const deleteNavItem = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = ctx(context);
     await assertAdmin(supabase);
+    const { data: item } = await supabase
+      .from("website_nav_items")
+      .select("image_path")
+      .eq("id", data.id)
+      .maybeSingle();
     const { error } = await supabase.from("website_nav_items").delete().eq("id", data.id);
     if (error) fail("This menu item could not be removed.");
+    if (item?.image_path) {
+      await supabase.storage.from(WEBSITE_MEDIA_BUCKET).remove([item.image_path as string]);
+    }
     await audit(supabase, userId, "website.nav.deleted", "website_nav_items", data.id, null);
     return { ok: true };
   });
