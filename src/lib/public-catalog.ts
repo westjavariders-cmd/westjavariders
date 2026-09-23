@@ -29,6 +29,11 @@ export type SummarizeAnswersOptions = {
    * Configurator (`yes_no`): show an explicit Yes/No for a real boolean answer.
    */
   booleanValues?: "omit" | "yes_no";
+  /**
+   * Field id → the question the customer saw (step Customer-facing title).
+   * Falls back to the field's customer_label, then its internal name.
+   */
+  questionTitles?: Record<string, string>;
 };
 
 /** Calendar YYYY-MM-DD as a readable date. Does not apply a timezone. */
@@ -112,7 +117,8 @@ export function summarizeAnswers(
     if (!f.is_active || f.field_type === "info_block") continue;
     const raw = all[f.variable_name];
     const isBoolean = typeof raw === "boolean" || f.field_type === "boolean";
-    const label = f.customer_label || f.internal_name;
+    const titled = extras.questionTitles?.[f.id]?.trim();
+    const label = titled || f.customer_label?.trim() || f.internal_name;
 
     if (extras.booleanValues === "yes_no" && isBoolean && (raw === true || raw === false)) {
       lines.push({ label, value: raw === true ? "Yes" : "No" });

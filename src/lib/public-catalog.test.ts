@@ -153,6 +153,17 @@ describe("configuration summary", () => {
     ]);
   });
 
+  it("uses the configurator Customer-facing title when provided", () => {
+    const fields = [
+      field({ id: "f2", variable_name: "level", field_type: "single_select", customer_label: "Level" }),
+    ];
+    expect(
+      summarizeAnswers(fields, [option()], { level: "beginner" }, {}, {}, {
+        questionTitles: { f2: "What is your surf level?" },
+      }),
+    ).toEqual([{ label: "What is your surf level?", value: "Beginner" }]);
+  });
+
 });
 
 describe("configurator defaults", () => {

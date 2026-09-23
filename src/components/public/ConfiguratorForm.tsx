@@ -289,14 +289,25 @@ export function ConfiguratorForm({
               className={`space-y-5 ${dir === 1 ? "cbr-step-next" : "cbr-step-prev"}`}
             >
               <div>
-                <h2
-                  id="configurator-step-title"
-                  ref={stepHeadingRef}
-                  tabIndex={-1}
-                  className="text-xl font-medium tracking-tight outline-none"
-                >
-                  {step.customer_title || step.internal_name}
-                </h2>
+                {step.customer_title?.trim() ? (
+                  <h2
+                    id="configurator-step-title"
+                    ref={stepHeadingRef}
+                    tabIndex={-1}
+                    className="text-xl font-medium tracking-tight outline-none"
+                  >
+                    {step.customer_title.trim()}
+                  </h2>
+                ) : (
+                  <h2
+                    id="configurator-step-title"
+                    ref={stepHeadingRef}
+                    tabIndex={-1}
+                    className="sr-only"
+                  >
+                    Step {stepIndex + 1}
+                  </h2>
+                )}
                 {step.customer_description && (
                   <p className="mt-1 text-sm text-muted-foreground">{step.customer_description}</p>
                 )}
@@ -305,6 +316,8 @@ export function ConfiguratorForm({
               {stepFields.map((f) => {
                 const e = evaluated.fields[f.id]!;
                 const value = e.forcedValue ?? values[f.variable_name] ?? "";
+                const fieldLabel = f.customer_label?.trim() ?? "";
+                const labelId = fieldLabel || e.required ? `${f.id}-label` : undefined;
                 const catalogueKeyOfField = fieldCatalogueKey(f as never);
                 const catalogueItems = catalogueKeyOfField
                   ? (catalogue[catalogueKeyOfField] ?? [])
@@ -324,9 +337,10 @@ export function ConfiguratorForm({
                       .filter((o) => !evaluated.hiddenOptionIds.has(o.id));
 
                 if (f.field_type === "info_block") {
+                  if (!fieldLabel && !f.help_text) return null;
                   return (
                     <div key={f.id} className="rounded-md bg-muted/50 p-3 text-sm">
-                      <p className="font-medium">{f.customer_label ?? f.internal_name}</p>
+                      {fieldLabel ? <p className="font-medium">{fieldLabel}</p> : null}
                       {f.help_text && <p className="text-muted-foreground">{f.help_text}</p>}
                     </div>
                   );
@@ -343,10 +357,12 @@ export function ConfiguratorForm({
                     }}
                     className="space-y-1.5"
                   >
-                    <Label className="text-sm" id={`${f.id}-label`}>
-                      {f.customer_label ?? f.internal_name}
-                      {e.required && <span className="ml-1 text-destructive">*</span>}
-                    </Label>
+                    {(fieldLabel || e.required) && (
+                      <Label className="text-sm" id={labelId}>
+                        {fieldLabel}
+                        {e.required && <span className="ml-1 text-destructive">*</span>}
+                      </Label>
+                    )}
                     {f.help_text && <p className="text-xs text-muted-foreground">{f.help_text}</p>}
 
                     {f.field_type === "single_select" && (
@@ -357,7 +373,7 @@ export function ConfiguratorForm({
                         disabled={e.disabled}
                         error={!!errorMessage}
                         errorId={errorMessage ? errorId : undefined}
-                        labelledBy={`${f.id}-label`}
+                        labelledBy={labelId}
                         onSelect={(internalValue) =>
                           set(f, value === internalValue && !e.required ? "" : internalValue)
                         }
@@ -458,7 +474,7 @@ export function ConfiguratorForm({
                         disabled={e.disabled}
                         error={!!errorMessage}
                         errorId={errorMessage ? errorId : undefined}
-                        labelledBy={`${f.id}-label`}
+                        labelledBy={labelId}
                         onSelect={(internalValue) => {
                           const list = Array.isArray(values[f.variable_name])
                             ? (values[f.variable_name] as string[])
@@ -524,7 +540,7 @@ export function ConfiguratorForm({
                         disabled={e.disabled}
                         error={!!errorMessage}
                         errorId={errorMessage ? errorId : undefined}
-                        labelledBy={`${f.id}-label`}
+                        labelledBy={labelId}
                         onSelect={(v) => set(f, v)}
                       />
                     )}

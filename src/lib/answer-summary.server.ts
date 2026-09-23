@@ -7,6 +7,36 @@ import {
 } from "@/lib/public-catalog";
 
 /**
+ * The question printed on the voucher is the step's Customer-facing title
+ * (what the customer saw in the configurator). If a step has several
+ * questions, the field label is kept so the lines stay distinct.
+ */
+export function questionTitlesFromSteps(
+  fields: { id: string; step_id: string | null; customer_label: string | null; internal_name: string; is_active: boolean; field_type: string }[],
+  steps: { id: string; customer_title: string | null; internal_name: string }[],
+): Record<string, string> {
+  const stepById = new Map(steps.map((step) => [step.id, step]));
+  const visiblePerStep = new Map<string, number>();
+  for (const field of fields) {
+    if (!field.is_active || field.field_type === "info_block") continue;
+    const stepId = field.step_id ?? "";
+    visiblePerStep.set(stepId, (visiblePerStep.get(stepId) ?? 0) + 1);
+  }
+  const titles: Record<string, string> = {};
+  for (const field of fields) {
+    const step = field.step_id ? stepById.get(field.step_id) : undefined;
+    const stepTitle = step?.customer_title?.trim() || "";
+    const fieldLabel = field.customer_label?.trim() || "";
+    const count = visiblePerStep.get(field.step_id ?? "") ?? 1;
+    if (stepTitle && count === 1) titles[field.id] = stepTitle;
+    else if (stepTitle && fieldLabel && fieldLabel !== stepTitle) titles[field.id] = `${stepTitle} — ${fieldLabel}`;
+    else if (stepTitle) titles[field.id] = stepTitle;
+    else titles[field.id] = fieldLabel || field.internal_name;
+  }
+  return titles;
+}
+
+/**
  * Builds one customer-facing answer list in the exact order of the product's
  * configurator. It also maps renamed legacy catalogue variables by catalogue,
  * without changing the historical answers stored in the purchase snapshot.
@@ -24,9 +54,14 @@ async function orderedAnswerDetails(
   ]);
   const fields = fieldRows ?? [];
   const { data: steps } = flow
-    ? await db.from("steps").select("id, display_order").eq("flow_id", flow.id).order("display_order")
+    ? await db
+        .from("steps")
+        .select("id, display_order, customer_title, internal_name")
+        .eq("flow_id", flow.id)
+        .order("display_order")
     : { data: [] };
   const orderedFields = sortFieldsByStepOrder(fields as any[], (steps ?? []) as any[]);
+  const questionTitles = questionTitlesFromSteps(orderedFields as any[], (steps ?? []) as any[]);
   const fieldIds = fields.map((field: any) => field.id);
   const options = fieldIds.length
     ? ((await db.from("field_options").select("*").in("field_id", fieldIds).order("display_order")).data ?? [])
@@ -84,6 +119,7 @@ async function orderedAnswerDetails(
         .map((selection: any) => [selection.item_id, selection.name]),
     ),
     quantityLabels,
+    { questionTitles },
   );
   return { lines, fields, answers };
 }
