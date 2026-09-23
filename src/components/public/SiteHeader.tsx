@@ -113,8 +113,8 @@ function CmsNavLinks({
     const className =
       variant === "desktop"
         ? withImage
-          ? "group relative flex h-[4.25rem] w-[8.25rem] shrink-0 items-end overflow-hidden px-2.5 py-2"
-          : "whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground"
+          ? "group relative flex h-[4.25rem] min-w-[5.5rem] max-w-[8.25rem] flex-1 items-end overflow-hidden px-2 py-2"
+          : "shrink-0 whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground"
         : withImage
           ? "group relative mb-3 flex h-32 shrink-0 items-end overflow-hidden px-4 py-3"
           : "block min-h-12 py-3 text-2xl font-medium tracking-tight text-foreground";
@@ -226,7 +226,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-border/40 bg-background/90 backdrop-blur-md">
       <div
         className={cn(
-          "mx-auto grid max-w-[90rem] grid-cols-[auto_1fr_auto] items-center gap-3 px-4 sm:px-6 lg:px-10 xl:grid-cols-[1fr_auto_1fr]",
+          "mx-auto grid max-w-[90rem] grid-cols-[auto_1fr_auto] items-center gap-3 px-4 sm:px-6 lg:px-10 xl:grid-cols-[auto_minmax(0,1fr)_auto]",
           hasNavImages ? "h-16 sm:h-[4.25rem] xl:h-[5.75rem]" : "h-16 sm:h-[4.25rem]",
         )}
       >
@@ -260,8 +260,8 @@ export function SiteHeader() {
 
         <nav
           className={cn(
-            "hidden items-center justify-center xl:flex",
-            hasNavImages ? "gap-x-2.5" : "gap-x-7",
+            "hidden min-w-0 items-center justify-center xl:flex",
+            hasNavImages ? "gap-x-2" : "gap-x-7",
           )}
           aria-label="Primary"
         >
