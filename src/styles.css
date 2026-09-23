@@ -1,6 +1,8 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+@import "@fontsource-variable/figtree";
+@import "@fontsource-variable/fraunces";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -121,6 +123,21 @@
   --border: oklch(1 0 0 / 18%);
   --input: oklch(1 0 0 / 28%);
   --ring: oklch(0.84 0 0);
+  font-family: "Figtree Variable", ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Display serif for titles; Figtree stays on menus, buttons and body copy. */
+.public-theme h1,
+.public-theme h2,
+.public-theme h3,
+:root:has(.public-theme) h1,
+:root:has(.public-theme) h2,
+:root:has(.public-theme) h3 {
+  font-family: "Fraunces Variable", ui-serif, Georgia, serif;
+  font-optical-sizing: auto;
+  letter-spacing: -0.03em;
 }
 
 .dark {
