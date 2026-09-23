@@ -13,7 +13,7 @@ import {
   type PreviewValues,
   type ProductBundle,
 } from "@/lib/catalog";
-import { formatIdr, summarizeAnswers } from "@/lib/public-catalog";
+import { formatIdr } from "@/lib/public-catalog";
 import {
   REQUIRED_FIELD_MESSAGE,
   isMissingRequiredAnswer,
@@ -30,7 +30,7 @@ import {
 import { completePackage, savePackageConfiguration } from "@/lib/cart.functions";
 import { PUBLIC_CART_KEY, usePublicCart } from "@/components/public/SiteHeader";
 import { ConfiguratorOptionList } from "@/components/public/ConfiguratorOptionList";
-import { ConfiguratorSummary } from "@/components/public/ConfiguratorSummary";
+import { QuoteNotes, QuoteTotal } from "@/components/public/ConfiguratorSummary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -212,39 +212,6 @@ export function ConfiguratorForm({
 
   const stepFields = step ? visibleStepFields(bundle, step.id, evaluated) : [];
 
-  const summaryLines = useMemo(() => {
-    const fields = bundle.fields.filter((f) => {
-      const effect = evaluated.fields[f.id];
-      if (!effect) return false;
-      if (effect.hidden && !effect.forcedVisible) return false;
-      if (effect.reset) return false;
-      return true;
-    });
-    const overlay: PreviewValues = { ...values };
-    for (const f of fields) {
-      const forced = evaluated.fields[f.id]?.forcedValue;
-      if (forced != null) overlay[f.variable_name] = forced;
-    }
-    const catalogueNames: Record<string, string> = {};
-    const quantityLabels: Record<string, Record<string, string>> = {};
-    for (const f of bundle.fields) {
-      const key = fieldCatalogueKey(f as never);
-      if (!key) continue;
-      const items = catalogue[key] ?? [];
-      for (const item of items) catalogueNames[item.id] = item.name;
-      const chosen = items.find((item) => item.id === String(overlay[f.variable_name] ?? ""));
-      const variants = chosen?.variants;
-      if (!variants) continue;
-      quantityLabels[f.variable_name] = {
-        ...(variants.people_label ? { _people: variants.people_label } : {}),
-        ...(variants.hours_label ? { _hours: variants.hours_label } : {}),
-      };
-    }
-    return summarizeAnswers(fields, bundle.options, overlay, catalogueNames, quantityLabels, {
-      booleanValues: "yes_no",
-    });
-  }, [bundle, catalogue, evaluated, values]);
-
   useEffect(() => {
     setFieldErrors((prev) => {
       const ids = Object.keys(prev);
@@ -355,18 +322,7 @@ export function ConfiguratorForm({
         </nav>
       </div>
 
-      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-12">
-        <ConfiguratorSummary
-          productTitle={productTitle}
-          imageUrl={imageUrl}
-          lines={summaryLines}
-          quote={quote}
-          display={display}
-          quoting={quoting}
-          unsaved={unsaved}
-          showCustomer={showCustomer}
-        />
-        <div className="mt-6 min-w-0 space-y-6 lg:col-start-1 lg:row-start-1 lg:mt-0">
+      <div className="min-w-0 space-y-6">
           <section aria-labelledby="configurator-step-title" className="space-y-6">
             <div
               key={stepIndex}
@@ -666,6 +622,14 @@ export function ConfiguratorForm({
 
           <Card>
             <CardContent className="space-y-3 p-4">
+              <QuoteTotal
+                quote={quote}
+                display={display}
+                quoting={quoting}
+                unsaved={unsaved}
+                showCustomer={showCustomer}
+              />
+              <QuoteNotes quote={quote} />
               <Button
                 className="min-h-11 w-full"
                 disabled={!ready || booking}
@@ -679,7 +643,6 @@ export function ConfiguratorForm({
               </p>
             </CardContent>
           </Card>
-        </div>
       </div>
     </div>
   );

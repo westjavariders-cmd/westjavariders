@@ -21,40 +21,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { sendContactRequest } from "@/lib/contact.functions";
 
 const CART_PAYMENT_SUMMARY_KEY = ["cart-payment-summary"] as const;
-const COMPACT_SUMMARY_LINES = 4;
-
-function CartPackageImage({
-  imageUrl,
-  title,
-  productId,
-  toLanding,
-}: {
-  imageUrl: string | null;
-  title: string;
-  productId: string | null;
-  toLanding: boolean;
-}) {
-  if (!imageUrl) return null;
-  const img = (
-    <img
-      src={imageUrl}
-      alt={title}
-      className="aspect-[4/3] w-full rounded-md object-cover sm:aspect-square sm:w-28"
-    />
-  );
-  if (toLanding && productId) {
-    return (
-      <Link
-        to="/build-your-trip/$productId"
-        params={{ productId }}
-        className="block shrink-0 sm:w-28"
-      >
-        {img}
-      </Link>
-    );
-  }
-  return <div className="shrink-0 sm:w-28">{img}</div>;
-}
 
 function CartConfigSummary({
   lines,
@@ -68,33 +34,31 @@ function CartConfigSummary({
   onToggle: () => void;
 }) {
   if (lines.length === 0 && !promoCode) return null;
-  const shown = expanded ? lines : lines.slice(0, COMPACT_SUMMARY_LINES);
-  const canExpand = lines.length > COMPACT_SUMMARY_LINES;
   return (
     <div className="space-y-2">
-      <dl className="space-y-1 text-sm">
-        {shown.map((line) => (
-          <div key={`${line.label}\u0000${line.value}`} className="flex justify-between gap-4">
-            <dt className="min-w-0 truncate text-muted-foreground">{line.label}</dt>
-            <dd className="max-w-[60%] truncate text-right">{line.value}</dd>
-          </div>
-        ))}
-        {promoCode && (
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Promo code</dt>
-            <dd className="truncate">{promoCode}</dd>
-          </div>
-        )}
-      </dl>
-      {canExpand && (
-        <button
-          type="button"
-          className="text-xs uppercase tracking-[0.14em] text-muted-foreground underline"
-          onClick={onToggle}
-        >
-          {expanded ? "Hide details" : "View details"}
-        </button>
-      )}
+      <button
+        type="button"
+        className="text-xs uppercase tracking-[0.14em] text-muted-foreground underline"
+        onClick={onToggle}
+      >
+        {expanded ? "Hide details" : "View details"}
+      </button>
+      {expanded ? (
+        <dl className="space-y-1 text-sm">
+          {lines.map((line) => (
+            <div key={`${line.label}\u0000${line.value}`} className="flex justify-between gap-4">
+              <dt className="min-w-0 truncate text-muted-foreground">{line.label}</dt>
+              <dd className="max-w-[60%] truncate text-right">{line.value}</dd>
+            </div>
+          ))}
+          {promoCode && (
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Promo code</dt>
+              <dd className="truncate">{promoCode}</dd>
+            </div>
+          )}
+        </dl>
+      ) : null}
     </div>
   );
 }
@@ -226,26 +190,10 @@ function CartPage() {
           return (
           <Card key={p.id}>
             <CardContent className="space-y-3 p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-                <CartPackageImage
-                  imageUrl={p.image_url}
-                  title={p.product_title}
-                  productId={p.product_id}
-                  toLanding
-                />
-                <div className="min-w-0 flex-1 space-y-3">
               <div className="flex items-baseline justify-between gap-3">
-                {p.product_id ? (
-                  <Link
-                    to="/build-your-trip/$productId"
-                    params={{ productId: p.product_id }}
-                    className="min-w-0 text-sm font-medium"
-                  >
-                    {`${p.product_title.toUpperCase()} — PACKAGE`}
-                  </Link>
-                ) : (
-                  <p className="min-w-0 text-sm font-medium">{p.product_title.toUpperCase()}</p>
-                )}
+                <p className="min-w-0 text-sm font-medium">
+                  {`${p.product_title.toUpperCase()} — PACKAGE`}
+                </p>
                 <p className="shrink-0 text-base font-semibold">{formatIdr(p.total_idr)}</p>
               </div>
               {quoted?.price_changed && (
@@ -273,8 +221,6 @@ function CartPage() {
               >
                 Remove
               </Button>
-                </div>
-              </div>
             </CardContent>
           </Card>
           );
@@ -283,14 +229,6 @@ function CartPage() {
         {draft && (
           <Card className="border-dashed">
             <CardContent className="space-y-3 p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-                <CartPackageImage
-                  imageUrl={draft.image_url}
-                  title={draft.product_title}
-                  productId={draft.product_id}
-                  toLanding={false}
-                />
-                <div className="min-w-0 flex-1 space-y-3">
               <div className="flex items-baseline justify-between gap-3">
                 <p className="min-w-0 text-sm font-medium">
                   {draft.product_title.toUpperCase()} — CURRENT PACKAGE
@@ -330,8 +268,6 @@ function CartPage() {
                 >
                   Discard
                 </Button>
-              </div>
-                </div>
               </div>
             </CardContent>
           </Card>
