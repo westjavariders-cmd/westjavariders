@@ -1873,6 +1873,7 @@ export type Database = {
           internal_name: string
           internal_ref: string | null
           kind: Database["public"]["Enums"]["product_kind"]
+          landing_image_path: string | null
           sort_order: number
           status: string
           updated_at: string
@@ -1885,6 +1886,7 @@ export type Database = {
           internal_name: string
           internal_ref?: string | null
           kind: Database["public"]["Enums"]["product_kind"]
+          landing_image_path?: string | null
           sort_order?: number
           status?: string
           updated_at?: string
@@ -1897,6 +1899,7 @@ export type Database = {
           internal_name?: string
           internal_ref?: string | null
           kind?: Database["public"]["Enums"]["product_kind"]
+          landing_image_path?: string | null
           sort_order?: number
           status?: string
           updated_at?: string
