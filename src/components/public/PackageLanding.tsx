@@ -31,7 +31,7 @@ export function PackageLanding({ productId, title, summary, body, imageUrl }: Pa
 
       <div className="mt-6 grid gap-8 lg:mt-8 lg:grid-cols-12 lg:items-end lg:gap-12 xl:gap-16">
         {imageUrl ? (
-          <div className="relative isolate overflow-hidden bg-secondary lg:col-span-7">
+          <div className="cbr-photo-tile relative isolate overflow-hidden bg-secondary lg:col-span-7">
             <img
               src={imageUrl}
               alt={title}

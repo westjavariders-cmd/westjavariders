@@ -14,7 +14,7 @@ export function ProductCard({ productId, title, summary, imageUrl, bookable }: P
   const inner = (
     <article
       className={cn(
-        "group relative isolate flex h-full min-h-[58vw] overflow-hidden bg-secondary",
+        "group relative isolate flex h-full min-h-[58vw] overflow-hidden bg-secondary cbr-photo-tile",
         "sm:min-h-[22rem] md:min-h-[28rem] lg:min-h-[34rem] xl:min-h-[38rem]",
         !bookable && "opacity-70",
       )}
@@ -76,7 +76,7 @@ export function ProductCard({ productId, title, summary, imageUrl, bookable }: P
     <Link
       to="/build-your-trip/$productId"
       params={{ productId }}
-      className="group block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      className="group block h-full rounded-[1.35rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
       {inner}
     </Link>

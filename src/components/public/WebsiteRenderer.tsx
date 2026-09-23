@@ -41,7 +41,7 @@ function Media({ media }: { media: NonNullable<PublicBlock["media"]> }) {
         controls
         playsInline
         preload="metadata"
-        className="aspect-[16/9] w-full bg-secondary object-cover object-center"
+        className="aspect-[16/9] w-full rounded-[1.35rem] bg-secondary object-cover object-center"
       />
     );
   }
@@ -50,7 +50,7 @@ function Media({ media }: { media: NonNullable<PublicBlock["media"]> }) {
       src={media.url}
       alt=""
       loading="lazy"
-      className="aspect-[16/10] w-full bg-secondary object-cover object-center sm:aspect-[16/9]"
+      className="aspect-[16/10] w-full rounded-[1.35rem] bg-secondary object-cover object-center sm:aspect-[16/9]"
     />
   );
 }
@@ -82,7 +82,7 @@ function CatalogueList({ items }: { items: PublicBlock["catalogue_items"] }) {
           key={`${item.catalogue_id}-${item.item_id}`}
           to="/book/$catalogueId/$itemId"
           params={{ catalogueId: item.catalogue_id, itemId: item.item_id }}
-          className="group relative isolate flex min-h-[52vw] overflow-hidden bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:min-h-[18rem] md:min-h-[20rem]"
+          className="group cbr-photo-tile relative isolate flex min-h-[52vw] overflow-hidden bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:min-h-[18rem] md:min-h-[20rem]"
         >
           {item.photo_url ? (
             <div className="absolute inset-0 overflow-hidden">
@@ -136,7 +136,7 @@ function CatalogueList({ items }: { items: PublicBlock["catalogue_items"] }) {
 
 function homeDoorsLayoutClass(count: number) {
   return cn(
-    "mx-auto grid max-w-[90rem] gap-3 md:gap-4 xl:gap-5",
+    "mx-auto grid max-w-[90rem] gap-4 md:gap-5 xl:gap-6",
     "grid-cols-1",
     count === 2 && "md:grid-cols-2",
     count === 3 && "md:grid-cols-2",

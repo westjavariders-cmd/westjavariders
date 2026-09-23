@@ -258,6 +258,36 @@
   animation: cbr-nav-drawer 0.28s ease-out both;
 }
 
+/* Photo tiles: rounded frame with a soft vignette at the edges. */
+.public-theme .cbr-photo-tile {
+  border-radius: 1.35rem;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 10%),
+    0 22px 44px -24px rgb(0 0 0 / 70%);
+}
+
+.public-theme .cbr-photo-tile::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  box-shadow: inset 0 0 56px 12px rgb(0 0 0 / 38%);
+  background: radial-gradient(130% 95% at 50% 40%, transparent 42%, rgb(0 0 0 / 32%) 100%);
+}
+
+.public-theme .cbr-photo-tile--compact {
+  border-radius: 0.7rem;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 12%);
+}
+
+.public-theme .cbr-photo-tile--compact::after {
+  box-shadow: inset 0 0 24px 6px rgb(0 0 0 / 35%);
+}
+
 /* Editorial CTA for the public showcase (doors, cards, package landing, CMS). */
 .public-theme .cbr-editorial-cta {
   display: inline-flex;

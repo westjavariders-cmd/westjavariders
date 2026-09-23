@@ -118,10 +118,10 @@ function CmsNavLinks({
     const className =
       variant === "desktop"
         ? withImage
-          ? "group relative flex h-[4.25rem] min-w-[5.5rem] max-w-[8.25rem] flex-1 items-end overflow-hidden px-2 py-2"
+          ? "group cbr-photo-tile cbr-photo-tile--compact relative flex h-[4.25rem] min-w-[5.5rem] max-w-[8.25rem] flex-1 items-end overflow-hidden px-2 py-2"
           : "shrink-0 whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground"
         : withImage
-          ? "group relative mb-3 flex h-32 shrink-0 items-end overflow-hidden px-4 py-3"
+          ? "group cbr-photo-tile cbr-photo-tile--compact relative mb-3 flex h-32 shrink-0 items-end overflow-hidden px-4 py-3"
           : "block min-h-12 py-3 text-2xl font-medium tracking-tight text-foreground";
 
     return (
