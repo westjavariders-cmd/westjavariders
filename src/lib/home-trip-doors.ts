@@ -73,6 +73,25 @@ function isFamilyDoor(block: PublicBlock): boolean {
   );
 }
 
+function isBookIndividuallyDoor(block: PublicBlock): boolean {
+  const title = norm(block.title);
+  const href = hrefOf(block);
+  return (
+    title.includes("select activities") ||
+    title === "book individually" ||
+    href.endsWith("/pages/book-individually") ||
+    href.endsWith("/book-individually")
+  );
+}
+
+function stripDoorSubtitles(block: PublicBlock): PublicBlock {
+  return {
+    ...block,
+    body: null,
+    cta: block.cta ? { ...block.cta, label: "" } : null,
+  };
+}
+
 function pointDoor(
   block: PublicBlock,
   spec: { title: string; href: string },
@@ -128,7 +147,9 @@ export function applyHomeTripDoors(blocks: PublicBlock[]): PublicBlock[] {
 
   if (!family) family = syntheticFamilyDoor();
 
-  return [...[firstWaves, intermediate, family].filter(Boolean) as PublicBlock[], ...rest, ...others];
+  return [...[firstWaves, intermediate, family].filter(Boolean) as PublicBlock[], ...rest, ...others].map(
+    (block) => (block.kind === "door" && isBookIndividuallyDoor(block) ? stripDoorSubtitles(block) : block),
+  );
 }
 
 export type HomeNavImage = {

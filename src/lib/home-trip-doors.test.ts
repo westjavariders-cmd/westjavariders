@@ -42,6 +42,7 @@ describe("applyHomeTripDoors", () => {
       door({
         id: "book",
         title: "Select Activities individually",
+        body: 'Check first our "BUILD YOUR TRIP" option',
         cta: { label: "All options one by one", href: "/pages/book-individually", external: false },
       }),
     ]);
@@ -59,6 +60,10 @@ describe("applyHomeTripDoors", () => {
     expect(out[1].cta?.href).toBe(HOME_TRIP_DOORS.intermediatePro.href);
     expect(out[2].cta?.href).toBe(HOME_TRIP_DOORS.familyAdventures.href);
     expect(out[4].title).toBe("Meet the Boardriders");
+    const book = out.find((b) => b.id === "book");
+    expect(book?.body).toBeNull();
+    expect(book?.cta?.label).toBe("");
+    expect(book?.cta?.href).toBe("/pages/book-individually");
   });
 
   it("leaves non-home blocks without doors unchanged", () => {
