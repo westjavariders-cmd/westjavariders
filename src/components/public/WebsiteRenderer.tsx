@@ -228,17 +228,23 @@ function Section({
   section,
   doorLayout,
   navItems,
+  onlyCatalogueId,
 }: {
   section: PublicSection;
   doorLayout: "mosaic" | "selection";
   navItems: HomeNavImage[];
+  onlyCatalogueId?: string | null;
 }) {
   const sectionBlocks =
     doorLayout === "mosaic"
       ? applyNavImagesToHomeDoors(applyHomeTripDoors(section.blocks), navItems)
       : section.blocks;
-  const doors = sectionBlocks.filter((b) => b.kind === "door");
-  const others = sectionBlocks.filter((b) => b.kind !== "door");
+  const doors = onlyCatalogueId ? [] : sectionBlocks.filter((b) => b.kind === "door");
+  const others = sectionBlocks.filter((b) => {
+    if (b.kind === "door") return false;
+    if (onlyCatalogueId && b.kind === "catalogue") return b.id === onlyCatalogueId;
+    return true;
+  });
   const isHomeMosaic = doorLayout === "mosaic";
 
   return (
@@ -311,28 +317,46 @@ function isCatalogueSection(section: PublicSection): boolean {
   return section.blocks.some((block) => block.kind === "catalogue");
 }
 
+function catalogueBlocks(section: PublicSection): PublicBlock[] {
+  return section.blocks.filter((block) => block.kind === "catalogue");
+}
+
+function blockLabel(block: PublicBlock): string {
+  return block.title?.trim() || block.catalogue_items[0]?.catalogue_name || "";
+}
+
+function blockCover(block: PublicBlock, fallbackAlt: string): { url: string; alt: string } | null {
+  const item = block.catalogue_items.find((entry) => entry.photo_url);
+  if (item?.photo_url) return { url: item.photo_url, alt: blockLabel(block) || item.name };
+  if (block.media?.kind === "image") return { url: block.media.url, alt: fallbackAlt };
+  return null;
+}
+
 function sectionCover(section: PublicSection): { url: string; alt: string } | null {
+  for (const block of catalogueBlocks(section)) {
+    const cover = blockCover(block, section.title ?? "");
+    if (cover) return cover;
+  }
   for (const block of section.blocks) {
-    const item = block.catalogue_items.find((entry) => entry.photo_url);
-    if (item?.photo_url) return { url: item.photo_url, alt: section.title ?? item.name };
     if (block.media?.kind === "image") return { url: block.media.url, alt: section.title ?? "" };
   }
   return null;
 }
 
-function CatalogueGroupCard({
-  pageSlug,
-  groupKey,
-  section,
+function PhotoEntryCard({
+  href,
+  title,
+  subtitle,
+  cover,
 }: {
-  pageSlug: string;
-  groupKey: string;
-  section: PublicSection;
+  href: string;
+  title: string | null;
+  subtitle: string | null;
+  cover: { url: string; alt: string } | null;
 }) {
-  const cover = sectionCover(section);
   return (
     <a
-      href={`/pages/${pageSlug}/${groupKey}`}
+      href={href}
       className="group block h-full rounded-[1.35rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
       <div className="cbr-photo-tile group relative isolate flex h-full min-h-[52vw] overflow-hidden bg-secondary sm:min-h-[18rem] md:min-h-[22rem]">
@@ -347,14 +371,10 @@ function CatalogueGroupCard({
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-black/15" />
         <div className="relative z-10 mt-auto flex w-full flex-col justify-end gap-2 p-5 sm:p-6">
-          {section.title && (
-            <h2 className="text-balance text-2xl font-semibold tracking-tight text-neutral-50 sm:text-3xl">
-              {section.title}
-            </h2>
+          {title && (
+            <h2 className="text-balance text-2xl font-semibold tracking-tight text-neutral-50 sm:text-3xl">{title}</h2>
           )}
-          {section.subtitle && (
-            <p className="max-w-md text-sm leading-relaxed text-neutral-200/90">{section.subtitle}</p>
-          )}
+          {subtitle && <p className="max-w-md text-sm leading-relaxed text-neutral-200/90">{subtitle}</p>}
           <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.22em] text-neutral-50">
             View
             <span aria-hidden="true" className="ml-2">
@@ -367,22 +387,57 @@ function CatalogueGroupCard({
   );
 }
 
+function CatalogueTileGrid({
+  pageSlug,
+  groupKey,
+  section,
+}: {
+  pageSlug: string;
+  groupKey: string;
+  section: PublicSection;
+}) {
+  const blocks = catalogueBlocks(section);
+  const keys = assignGroupKeys(blocks.map((block) => ({ id: block.id, title: blockLabel(block) })));
+  return (
+    <div className={internalDoorsLayoutClass(blocks.length)}>
+      {blocks.map((block) => (
+        <PhotoEntryCard
+          key={block.id}
+          href={`/pages/${pageSlug}/${groupKey}/${keys.get(block.id) ?? block.id}`}
+          title={blockLabel(block) || null}
+          subtitle={block.body}
+          cover={blockCover(block, blockLabel(block))}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function WebsiteRenderer({
   page,
   showHeading = true,
   navItems = [],
   groupKey = null,
+  catalogueKey = null,
 }: {
   page: PublicWebsitePage;
   showHeading?: boolean;
   navItems?: HomeNavImage[];
   groupKey?: string | null;
+  catalogueKey?: string | null;
 }) {
   const doorLayout = page.slug === HOME_SLUG ? "mosaic" : "selection";
   const groupKeys = assignGroupKeys(page.sections);
   const catalogueGroups = page.sections.filter(isCatalogueSection);
   const selected =
     groupKey == null ? null : (page.sections.find((section) => groupKeys.get(section.id) === groupKey) ?? null);
+  const catalogueKeys = selected
+    ? assignGroupKeys(catalogueBlocks(selected).map((block) => ({ id: block.id, title: blockLabel(block) })))
+    : new Map<string, string>();
+  const selectedCatalogue =
+    selected && catalogueKey
+      ? (catalogueBlocks(selected).find((block) => catalogueKeys.get(block.id) === catalogueKey) ?? null)
+      : null;
 
   const heading = showHeading && (page.title || page.subtitle) && (
     <header className="mx-auto max-w-6xl space-y-3">
@@ -397,40 +452,75 @@ export function WebsiteRenderer({
     </header>
   );
 
+  const drillCatalogues = (section: PublicSection) => catalogueBlocks(section).length >= 2;
+
   if (groupKey) {
     if (!selected) return null;
+    if (catalogueKey && !selectedCatalogue) return null;
+    const backHref = catalogueKey ? `/pages/${page.slug}/${groupKey}` : `/pages/${page.slug}`;
+    const headingTitle = selectedCatalogue ? blockLabel(selectedCatalogue) : selected.title;
+    const headingSubtitle = selectedCatalogue ? selectedCatalogue.body : selected.subtitle;
+    const showCatalogueTiles = !catalogueKey && drillCatalogues(selected);
+
     return (
       <div className="space-y-10 py-0 sm:space-y-14 sm:py-1">
         <div className="mx-auto max-w-6xl">
-          <a href={`/pages/${page.slug}`} className="cbr-editorial-cta text-muted-foreground">
+          <a href={backHref} className="cbr-editorial-cta text-muted-foreground">
             ← Back
           </a>
-          {selected.title && (
-            <h1 className="mt-6 max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl">
-              {selected.title}
-            </h1>
+          {headingTitle && (
+            <h1 className="mt-6 max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl">{headingTitle}</h1>
           )}
-          {selected.subtitle && (
+          {headingSubtitle && (
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-              {selected.subtitle}
+              {headingSubtitle}
             </p>
           )}
         </div>
-        <Section
-          section={{ ...selected, title: null, subtitle: null }}
-          doorLayout={doorLayout}
-          navItems={navItems}
-        />
+        {showCatalogueTiles ? (
+          <>
+            <Section
+              section={{
+                ...selected,
+                title: null,
+                subtitle: null,
+                blocks: selected.blocks.filter((block) => block.kind !== "catalogue"),
+              }}
+              doorLayout={doorLayout}
+              navItems={navItems}
+            />
+            <CatalogueTileGrid pageSlug={page.slug} groupKey={groupKey} section={selected} />
+          </>
+        ) : (
+          <Section
+            section={{
+              ...selected,
+              title: null,
+              subtitle: null,
+              blocks: selectedCatalogue
+                ? selected.blocks.map((block) =>
+                    block.id === selectedCatalogue.id ? { ...block, title: null, body: null } : block,
+                  )
+                : selected.blocks,
+            }}
+            doorLayout={doorLayout}
+            navItems={navItems}
+            onlyCatalogueId={selectedCatalogue?.id ?? null}
+          />
+        )}
       </div>
     );
   }
 
-  const useGroupIndex = page.slug !== HOME_SLUG && catalogueGroups.length >= 2;
+  const useSectionIndex = page.slug !== HOME_SLUG && catalogueGroups.length >= 2;
+  const loneSection = catalogueGroups.length === 1 ? catalogueGroups[0] : null;
+  const useCatalogueIndexOnPage =
+    page.slug !== HOME_SLUG && Boolean(loneSection && drillCatalogues(loneSection));
 
   return (
     <div className="space-y-10 py-0 sm:space-y-14 sm:py-1">
       {heading}
-      {useGroupIndex ? (
+      {useSectionIndex ? (
         <>
           {page.sections
             .filter((section) => !isCatalogueSection(section))
@@ -439,14 +529,36 @@ export function WebsiteRenderer({
             ))}
           <div className={internalDoorsLayoutClass(catalogueGroups.length)}>
             {catalogueGroups.map((section) => (
-              <CatalogueGroupCard
+              <PhotoEntryCard
                 key={section.id}
-                pageSlug={page.slug}
-                groupKey={groupKeys.get(section.id) ?? section.id}
-                section={section}
+                href={`/pages/${page.slug}/${groupKeys.get(section.id) ?? section.id}`}
+                title={section.title}
+                subtitle={section.subtitle}
+                cover={sectionCover(section)}
               />
             ))}
           </div>
+        </>
+      ) : useCatalogueIndexOnPage && loneSection ? (
+        <>
+          {page.sections
+            .filter((section) => section.id !== loneSection.id)
+            .map((section) => (
+              <Section key={section.id} section={section} doorLayout={doorLayout} navItems={navItems} />
+            ))}
+          <Section
+            section={{
+              ...loneSection,
+              blocks: loneSection.blocks.filter((block) => block.kind !== "catalogue"),
+            }}
+            doorLayout={doorLayout}
+            navItems={navItems}
+          />
+          <CatalogueTileGrid
+            pageSlug={page.slug}
+            groupKey={groupKeys.get(loneSection.id) ?? loneSection.id}
+            section={loneSection}
+          />
         </>
       ) : (
         page.sections.map((section) => (

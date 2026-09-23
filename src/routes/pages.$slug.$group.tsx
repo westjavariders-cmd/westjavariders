@@ -1,7 +1,6 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { Outlet, createFileRoute, Link, notFound } from "@tanstack/react-router";
 
 import { PublicPage } from "@/components/public/SiteHeader";
-import { WebsiteRenderer } from "@/components/public/WebsiteRenderer";
 import { getWebsitePage } from "@/lib/website.functions";
 import { assignGroupKeys } from "@/lib/website";
 
@@ -54,14 +53,9 @@ export const Route = createFileRoute("/pages/$slug/$group")({
       </div>
     </PublicPage>
   ),
-  component: CatalogueGroupRoute,
+  component: CatalogueGroupLayout,
 });
 
-function CatalogueGroupRoute() {
-  const { page, group } = Route.useLoaderData();
-  return (
-    <PublicPage width="full">
-      <WebsiteRenderer page={page} showHeading={false} groupKey={group} />
-    </PublicPage>
-  );
+function CatalogueGroupLayout() {
+  return <Outlet />;
 }

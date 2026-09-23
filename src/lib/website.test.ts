@@ -142,4 +142,13 @@ describe("catalogue group keys", () => {
     expect(keys.get("b")).toBe("surf-lessons-2");
     expect(keys.get("c")).toBe("transfers");
   });
+
+  it("slugs catalogue block titles the same way as sections", () => {
+    const keys = assignGroupKeys([
+      { id: "b1", title: "Beginner lessons" },
+      { id: "b2", title: null },
+    ]);
+    expect(keys.get("b1")).toBe("beginner-lessons");
+    expect(keys.get("b2")).toBe("b2");
+  });
 });
