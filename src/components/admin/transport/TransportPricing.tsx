@@ -240,7 +240,7 @@ export function TransportPricing({
               <div>
                 <h3 className="text-sm font-medium">Price per travel time</h3>
                 <p className="text-xs text-muted-foreground">
-                  Travel time from 1 to 9 hours. The customer price for other locations is the time price plus
+                  Travel time from 1 to 14 hours. The customer price for other locations is the time price plus
                   the people price.
                 </p>
               </div>
