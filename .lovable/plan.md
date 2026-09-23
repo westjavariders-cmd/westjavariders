@@ -1,15 +1,20 @@
-# Ampliar "other location" a 7 personas y 14 horas (reintento guiado)
+# Let "other location" transport save up to 7 people and 14 hours
 
-## Contexto (verificado en tus datos)
+## Cause (checked in your data)
 
-Tus cambios anteriores no llegaron a guardarse: todas las opciones "other location" siguen con máximo 4 personas y 9 horas, y el registro de actividad no muestra ningún guardado desde el 17 de septiembre. El configurador muestra exactamente lo guardado en la ficha de cada transporte; no hay ningún límite de 4/9 en el código (los máximos ya son 7 y 14).
+The database still has the old limits: at most 4 people and 9 hours, for prices and for the minimum/maximum travel time. So when you fill in 5–7 people or 10–14 hours, the save fails or keeps only the first rows. That is why every "other location" option still stops at 4 and 9, and the configurator can't show more. The Admin screen already offers 7 and 14.
 
-## Qué haremos
+## What I'll do
 
-1. **Tú**: en Admin → Transport, abre cada opción "other location", rellena las casillas 5, 6 y 7 personas y 10 a 14 horas con sus precios y pulsa **Save prices**. Debe aparecer el aviso "Prices saved." — si sale un aviso rojo, dímelo tal cual.
-2. **Yo**: en cuanto lo hagas, verifico que las casillas quedaron guardadas y que el configurador ofrece 1–7 personas y 1–14 horas en cada opción. Si el guardado falla, investigo y corrijo la causa.
-3. **Yo**: corrijo el texto desactualizado de la pantalla de precios, que dice "Travel time from 1 to 9 hours" cuando el límite real es 14 (`src/components/admin/transport/TransportPricing.tsx`).
+1. Raise the database limits to 1–7 people and 1–14 hours, for price tables and for min/max travel time. Nothing already saved is lost.
+2. Remove the temporary workaround that drops rows 5–7 and 10–14 with a warning, so everything you fill in is saved.
+3. Fix the out-of-date text "Travel time from 1 to 9 hours" in the prices screen so it says 14.
+4. Check: save 7 people and 14 hours on a test option, confirm it shows 1–7 and 1–14 in the configurator, then put it back as it was.
 
-## Detalle a tener en cuenta
+After that you fill in the prices for 5–7 and 10–14 in each option and press "Save prices".
 
-"Save prices" guarda **todas** las casillas de la 1 a la 7 (y de la 1 a la 14), incluidas las que queden a 0 — y todas aparecen en el configurador. Si alguna casilla no debe ofrecerse, avísame.
+## Technical details
+
+- Migration: drop and recreate `transport_people_prices_people_range` (1–7), `transport_time_prices_hours_range` (1–14), `transports_min_hours_range` / `transports_max_hours_range` (1–14).
+- `src/lib/transport.functions.ts`: remove the `LEGACY_MAX_*` fallback branches.
+- `src/components/admin/transport/TransportPricing.tsx`: update the help text.
