@@ -45,23 +45,23 @@ function BuildYourTrip() {
   return (
     <PublicPage width="full">
       <header className="mx-auto max-w-6xl">
-        <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl">
+        <h1 className="max-w-3xl text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
           {page?.title ?? "Build your trip"}
         </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
           {page?.subtitle ??
             "Pick an experience, choose your options and see your price straight away."}
         </p>
       </header>
 
       {hasConfigured && page && (
-        <div className="mt-8 sm:mt-10">
+        <div className="mt-5 sm:mt-6">
           <WebsiteRenderer page={page} showHeading={false} />
         </div>
       )}
 
       {!hasConfigured && (
-        <div className="mx-auto mt-8 w-full max-w-6xl sm:mt-10">
+        <div className="mx-auto mt-5 w-full max-w-[90rem] sm:mt-6">
           {(products.isPending || configured.isPending) && (
             <p className="text-sm text-muted-foreground">Loading…</p>
           )}
@@ -71,7 +71,7 @@ function BuildYourTrip() {
             </p>
           )}
           {products.data?.products && products.data.products.length > 0 && (
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 xl:gap-6">
               {products.data.products.map((p) => (
                 <ProductCard
                   key={p.id}

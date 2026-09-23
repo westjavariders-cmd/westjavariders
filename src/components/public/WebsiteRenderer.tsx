@@ -57,7 +57,7 @@ function Media({ media }: { media: NonNullable<PublicBlock["media"]> }) {
 function ProductList({ products }: { products: PublicBlock["products"] }) {
   if (products.length === 0) return null;
   return (
-    <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3">
+    <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 xl:gap-6">
       {products.map((product) => (
         <ProductCard
           key={product.id}
@@ -135,13 +135,13 @@ function CatalogueList({ items }: { items: PublicBlock["catalogue_items"] }) {
 
 function homeDoorsLayoutClass(count: number) {
   return cn(
-    "mx-auto grid max-w-6xl gap-3 md:gap-4",
+    "mx-auto grid max-w-[90rem] gap-3 md:gap-4 xl:gap-5",
     "grid-cols-1",
     count === 2 && "md:grid-cols-2",
-    count === 3 && "md:grid-cols-2 lg:grid-cols-3",
+    count === 3 && "md:grid-cols-2",
     count === 4 && "md:grid-cols-2",
     count === 5 && "md:grid-cols-2 lg:grid-cols-4 lg:grid-rows-2",
-    count >= 6 && "md:grid-cols-2 lg:grid-cols-3",
+    count >= 6 && "md:grid-cols-2",
   );
 }
 
@@ -234,7 +234,7 @@ function Section({
   const isHomeMosaic = doorLayout === "mosaic";
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-4 sm:space-y-5">
       {(section.title || section.subtitle) && (
         <div className="mx-auto max-w-6xl">
           {section.title && (
@@ -287,7 +287,7 @@ function Section({
             return (
               <div
                 key={block.id}
-                className={wide ? "mx-auto w-full max-w-6xl" : "mx-auto max-w-3xl"}
+                className={wide ? "mx-auto w-full max-w-[90rem]" : "mx-auto max-w-3xl"}
               >
                 <Block block={block} />
               </div>
@@ -309,7 +309,7 @@ export function WebsiteRenderer({
   const doorLayout = page.slug === HOME_SLUG ? "mosaic" : "selection";
 
   return (
-    <div className="space-y-16 py-2 sm:space-y-20 sm:py-4">
+    <div className="space-y-10 py-0 sm:space-y-14 sm:py-1">
       {showHeading && (page.title || page.subtitle) && (
         <header className="mx-auto max-w-6xl space-y-3">
           {page.title && (

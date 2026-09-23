@@ -87,23 +87,23 @@ function PromoCodeEntry() {
 /** The configured Home content, shared by the site root and /home. */
 export function HomeContent({ page }: { page: PublicWebsitePage | null }) {
   return (
-    <div className="py-2 sm:py-4">
+    <div className="py-0 sm:py-1">
       <div className="mx-auto max-w-6xl">
-        <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
+        <h1 className="max-w-3xl text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
           {page?.title ?? "Surf, travel and local experiences in Cimaja"}
         </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:mt-2.5">
           {page?.subtitle ??
             "West Java's warm-water pointbreaks, local guides and trips built exactly the way you want them."}
         </p>
       </div>
 
       {page && page.sections.length > 0 ? (
-        <div className="mt-8 sm:mt-10">
+        <div className="mt-5 sm:mt-6">
           <WebsiteRenderer page={page} showHeading={false} />
         </div>
       ) : (
-        <div className="mx-auto mt-8 flex max-w-6xl flex-wrap gap-x-6">
+        <div className="mx-auto mt-6 flex max-w-6xl flex-wrap gap-x-6">
           <Link to="/build-your-trip" className="cbr-editorial-cta">
             Build your trip
             <span aria-hidden="true">→</span>

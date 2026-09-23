@@ -13,7 +13,7 @@ function ConfigureCta({ productId }: { productId: string }) {
     <Link
       to="/build-your-trip/$productId/configure"
       params={{ productId }}
-      className="cbr-editorial-cta"
+      className="inline-flex min-h-12 items-center justify-center gap-2 border border-foreground bg-foreground px-6 text-[11px] font-medium uppercase tracking-[0.18em] text-background transition-opacity duration-150 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
       Configure this trip
       <span aria-hidden="true">→</span>
@@ -24,22 +24,18 @@ function ConfigureCta({ productId }: { productId: string }) {
 /** Informational screen before the configurator. Does not start a draft. */
 export function PackageLanding({ productId, title, summary, body, imageUrl }: PackageLandingProps) {
   return (
-    <div className="mx-auto w-full max-w-6xl">
+    <div className="mx-auto w-full max-w-[90rem]">
       <Link to="/build-your-trip" className="cbr-editorial-cta text-muted-foreground">
         ← Back
       </Link>
 
-      <div className="mt-8 grid gap-8 lg:mt-12 lg:grid-cols-12 lg:items-end lg:gap-12">
+      <div className="mt-6 grid gap-8 lg:mt-8 lg:grid-cols-12 lg:items-end lg:gap-12 xl:gap-16">
         {imageUrl ? (
           <div className="relative isolate overflow-hidden bg-secondary lg:col-span-7">
             <img
               src={imageUrl}
               alt={title}
-              className="aspect-[4/5] w-full object-cover object-center sm:aspect-[16/10] lg:aspect-[4/5] lg:min-h-[32rem]"
-            />
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent lg:from-black/10"
+              className="aspect-[4/5] w-full object-cover object-center sm:aspect-[16/10] lg:aspect-auto lg:h-[min(70svh,44rem)] lg:min-h-[36rem]"
             />
           </div>
         ) : null}

@@ -15,7 +15,7 @@ export function ProductCard({ productId, title, summary, imageUrl, bookable }: P
     <article
       className={cn(
         "group relative isolate flex h-full min-h-[58vw] overflow-hidden bg-secondary",
-        "sm:min-h-[20rem] md:min-h-[22rem] lg:min-h-[24rem]",
+        "sm:min-h-[22rem] md:min-h-[28rem] lg:min-h-[34rem] xl:min-h-[38rem]",
         !bookable && "opacity-70",
       )}
     >

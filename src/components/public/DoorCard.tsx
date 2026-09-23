@@ -43,8 +43,8 @@ export function DoorCard({ block, featured = false, layout = "mosaic" }: DoorCar
     <div
       className={cn(
         "group relative isolate flex h-full min-h-[62vw] overflow-hidden bg-secondary",
-        layout === "mosaic" && "md:min-h-[18rem]",
-        mosaicFeatured && "md:min-h-[22rem] lg:min-h-[32rem]",
+        layout === "mosaic" && "md:min-h-[28rem] lg:min-h-[34rem] xl:min-h-[38rem]",
+        mosaicFeatured && "md:min-h-[34rem] lg:min-h-[42rem] xl:min-h-[46rem]",
         layout === "selection" && "md:min-h-[22rem] lg:min-h-[24rem]",
       )}
     >
