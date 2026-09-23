@@ -11,6 +11,7 @@ import type { ReactNode } from "react";
 import { DoorCard } from "@/components/public/DoorCard";
 import { ProductCard } from "@/components/public/ProductCard";
 import { cn } from "@/lib/utils";
+import { applyHomeTripDoors } from "@/lib/home-trip-doors";
 import { HOME_SLUG } from "@/lib/website";
 import type { PublicBlock, PublicSection, PublicWebsitePage } from "@/lib/website.server";
 
@@ -230,8 +231,9 @@ function Section({
   section: PublicSection;
   doorLayout: "mosaic" | "selection";
 }) {
-  const doors = section.blocks.filter((b) => b.kind === "door");
-  const others = section.blocks.filter((b) => b.kind !== "door");
+  const sectionBlocks = doorLayout === "mosaic" ? applyHomeTripDoors(section.blocks) : section.blocks;
+  const doors = sectionBlocks.filter((b) => b.kind === "door");
+  const others = sectionBlocks.filter((b) => b.kind !== "door");
   const isHomeMosaic = doorLayout === "mosaic";
 
   return (
