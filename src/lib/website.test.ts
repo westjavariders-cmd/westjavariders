@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   isSafeSlug,
+  isSiteBackgroundPath,
   moveInOrder,
   pickTranslation,
   resolveDestination,
@@ -115,5 +116,13 @@ describe("destination resolution", () => {
       href: "https://example.com/x",
       external: true,
     });
+  });
+});
+
+describe("site background storage path", () => {
+  it("only accepts files stored under site-background/", () => {
+    expect(isSiteBackgroundPath("site-background/123-cimaja.jpg")).toBe(true);
+    expect(isSiteBackgroundPath("landing/image.jpg")).toBe(false);
+    expect(isSiteBackgroundPath("../secret")).toBe(false);
   });
 });

@@ -6,7 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { X } from "lucide-react";
 
 import { getPublicCart } from "@/lib/public.functions";
-import { getWebsiteNav } from "@/lib/website.functions";
+import { getWebsiteNav, getWebsiteSiteBackground } from "@/lib/website.functions";
 import { setFxCurrency } from "@/lib/fx.functions";
 import { formatIdr } from "@/lib/public-catalog";
 import { formatCustomerAmount } from "@/lib/fx";
@@ -344,19 +344,34 @@ export function PublicPage({
   children: React.ReactNode;
   width?: PublicPageWidth;
 }) {
+  const loadBackground = useServerFn(getWebsiteSiteBackground);
+  const background = useQuery({
+    queryKey: ["website-site-background"],
+    queryFn: () => loadBackground({ data: {} }),
+  });
+  const backdropUrl = background.data?.image_url ?? null;
+
   return (
-    <div className="public-theme min-h-screen bg-background text-foreground">
-      <SiteHeader />
-      <main
-        className={cn(
-          "px-4 pb-20 pt-8 md:px-8 md:pt-10 lg:px-10 lg:pt-12 xl:px-12",
-          width === "readable" && "mx-auto w-full max-w-3xl",
-          width === "wide" && "mx-auto w-full max-w-6xl",
-          width === "full" && "w-full",
-        )}
-      >
-        {children}
-      </main>
+    <div className={cn("public-theme relative min-h-screen text-foreground", !backdropUrl && "bg-background")}>
+      {backdropUrl ? (
+        <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
+          <img src={backdropUrl} alt="" className="size-full object-cover" />
+          <div className="absolute inset-0 bg-black/55" />
+        </div>
+      ) : null}
+      <div className="relative z-10">
+        <SiteHeader />
+        <main
+          className={cn(
+            "px-4 pb-20 pt-8 md:px-8 md:pt-10 lg:px-10 lg:pt-12 xl:px-12",
+            width === "readable" && "mx-auto w-full max-w-3xl",
+            width === "wide" && "mx-auto w-full max-w-6xl",
+            width === "full" && "w-full",
+          )}
+        >
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

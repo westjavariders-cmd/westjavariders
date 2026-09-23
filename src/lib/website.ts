@@ -9,6 +9,13 @@
 
 export const WEBSITE_MEDIA_BUCKET = "website-media";
 
+/** Settings key for the photo behind every public page except the entry screen. */
+export const SITE_BACKGROUND_SETTING_KEY = "website_site_background_path";
+
+export function isSiteBackgroundPath(path: string): boolean {
+  return /^site-background\/[A-Za-z0-9._-]+$/.test(path);
+}
+
 export const BLOCK_KINDS = [
   "hero",
   "image_text",

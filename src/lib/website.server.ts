@@ -9,6 +9,7 @@ import { PRODUCT_MEDIA_BUCKET } from "@/lib/catalog";
 import { isPurchasable } from "@/lib/pricing";
 import {
   WEBSITE_MEDIA_BUCKET,
+  SITE_BACKGROUND_SETTING_KEY,
   isPubliclyListable,
   pickTranslation,
   resolveDestination,
@@ -162,6 +163,19 @@ export async function websiteLanding(language?: string): Promise<PublicLanding |
     cta: destination && text?.cta_label ? { label: text.cta_label, ...destination } : null,
     language: wanted,
   };
+}
+
+/** Signed URL for the interior-pages wallpaper. Never used on the entry screen. */
+export async function websiteSiteBackground(): Promise<string | null> {
+  const db = await admin();
+  const { data } = await db
+    .from("settings")
+    .select("value")
+    .eq("key", SITE_BACKGROUND_SETTING_KEY)
+    .maybeSingle();
+  const path = typeof data?.value === "string" ? data.value.trim() : "";
+  if (!path) return null;
+  return signedMedia(db, path);
 }
 
 
