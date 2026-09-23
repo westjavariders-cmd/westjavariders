@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  isChromeImagePath,
   isSafeSlug,
   isSiteBackgroundPath,
   moveInOrder,
@@ -119,9 +120,11 @@ describe("destination resolution", () => {
   });
 });
 
-describe("site background storage path", () => {
-  it("only accepts files stored under site-background/", () => {
+describe("chrome background storage paths", () => {
+  it("only accepts files stored under the matching folder", () => {
     expect(isSiteBackgroundPath("site-background/123-cimaja.jpg")).toBe(true);
+    expect(isChromeImagePath("header", "header-background/bar.jpg")).toBe(true);
+    expect(isChromeImagePath("header", "site-background/123-cimaja.jpg")).toBe(false);
     expect(isSiteBackgroundPath("landing/image.jpg")).toBe(false);
     expect(isSiteBackgroundPath("../secret")).toBe(false);
   });

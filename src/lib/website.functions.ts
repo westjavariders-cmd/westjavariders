@@ -14,10 +14,11 @@ import {
   BLOCK_KINDS,
   DESTINATION_KINDS,
   MEDIA_KINDS,
-  SITE_BACKGROUND_SETTING_KEY,
   WEBSITE_MEDIA_BUCKET,
+  chromeImageSettingKey,
+  isChromeImagePath,
   isSafeSlug,
-  isSiteBackgroundPath,
+  type WebsiteChromeSlot,
 } from "@/lib/website";
 
 const SAFE_ERROR = "This action could not be completed. Please check your input and try again.";
@@ -654,56 +655,57 @@ export const saveLanding = createServerFn({ method: "POST" })
     return { id: landingId };
   });
 
-export const getWebsiteSiteBackground = createServerFn({ method: "POST" })
+export const getWebsiteChromeImages = createServerFn({ method: "POST" })
   .inputValidator((data) => z.object({}).parse(data ?? {}))
   .handler(async () => {
-    const { websiteSiteBackground } = await import("@/lib/website.server");
-    return { image_url: await websiteSiteBackground() };
+    const { websiteChromeImages } = await import("@/lib/website.server");
+    return websiteChromeImages();
   });
 
-export const saveSiteBackground = createServerFn({ method: "POST" })
+export const saveChromeImage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ image_path: z.string().max(500).nullable() }).parse(data))
+  .inputValidator((data) =>
+    z.object({ slot: z.enum(["site", "header"]), image_path: z.string().max(500).nullable() }).parse(data),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = ctx(context);
     await assertAdmin(supabase);
 
+    const slot = data.slot as WebsiteChromeSlot;
+    const key = chromeImageSettingKey(slot);
     const next = data.image_path?.trim() || null;
-    if (next && !isSiteBackgroundPath(next)) fail("This background file could not be saved.");
+    if (next && !isChromeImagePath(slot, next)) fail("This background file could not be saved.");
 
-    const { data: existing } = await supabase
-      .from("settings")
-      .select("value")
-      .eq("key", SITE_BACKGROUND_SETTING_KEY)
-      .maybeSingle();
+    const { data: existing } = await supabase.from("settings").select("value").eq("key", key).maybeSingle();
     const previous = typeof existing?.value === "string" && existing.value.trim() ? existing.value.trim() : null;
 
     if (next) {
       if (existing) {
-        const { error } = await supabase
-          .from("settings")
-          .update({ value: next })
-          .eq("key", SITE_BACKGROUND_SETTING_KEY);
-        if (error) fail("The site background could not be saved.");
+        const { error } = await supabase.from("settings").update({ value: next }).eq("key", key);
+        if (error) fail("The background could not be saved.");
       } else {
         const { error } = await supabase.from("settings").insert({
-          key: SITE_BACKGROUND_SETTING_KEY,
+          key,
           value: next,
           value_type: "string",
-          description: "Photo behind public pages except the entry screen.",
+          description:
+            slot === "header"
+              ? "Photo in the public header bar and menu button."
+              : "Photo behind public pages except the entry screen.",
         });
-        if (error) fail("The site background could not be saved.");
+        if (error) fail("The background could not be saved.");
       }
     } else if (existing) {
-      const { error } = await supabase.from("settings").delete().eq("key", SITE_BACKGROUND_SETTING_KEY);
-      if (error) fail("The site background could not be removed.");
+      const { error } = await supabase.from("settings").delete().eq("key", key);
+      if (error) fail("The background could not be removed.");
     }
 
     if (previous && previous !== next) {
       await supabase.storage.from(WEBSITE_MEDIA_BUCKET).remove([previous]);
     }
 
-    await audit(supabase, userId, "website.site_background.updated", "settings", null, SITE_BACKGROUND_SETTING_KEY, {
+    await audit(supabase, userId, "website.chrome_image.updated", "settings", null, key, {
+      slot,
       has_image: Boolean(next),
     });
     return { ok: true };

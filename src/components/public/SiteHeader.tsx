@@ -6,7 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { X } from "lucide-react";
 
 import { getPublicCart } from "@/lib/public.functions";
-import { getWebsiteNav, getWebsiteSiteBackground } from "@/lib/website.functions";
+import { getWebsiteChromeImages, getWebsiteNav } from "@/lib/website.functions";
 import { setFxCurrency } from "@/lib/fx.functions";
 import { formatIdr } from "@/lib/public-catalog";
 import { formatCustomerAmount } from "@/lib/fx";
@@ -70,6 +70,11 @@ function useWebsiteNav() {
 }
 
 const DESKTOP_NAV = "(min-width: 1280px)";
+
+function useWebsiteChromeImages() {
+  const load = useServerFn(getWebsiteChromeImages);
+  return useQuery({ queryKey: ["website-chrome-images"], queryFn: () => load({ data: {} }) });
+}
 
 type CmsNavItem = {
   id: string;
@@ -160,6 +165,8 @@ export function SiteHeader() {
   const menuId = useId();
   const [open, setOpen] = useState(false);
   const cart = usePublicCart();
+  const chrome = useWebsiteChromeImages();
+  const headerBarUrl = chrome.data?.header_url ?? null;
   const nav = useWebsiteNav();
   const navItems = nav.data?.items ?? [];
   const navReady = nav.isSuccess;
@@ -223,10 +230,21 @@ export function SiteHeader() {
   }, [open]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/40 bg-background/90 backdrop-blur-md">
+    <header
+      className={cn(
+        "sticky top-0 z-40 relative overflow-hidden border-b border-border/40",
+        headerBarUrl ? "bg-transparent" : "bg-background/90 backdrop-blur-md",
+      )}
+    >
+      {headerBarUrl ? (
+        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+          <img src={headerBarUrl} alt="" className="size-full object-cover object-center" />
+          <div className="absolute inset-0 bg-black/45" />
+        </div>
+      ) : null}
       <div
         className={cn(
-          "mx-auto grid max-w-[90rem] grid-cols-[auto_1fr_auto] items-center gap-3 px-4 sm:px-6 lg:px-10 xl:grid-cols-[auto_minmax(0,1fr)_auto]",
+          "relative mx-auto grid max-w-[90rem] grid-cols-[auto_1fr_auto] items-center gap-3 px-4 sm:px-6 lg:px-10 xl:grid-cols-[auto_minmax(0,1fr)_auto]",
           hasNavImages ? "h-16 sm:h-[4.25rem] xl:h-[5.75rem]" : "h-16 sm:h-[4.25rem]",
         )}
       >
@@ -234,14 +252,25 @@ export function SiteHeader() {
           <button
             ref={openButtonRef}
             type="button"
-            className="inline-flex min-h-11 max-w-[8.5rem] items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-left text-[10px] font-medium uppercase leading-tight tracking-[0.12em] transition-colors hover:bg-muted sm:max-w-[16rem] md:max-w-[18rem] sm:text-[11px] sm:tracking-[0.14em] xl:hidden"
+            className={cn(
+              "relative inline-flex min-h-11 max-w-[8.5rem] items-center justify-center gap-2 overflow-hidden rounded-md border px-3 py-2 text-left text-[10px] font-medium uppercase leading-tight tracking-[0.12em] sm:max-w-[16rem] md:max-w-[18rem] sm:text-[11px] sm:tracking-[0.14em] xl:hidden",
+              headerBarUrl
+                ? "border-white/35 text-white"
+                : "border-border bg-background transition-colors hover:bg-muted",
+            )}
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
             aria-controls={menuId}
             onClick={() => setOpen((value) => !value)}
           >
-            {open ? <X className="size-4 shrink-0" strokeWidth={1.5} /> : null}
-            <span className="truncate">Surf, Explore, Experience West Java</span>
+            {headerBarUrl ? (
+              <span className="pointer-events-none absolute inset-0" aria-hidden="true">
+                <img src={headerBarUrl} alt="" className="size-full object-cover object-center" />
+                <span className="absolute inset-0 bg-black/40" />
+              </span>
+            ) : null}
+            {open ? <X className="relative z-10 size-4 shrink-0" strokeWidth={1.5} /> : null}
+            <span className="relative z-10 truncate">Surf, Explore, Experience West Java</span>
           </button>
           <Link
             to="/home"
@@ -344,12 +373,8 @@ export function PublicPage({
   children: React.ReactNode;
   width?: PublicPageWidth;
 }) {
-  const loadBackground = useServerFn(getWebsiteSiteBackground);
-  const background = useQuery({
-    queryKey: ["website-site-background"],
-    queryFn: () => loadBackground({ data: {} }),
-  });
-  const backdropUrl = background.data?.image_url ?? null;
+  const chrome = useWebsiteChromeImages();
+  const backdropUrl = chrome.data?.site_url ?? null;
 
   return (
     <div className={cn("public-theme relative min-h-screen text-foreground", !backdropUrl && "bg-background")}>

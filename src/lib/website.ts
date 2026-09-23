@@ -9,11 +9,23 @@
 
 export const WEBSITE_MEDIA_BUCKET = "website-media";
 
-/** Settings key for the photo behind every public page except the entry screen. */
+/** Settings keys for chrome photos (public pages + header bar). */
 export const SITE_BACKGROUND_SETTING_KEY = "website_site_background_path";
+export const HEADER_BACKGROUND_SETTING_KEY = "website_header_background_path";
+export const WEBSITE_CHROME_SETTING_KEYS = [SITE_BACKGROUND_SETTING_KEY, HEADER_BACKGROUND_SETTING_KEY] as const;
+export type WebsiteChromeSlot = "site" | "header";
+
+export function chromeImageSettingKey(slot: WebsiteChromeSlot): string {
+  return slot === "header" ? HEADER_BACKGROUND_SETTING_KEY : SITE_BACKGROUND_SETTING_KEY;
+}
+
+export function isChromeImagePath(slot: WebsiteChromeSlot, path: string): boolean {
+  const folder = slot === "header" ? "header-background" : "site-background";
+  return new RegExp(`^${folder}/[A-Za-z0-9._-]+$`).test(path);
+}
 
 export function isSiteBackgroundPath(path: string): boolean {
-  return /^site-background\/[A-Za-z0-9._-]+$/.test(path);
+  return isChromeImagePath("site", path);
 }
 
 export const BLOCK_KINDS = [

@@ -9,6 +9,7 @@ import { PRODUCT_MEDIA_BUCKET } from "@/lib/catalog";
 import { isPurchasable } from "@/lib/pricing";
 import {
   WEBSITE_MEDIA_BUCKET,
+  HEADER_BACKGROUND_SETTING_KEY,
   SITE_BACKGROUND_SETTING_KEY,
   isPubliclyListable,
   pickTranslation,
@@ -165,17 +166,34 @@ export async function websiteLanding(language?: string): Promise<PublicLanding |
   };
 }
 
-/** Signed URL for the interior-pages wallpaper. Never used on the entry screen. */
-export async function websiteSiteBackground(): Promise<string | null> {
+export type PublicChromeImages = {
+  site_url: string | null;
+  header_url: string | null;
+};
+
+/** Signed URLs for interior wallpaper and the header bar. Not used on the entry screen. */
+export async function websiteChromeImages(): Promise<PublicChromeImages> {
   const db = await admin();
   const { data } = await db
     .from("settings")
-    .select("value")
-    .eq("key", SITE_BACKGROUND_SETTING_KEY)
-    .maybeSingle();
-  const path = typeof data?.value === "string" ? data.value.trim() : "";
-  if (!path) return null;
-  return signedMedia(db, path);
+    .select("key, value")
+    .in("key", [SITE_BACKGROUND_SETTING_KEY, HEADER_BACKGROUND_SETTING_KEY]);
+  const byKey = new Map<string, string>(
+    ((data ?? []) as { key: string; value: string }[])
+      .map((row) => [row.key, row.value.trim()] as const)
+      .filter((entry) => entry[1]),
+  );
+  const sitePath = byKey.get(SITE_BACKGROUND_SETTING_KEY) ?? "";
+  const headerPath = byKey.get(HEADER_BACKGROUND_SETTING_KEY) ?? "";
+  const [site_url, headerSigned] = await Promise.all([
+    signedMedia(db, sitePath || null),
+    signedMedia(db, headerPath || null),
+  ]);
+  return { site_url, header_url: headerSigned ?? site_url };
+}
+
+export async function websiteSiteBackground(): Promise<string | null> {
+  return (await websiteChromeImages()).site_url;
 }
 
 

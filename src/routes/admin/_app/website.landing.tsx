@@ -6,10 +6,11 @@ import { toast } from "sonner";
 
 import { PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { saveLanding, saveSiteBackground } from "@/lib/website.functions";
+import { saveChromeImage, saveLanding } from "@/lib/website.functions";
 import {
   DESTINATION_KINDS,
   DESTINATION_LABELS,
+  HEADER_BACKGROUND_SETTING_KEY,
   SITE_BACKGROUND_SETTING_KEY,
   WEBSITE_MEDIA_BUCKET,
   type DestinationKind,
@@ -57,7 +58,7 @@ function WebsiteLandingScreen() {
   const pageOptions = useWebsitePageOptions();
   const products = useWebsiteProducts();
   const persist = useServerFn(saveLanding);
-  const persistBackground = useServerFn(saveSiteBackground);
+  const persistChrome = useServerFn(saveChromeImage);
 
   const landing = useQuery({
     queryKey: ["website-landing"],
@@ -87,16 +88,19 @@ function WebsiteLandingScreen() {
     },
   });
 
-  const siteBackground = useQuery({
-    queryKey: ["website-site-background-path"],
+  const chromeImages = useQuery({
+    queryKey: ["website-chrome-image-paths"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("settings")
-        .select("value")
-        .eq("key", SITE_BACKGROUND_SETTING_KEY)
-        .maybeSingle();
+        .select("key, value")
+        .in("key", [SITE_BACKGROUND_SETTING_KEY, HEADER_BACKGROUND_SETTING_KEY]);
       if (error) throw new Error(error.message);
-      return ((data?.value as string | undefined) ?? "").trim() || null;
+      const byKey = new Map((data ?? []).map((row) => [row.key as string, ((row.value as string) ?? "").trim()]));
+      return {
+        site: byKey.get(SITE_BACKGROUND_SETTING_KEY) || null,
+        header: byKey.get(HEADER_BACKGROUND_SETTING_KEY) || null,
+      };
     },
   });
 
@@ -105,6 +109,7 @@ function WebsiteLandingScreen() {
     video_path: null as string | null,
     image_path: null as string | null,
     site_background_path: null as string | null,
+    header_background_path: null as string | null,
     image_alt: "",
     cta_kind: "page" as DestinationKind,
     cta_page_id: null as string | null,
@@ -122,7 +127,8 @@ function WebsiteLandingScreen() {
       is_active: row?.is_active ?? false,
       video_path: row?.video_path ?? null,
       image_path: row?.image_path ?? null,
-      site_background_path: siteBackground.data ?? null,
+      site_background_path: chromeImages.data?.site ?? null,
+      header_background_path: chromeImages.data?.header ?? null,
       image_alt: row?.image_alt ?? "",
       cta_kind: row?.cta_kind ?? "page",
       cta_page_id: row?.cta_page_id ?? null,
@@ -132,16 +138,18 @@ function WebsiteLandingScreen() {
       subtitle: text?.subtitle ?? "",
       cta_label: text?.cta_label ?? "",
     });
-  }, [landing.data, translation.data, siteBackground.data]);
+  }, [landing.data, translation.data, chromeImages.data]);
 
   const [previews, setPreviews] = useState<{
     video: string | null;
     image: string | null;
     site: string | null;
+    header: string | null;
   }>({
     video: null,
     image: null,
     site: null,
+    header: null,
   });
 
   useEffect(() => {
@@ -152,24 +160,26 @@ function WebsiteLandingScreen() {
       return data?.signedUrl ?? null;
     }
     void (async () => {
-      const [video, image, site] = await Promise.all([
+      const [video, image, site, header] = await Promise.all([
         sign(form.video_path),
         sign(form.image_path),
         sign(form.site_background_path),
+        sign(form.header_background_path),
       ]);
-      if (!cancelled) setPreviews({ video, image, site });
+      if (!cancelled) setPreviews({ video, image, site, header });
     })();
     return () => {
       cancelled = true;
     };
-  }, [form.video_path, form.image_path, form.site_background_path]);
+  }, [form.video_path, form.image_path, form.site_background_path, form.header_background_path]);
 
   const videoInput = useRef<HTMLInputElement>(null);
   const imageInput = useRef<HTMLInputElement>(null);
   const siteBackgroundInput = useRef<HTMLInputElement>(null);
+  const headerBackgroundInput = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
-  async function upload(files: FileList | null, kind: "video" | "image" | "site") {
+  async function upload(files: FileList | null, kind: "video" | "image" | "site" | "header") {
     const file = files?.[0];
     if (!file) return;
     setUploading(true);
@@ -178,7 +188,9 @@ function WebsiteLandingScreen() {
       const path =
         kind === "site"
           ? `site-background/${Date.now()}-${safeName}`
-          : `landing/${kind}-${Date.now()}-${safeName}`;
+          : kind === "header"
+            ? `header-background/${Date.now()}-${safeName}`
+            : `landing/${kind}-${Date.now()}-${safeName}`;
       const { error } = await supabase.storage.from(WEBSITE_MEDIA_BUCKET).upload(path, file);
       if (error) throw new Error(error.message);
       setForm((f) =>
@@ -186,7 +198,9 @@ function WebsiteLandingScreen() {
           ? { ...f, video_path: path }
           : kind === "site"
             ? { ...f, site_background_path: path }
-            : { ...f, image_path: path },
+            : kind === "header"
+              ? { ...f, header_background_path: path }
+              : { ...f, image_path: path },
       );
       toast.success("Uploaded. Save to keep it.");
     } catch (e) {
@@ -216,11 +230,12 @@ function WebsiteLandingScreen() {
           cta_label: form.cta_label,
         },
       });
-      await persistBackground({ data: { image_path: form.site_background_path } });
+      await persistChrome({ data: { slot: "site", image_path: form.site_background_path } });
+      await persistChrome({ data: { slot: "header", image_path: form.header_background_path } });
       await queryClient.invalidateQueries({ queryKey: ["website-landing"] });
       await queryClient.invalidateQueries({ queryKey: ["website-landing-text", activeLanguage] });
-      await queryClient.invalidateQueries({ queryKey: ["website-site-background-path"] });
-      await queryClient.invalidateQueries({ queryKey: ["website-site-background"] });
+      await queryClient.invalidateQueries({ queryKey: ["website-chrome-image-paths"] });
+      await queryClient.invalidateQueries({ queryKey: ["website-chrome-images"] });
       toast.success("Entry screen saved.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "This could not be saved.");
@@ -392,6 +407,46 @@ function WebsiteLandingScreen() {
             )}
           </div>
           {previews.site && <img src={previews.site} alt="" className="max-h-48 rounded-md" />}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Header bar image</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Fills the top menu bar and the Surf, Explore, Experience West Java button. If empty, the site pages
+            background is used instead.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              ref={headerBackgroundInput}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => void upload(e.target.files, "header")}
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!canEdit || uploading}
+              onClick={() => headerBackgroundInput.current?.click()}
+            >
+              {form.header_background_path ? "Replace image" : "Upload image"}
+            </Button>
+            {form.header_background_path && (
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={!canEdit}
+                onClick={() => setForm((f) => ({ ...f, header_background_path: null }))}
+              >
+                Remove
+              </Button>
+            )}
+          </div>
+          {previews.header && <img src={previews.header} alt="" className="max-h-48 rounded-md" />}
         </CardContent>
       </Card>
 
