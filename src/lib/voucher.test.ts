@@ -9,6 +9,7 @@ import {
   parseValidityMonths,
   redemptionCheck,
   validUntil,
+  voucherQuestionLabel,
   validateGift,
 } from "@/lib/voucher";
 
@@ -125,6 +126,47 @@ describe("entitlement", () => {
     expect(gift.items[0]!.base_price_idr).toBeNull();
     expect(gift.items[0]!.breakdown).toEqual([]);
     expect(gift.items[0]!.total_idr).toBeNull();
+  });
+
+  it("prints short voucher names for the long configurator questions", () => {
+    const detailed = {
+      packages: [
+        {
+          package_id: "pk1",
+          product_title: "Beginners week",
+          option_labels: [
+            { label: "Do you want to rent a motorbike? — How many motorbikes?", value: "2" },
+            { label: "Do you want to rent a motorbike? — How many days?", value: "5" },
+            { label: "Do you want video+photo or video+videoanalysis?", value: "Video + photo" },
+            { label: "How many days you want to stay in Cimaja Area?", value: "7" },
+            { label: "Do you want to rent a Softboard?", value: "Yes" },
+            { label: "Do you want to rent a Fiber Board?", value: "Yes" },
+            { label: "Do you want to rent a motorbike?", value: "Yes" },
+            { label: "Do you need us to pick you up?", value: "Airport" },
+            { label: "Do you need us to drop you off somewhere?", value: "Station" },
+            { label: "Do you want to do other activities?", value: "Surf lesson" },
+            { label: "Choose your level", value: "Beginner" },
+          ],
+          total_idr: 1,
+        },
+      ],
+    };
+    const options = buildEntitlement({ ...base, snapshot: detailed, voucherType: "STANDARD" }).items[0]!
+      .options;
+    expect(options).toEqual([
+      { label: "How many motorbikes?", value: "2" },
+      { label: "How many days motorbike", value: "5" },
+      { label: "Media Options", value: "Video + photo" },
+      { label: "Days Cimaja", value: "7" },
+      { label: "Board Rent", value: "Yes" },
+      { label: "Board Rent", value: "Yes" },
+      { label: "Motorbike", value: "Yes" },
+      { label: "Pick Up", value: "Airport" },
+      { label: "Drop Off", value: "Station" },
+      { label: "Other activities", value: "Surf lesson" },
+      { label: "Choose your level", value: "Beginner" },
+    ]);
+    expect(voucherQuestionLabel("  Do you want to rent a motorbike? ")).toBe("Motorbike");
   });
 
   it("rebuilds readable choices for older snapshots without saved labels", () => {

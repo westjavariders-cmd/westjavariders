@@ -243,8 +243,10 @@ export function ConfiguratorForm({
     quote.purchasable &&
     quote.configuration_issues.length === 0 &&
     quote.errors.length === 0;
+  const nearEnd = activeSteps.length <= 2 || stepIndex >= activeSteps.length - 2;
 
   async function book() {
+    if (!ready || !nearEnd) return;
     setBooking(true);
     try {
       await complete({ data: { packageId } });
@@ -631,7 +633,7 @@ export function ConfiguratorForm({
               <button
                 type="button"
                 className="cbr-config-primary"
-                disabled={!ready || booking}
+                disabled={!ready || !nearEnd || booking}
                 aria-busy={booking || undefined}
                 onClick={book}
               >

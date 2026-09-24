@@ -165,13 +165,38 @@ export const VOUCHER_INSTRUCTIONS = [
   "Contact us in advance so we can reserve your spot, equipment and guide.",
 ];
 
+/**
+ * Shorter names printed on the voucher only. The customer still sees the
+ * full question in the configurator. Matching is exact after trim/case.
+ */
+const VOUCHER_QUESTION_LABELS: Record<string, string> = {
+  "do you want to rent a motorbike? — how many motorbikes?": "How many motorbikes?",
+  "do you want to rent a motorbike? — how many days?": "How many days motorbike",
+  "do you want video+photo or video+videoanalysis?": "Media Options",
+  "how many days you want to stay in cimaja area?": "Days Cimaja",
+  "do you want to rent a softboard?": "Board Rent",
+  "do you want to rent a fiber board?": "Board Rent",
+  "do you want to rent a motorbike?": "Motorbike",
+  "do you need us to pick you up?": "Pick Up",
+  "do you need us to drop you off somewhere?": "Drop Off",
+  "do you want to do other activities?": "Other activities",
+};
+
+export function voucherQuestionLabel(label: string): string {
+  const key = label.trim().replace(/\s+/g, " ").toLowerCase();
+  return VOUCHER_QUESTION_LABELS[key] ?? label;
+}
+
 function optionLabels(pkg: any): { label: string; value: string }[] {
   // Newer snapshots carry the real question labels the customer answered.
   const saved = pkg?.option_labels;
   if (Array.isArray(saved) && saved.length > 0) {
     return saved
       .filter((o: any) => o && (o.label != null || o.value != null))
-      .map((o: any) => ({ label: String(o.label ?? ""), value: String(o.value ?? "") }));
+      .map((o: any) => ({
+        label: voucherQuestionLabel(String(o.label ?? "")),
+        value: String(o.value ?? ""),
+      }));
   }
   // Older snapshots only kept raw answers: rebuild readable lines from them,
   // resolving catalogue ids to names and hiding declined or empty answers.
@@ -207,7 +232,10 @@ function optionLabels(pkg: any): { label: string; value: string }[] {
         if (isEmptyAnswer(q)) continue;
         const n = Number(q);
         if (Number.isFinite(n) && n <= 0) continue;
-        out.push({ label: labels[labelKey]?.[suffix] || labels[key]?.[suffix] || qLabel, value: String(q) });
+        out.push({
+          label: voucherQuestionLabel(labels[labelKey]?.[suffix] || labels[key]?.[suffix] || qLabel),
+          value: String(q),
+        });
       }
     };
 
@@ -220,13 +248,13 @@ function optionLabels(pkg: any): { label: string; value: string }[] {
         for (const id of ids) {
           const name = resolve(id);
           if (!name) continue;
-          out.push({ label, value: name });
+          out.push({ label: voucherQuestionLabel(label), value: name });
           pushQuantities(`${key}__${id}`, `${key}__${id}`);
         }
         continue;
       }
       const parts = ids.map(resolve).filter((v): v is string => !!v);
-      if (parts.length > 0) out.push({ label, value: parts.join(", ") });
+      if (parts.length > 0) out.push({ label: voucherQuestionLabel(label), value: parts.join(", ") });
       pushQuantities(key, key);
       continue;
     }
@@ -234,7 +262,7 @@ function optionLabels(pkg: any): { label: string; value: string }[] {
     let value: string | null;
     if (typeof raw === "boolean") value = null; // yes/no gates are not shown
     else value = resolve(raw);
-    if (value != null && value !== "") out.push({ label, value });
+    if (value != null && value !== "") out.push({ label: voucherQuestionLabel(label), value });
     pushQuantities(key, key);
   }
   return out;
