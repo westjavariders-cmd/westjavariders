@@ -12,10 +12,12 @@ export const TRANSPORT_TYPE_LABELS: Record<TransportType, string> = {
   other_location: "Other location",
 };
 
-export const PEOPLE_OPTIONS = [1, 2, 3, 4, 5, 6, 7] as const;
-export const TRAVEL_HOUR_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14] as const;
-export const MAX_TRANSPORT_PEOPLE = 7;
-export const MAX_TRAVEL_HOURS = 14;
+export const PEOPLE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
+export const TRAVEL_HOUR_OPTIONS = [
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+] as const;
+export const MAX_TRANSPORT_PEOPLE = 10;
+export const MAX_TRAVEL_HOURS = 30;
 
 export type Transport = {
   id: string;
@@ -202,35 +204,39 @@ export function moveItem<T>(items: T[], index: number, direction: -1 | 1): T[] {
   return next;
 }
 
-const OLD_MAX_TRANSPORT_PEOPLE = 4;
-const OLD_MAX_TRAVEL_HOURS = 9;
+const PREVIOUS_PEOPLE_CEILING = 7;
+const PREVIOUS_HOUR_CEILINGS = new Set([9, 14]);
 
 /**
- * Public people/hours pickers follow the Admin grid, not only rows already
- * stored. A consecutive 1..oldMax table is opened out to the new max; other
- * sparse tables are left as stored. Missing slots keep price 0 until Admin saves.
+ * Public people/hours pickers follow the Admin grid.
+ * If every stored slot is the identity scale (1 costs 1, 2 costs 2, …),
+ * missing slots up to the new max are filled the same way (8→8, 15→15).
+ * Other tables are left as stored so we never invent a 0 Rp choice.
  */
 export function expandTransportPriceChoices(
   rows: { value: number; price_idr: number }[],
-  oldFullMax: number,
+  _oldFullMax: number,
   newMax: number,
 ): { value: number; price_idr: number }[] {
   if (rows.length === 0) return [];
   const byValue = new Map(rows.map((row) => [row.value, row.price_idr]));
   const values = [...byValue.keys()].sort((a, b) => a - b);
   const consecutiveFromOne = values.every((value, i) => value === i + 1);
-  const currentMax = values[values.length - 1]!;
-  if (!consecutiveFromOne || currentMax < oldFullMax) {
+  if (!consecutiveFromOne) {
+    return values.map((value) => ({ value, price_idr: byValue.get(value) ?? 0 }));
+  }
+  const identity = values.every((value) => byValue.get(value) === value);
+  if (!identity) {
     return values.map((value) => ({ value, price_idr: byValue.get(value) ?? 0 }));
   }
   return Array.from({ length: newMax }, (_, i) => {
     const value = i + 1;
-    return { value, price_idr: byValue.get(value) ?? 0 };
+    return { value, price_idr: byValue.get(value) ?? value };
   });
 }
 
 export function publicTransportPeopleChoices(rows: { value: number; price_idr: number }[]) {
-  return expandTransportPriceChoices(rows, OLD_MAX_TRANSPORT_PEOPLE, MAX_TRANSPORT_PEOPLE);
+  return expandTransportPriceChoices(rows, PREVIOUS_PEOPLE_CEILING, MAX_TRANSPORT_PEOPLE);
 }
 
 export function publicTransportHourChoices(
@@ -238,9 +244,8 @@ export function publicTransportHourChoices(
   min: number | null,
   max: number | null,
 ) {
-  const expanded = expandTransportPriceChoices(rows, OLD_MAX_TRAVEL_HOURS, MAX_TRAVEL_HOURS);
-  // 9 was the previous catalogue ceiling; do not hide 10–14 on the customer picker.
-  const cap = max === OLD_MAX_TRAVEL_HOURS ? MAX_TRAVEL_HOURS : max;
+  const expanded = expandTransportPriceChoices(rows, 14, MAX_TRAVEL_HOURS);
+  const cap = max != null && PREVIOUS_HOUR_CEILINGS.has(max) ? MAX_TRAVEL_HOURS : max;
   return expanded.filter(
     (row) => (min == null || row.value >= min) && (cap == null || row.value <= cap),
   );

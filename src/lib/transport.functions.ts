@@ -136,7 +136,7 @@ export const updateTransport = createServerFn({ method: "POST" })
         (fields.max_travel_hours != null && fields.max_travel_hours > LEGACY_MAX_HOURS);
       if (hours) {
         fail(
-          "Travel times of 10–14 hours cannot be saved until the database range update is applied in Lovable Cloud.",
+          "Travel times above 14 hours cannot be saved until the database range update is applied in Lovable Cloud.",
         );
       }
       fail(SAFE_ERROR);
@@ -234,9 +234,9 @@ const moneyRow = {
   customer_price_idr: z.number().int().min(0, "Customer prices cannot be negative."),
 };
 
-/** Live Cloud still has the original CHECKs until 20260923084800 is applied. */
-const LEGACY_MAX_PEOPLE = 4;
-const LEGACY_MAX_HOURS = 9;
+/** Live Cloud CHECKs after 20260923084800: people 1–7, hours 1–14. */
+const LEGACY_MAX_PEOPLE = 7;
+const LEGACY_MAX_HOURS = 14;
 
 function moneyUsed(row: { supplier_cost_idr: number; customer_price_idr: number }) {
   return row.supplier_cost_idr !== 0 || row.customer_price_idr !== 0;
@@ -310,7 +310,7 @@ export const savePeoplePrices = createServerFn({ method: "POST" })
     if (writeError) {
       if (extrasPriced) {
         fail(
-          "People 5–7 cannot be saved until the database range update is applied in Lovable Cloud. Leave those rows at 0 to save prices for 1–4 people.",
+          "People 8–10 cannot be saved until the database range update is applied in Lovable Cloud. Leave those rows at 0 to save prices for 1–7 people.",
         );
       }
       fail(SAFE_ERROR);
@@ -365,7 +365,7 @@ export const saveTimePrices = createServerFn({ method: "POST" })
     if (writeError) {
       if (extrasPriced) {
         fail(
-          "Travel times of 10–14 hours cannot be saved until the database range update is applied in Lovable Cloud. Leave those rows at 0 to save prices for 1–9 hours.",
+          "Travel times of 15–30 hours cannot be saved until the database range update is applied in Lovable Cloud. Leave those rows at 0 to save prices for 1–14 hours.",
         );
       }
       fail(SAFE_ERROR);
