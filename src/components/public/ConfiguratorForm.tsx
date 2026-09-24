@@ -37,6 +37,7 @@ import { ConfiguratorOptionList } from "@/components/public/ConfiguratorOptionLi
 import { QuoteNotes, QuoteTotal } from "@/components/public/ConfiguratorSummary";
 import { ConfiguratorYesNo } from "@/components/public/ConfiguratorYesNo";
 import { ConfiguratorQuantityStepper } from "@/components/public/ConfiguratorQuantityStepper";
+import { integerQuantityChoices } from "@/lib/quantity-choices";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -504,17 +505,16 @@ export function ConfiguratorForm({
                       })}
 
                     {(f.field_type === "quantity" || f.field_type === "number") && (
-                      <Input
-                        id={f.id}
-                        inputMode="decimal"
-                        disabled={e.disabled}
+                      <ConfiguratorQuantityStepper
+                        choices={integerQuantityChoices(e.min, e.max)}
                         value={String(value)}
-                        min={e.min ?? undefined}
-                        max={e.max ?? undefined}
-                        aria-invalid={errorMessage ? true : undefined}
-                        aria-describedby={errorMessage ? errorId : undefined}
-                        className="cbr-config-field"
-                        onChange={(ev) => set(f, ev.target.value)}
+                        disabled={e.disabled}
+                        error={!!errorMessage}
+                        errorId={errorMessage ? errorId : undefined}
+                        labelledBy={labelId}
+                        decreaseLabel={`Decrease ${fieldLabel || f.internal_name}`}
+                        increaseLabel={`Increase ${fieldLabel || f.internal_name}`}
+                        onChange={(next) => set(f, next)}
                       />
                     )}
 
