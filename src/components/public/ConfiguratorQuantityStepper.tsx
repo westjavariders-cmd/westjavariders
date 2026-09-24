@@ -5,8 +5,8 @@ type ConfiguratorQuantityStepperProps = {
   value: string;
   disabled?: boolean;
   error?: boolean;
-  errorId?: string;
-  labelledBy?: string;
+  errorId?: string | undefined;
+  labelledBy?: string | undefined;
   decreaseLabel: string;
   increaseLabel: string;
   onChange: (value: string) => void;
