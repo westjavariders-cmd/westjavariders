@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { applyHomeTripDoors, applyNavImagesToHomeDoors, HOME_TRIP_DOORS } from "@/lib/home-trip-doors";
+import {
+  applyFirstWavesMenuLabel,
+  applyHomeTripDoors,
+  applyNavImagesToHomeDoors,
+  HOME_TRIP_DOORS,
+} from "@/lib/home-trip-doors";
 import type { PublicBlock } from "@/lib/website.server";
 
 function door(partial: Partial<PublicBlock> & Pick<PublicBlock, "id" | "title">): PublicBlock {
@@ -48,7 +53,7 @@ describe("applyHomeTripDoors", () => {
     ]);
 
     expect(out.map((b) => b.title)).toEqual([
-      "First Waves",
+      "Catching My First Waves",
       "Intermediate & Pro",
       "Family Adventures",
       "Explore West Java",
@@ -110,7 +115,7 @@ describe("applyNavImagesToHomeDoors", () => {
       { label: "Explore West Java", href: "/pages/explore-west-java", image_url: "https://cdn/explore.jpg" },
     ]);
 
-    expect(painted.find((b) => b.title === "First Waves")?.media).toEqual({
+    expect(painted.find((b) => b.title === "Catching My First Waves")?.media).toEqual({
       kind: "image",
       url: "https://cdn/waves.jpg",
     });
@@ -126,5 +131,20 @@ describe("applyNavImagesToHomeDoors", () => {
       kind: "image",
       url: "https://cdn/explore.jpg",
     });
+  });
+});
+
+describe("applyFirstWavesMenuLabel", () => {
+  it("renames the First Waves nav item without touching the others", () => {
+    const items = applyFirstWavesMenuLabel([
+      { label: "My First Waves", href: "/pages/firstwaves" },
+      { label: "Intermediate & Pro", href: "/pages/intermediatepro" },
+      { label: "Explore West Java", href: "/pages/explore-west-java" },
+    ]);
+    expect(items.map((item) => item.label)).toEqual([
+      "Catching My First Waves",
+      "Intermediate & Pro",
+      "Explore West Java",
+    ]);
   });
 });

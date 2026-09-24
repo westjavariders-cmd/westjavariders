@@ -6,6 +6,7 @@
  * product system for product references. No pricing happens in this file.
  */
 import { PRODUCT_MEDIA_BUCKET } from "@/lib/catalog";
+import { applyFirstWavesMenuLabel } from "@/lib/home-trip-doors";
 import { isPurchasable } from "@/lib/pricing";
 import {
   WEBSITE_MEDIA_BUCKET,
@@ -460,7 +461,7 @@ export async function websiteNav(language?: string): Promise<PublicNavItem[]> {
         .in("nav_item_id", ids)
     : { data: [] };
 
-  return (
+  const items = (
     await Promise.all(
       active.map(async (item: any) => {
         const destination = resolveDestination({
@@ -484,4 +485,5 @@ export async function websiteNav(language?: string): Promise<PublicNavItem[]> {
       }),
     )
   ).filter((i: unknown): i is PublicNavItem => Boolean(i));
+  return applyFirstWavesMenuLabel(items);
 }

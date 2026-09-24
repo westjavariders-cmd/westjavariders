@@ -65,7 +65,7 @@ export const DESTINATION_LABELS: Record<DestinationKind, string> = {
   none: "No button",
   page: "Website page",
   product: "Product",
-  build_your_trip: "First Waves",
+  build_your_trip: "Catching My First Waves",
   book_individually: "Book individually",
   external: "External link",
 };
