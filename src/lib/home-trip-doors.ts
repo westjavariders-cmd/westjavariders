@@ -8,8 +8,11 @@
 import type { PublicBlock } from "@/lib/website.server";
 
 export const HOME_TRIP_DOORS = {
-  firstWaves: { title: "Catching My First Waves", href: "/pages/firstwaves" },
-  intermediatePro: { title: "Intermediate & Pro", href: "/pages/intermediatepro" },
+  firstWaves: { title: "SURFCAMP", href: "/pages/firstwaves" },
+  intermediatePro: {
+    title: "For adventurers who want to make their own decisions",
+    href: "/pages/intermediatepro",
+  },
   familyAdventures: { title: "Family Adventures", href: "/pages/familyadventures" },
 } as const;
 
@@ -30,7 +33,8 @@ function isFirstWavesNamed(title: string): boolean {
     title === "build your trip" ||
     title === "first waves" ||
     title === "my first waves" ||
-    title === "catching my first waves"
+    title === "catching my first waves" ||
+    title === "surfcamp"
   );
 }
 
@@ -39,7 +43,8 @@ function isIntermediateNamed(title: string): boolean {
     isEpicNamed(title) ||
     title === "intermediate & pro" ||
     title === "intermediates and pros" ||
-    title === "intermediate and pro"
+    title === "intermediate and pro" ||
+    title === "for adventurers who want to make their own decisions"
   );
 }
 
@@ -173,7 +178,7 @@ function pathOf(href: string): string {
   }
 }
 
-/** Public menu label for the First Waves audience (header + Home tile). */
+/** Public menu labels for audience tiles (header + Home). */
 export function applyFirstWavesMenuLabel<T extends { label: string; href: string }>(items: T[]): T[] {
   return items.map((item) => {
     const title = norm(item.label);
@@ -182,9 +187,19 @@ export function applyFirstWavesMenuLabel<T extends { label: string; href: string
       isFirstWavesNamed(title) ||
       href.endsWith("/pages/firstwaves") ||
       href.endsWith("/pages/first-waves");
-    if (!isWaves) return item;
-    if (title === "family adventures" || isIntermediateNamed(title)) return item;
-    return { ...item, label: HOME_TRIP_DOORS.firstWaves.title };
+    const isPro =
+      isIntermediateNamed(title) ||
+      href.endsWith("/pages/intermediatepro") ||
+      href.endsWith("/pages/intermediate-and-pro") ||
+      href.endsWith("/pages/epictrips") ||
+      href.endsWith("/pages/epic-trips");
+    if (isWaves && title !== "family adventures" && !isIntermediateNamed(title)) {
+      return { ...item, label: HOME_TRIP_DOORS.firstWaves.title };
+    }
+    if (isPro && title !== "family adventures" && !isFirstWavesNamed(title)) {
+      return { ...item, label: HOME_TRIP_DOORS.intermediatePro.title };
+    }
+    return item;
   });
 }
 

@@ -53,8 +53,8 @@ describe("applyHomeTripDoors", () => {
     ]);
 
     expect(out.map((b) => b.title)).toEqual([
-      "Catching My First Waves",
-      "Intermediate & Pro",
+      "SURFCAMP",
+      "For adventurers who want to make their own decisions",
       "Family Adventures",
       "Explore West Java",
       "Meet the Boardriders",
@@ -115,11 +115,11 @@ describe("applyNavImagesToHomeDoors", () => {
       { label: "Explore West Java", href: "/pages/explore-west-java", image_url: "https://cdn/explore.jpg" },
     ]);
 
-    expect(painted.find((b) => b.title === "Catching My First Waves")?.media).toEqual({
+    expect(painted.find((b) => b.title === "SURFCAMP")?.media).toEqual({
       kind: "image",
       url: "https://cdn/waves.jpg",
     });
-    expect(painted.find((b) => b.title === "Intermediate & Pro")?.media).toEqual({
+    expect(painted.find((b) => b.title === "For adventurers who want to make their own decisions")?.media).toEqual({
       kind: "image",
       url: "https://cdn/pro.jpg",
     });
@@ -135,15 +135,15 @@ describe("applyNavImagesToHomeDoors", () => {
 });
 
 describe("applyFirstWavesMenuLabel", () => {
-  it("renames the First Waves nav item without touching the others", () => {
+  it("renames the audience nav items without touching the others", () => {
     const items = applyFirstWavesMenuLabel([
       { label: "My First Waves", href: "/pages/firstwaves" },
       { label: "Intermediate & Pro", href: "/pages/intermediatepro" },
       { label: "Explore West Java", href: "/pages/explore-west-java" },
     ]);
     expect(items.map((item) => item.label)).toEqual([
-      "Catching My First Waves",
-      "Intermediate & Pro",
+      "SURFCAMP",
+      "For adventurers who want to make their own decisions",
       "Explore West Java",
     ]);
   });
