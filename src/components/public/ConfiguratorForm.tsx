@@ -22,9 +22,13 @@ import {
 import { readStoredPromoCode } from "@/lib/promo-code-storage";
 import {
   catalogueHoursVariable,
+  catalogueItemChoiceValue,
+  catalogueItemHoursVariable,
+  catalogueItemPeopleVariable,
   cataloguePeopleVariable,
   fieldCatalogueKey,
   type CatalogueItemsByKey,
+  type CatalogueVariants,
 } from "@/lib/catalogue-bridge";
 
 import { completePackage, savePackageConfiguration } from "@/lib/cart.functions";
@@ -32,6 +36,7 @@ import { PUBLIC_CART_KEY, usePublicCart } from "@/components/public/SiteHeader";
 import { ConfiguratorOptionList } from "@/components/public/ConfiguratorOptionList";
 import { QuoteNotes, QuoteTotal } from "@/components/public/ConfiguratorSummary";
 import { ConfiguratorYesNo } from "@/components/public/ConfiguratorYesNo";
+import { ConfiguratorQuantityStepper } from "@/components/public/ConfiguratorQuantityStepper";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -380,6 +385,45 @@ export function ConfiguratorForm({
                       />
                     )}
 
+                    {f.field_type === "multi_select" && (
+                      <ConfiguratorOptionList
+                        multiple
+                        options={options}
+                        value={
+                          Array.isArray(values[f.variable_name])
+                            ? (values[f.variable_name] as string[])
+                            : []
+                        }
+                        disabled={e.disabled}
+                        error={!!errorMessage}
+                        errorId={errorMessage ? errorId : undefined}
+                        labelledBy={labelId}
+                        onSelect={(internalValue) => {
+                          const list = Array.isArray(values[f.variable_name])
+                            ? (values[f.variable_name] as string[])
+                            : [];
+                          const on = list.includes(internalValue);
+                          setValues((v) => {
+                            const current = Array.isArray(v[f.variable_name])
+                              ? (v[f.variable_name] as string[])
+                              : [];
+                            const next: PreviewValues = {
+                              ...v,
+                              [f.variable_name]: on
+                                ? current.filter((x) => x !== internalValue)
+                                : [...current, internalValue],
+                            };
+                            if (on) {
+                              delete next[catalogueItemPeopleVariable(f.variable_name, internalValue)];
+                              delete next[catalogueItemHoursVariable(f.variable_name, internalValue)];
+                            }
+                            return next;
+                          });
+                          if (!on) setShown((s) => ({ ...s, [f.id]: internalValue }));
+                        }}
+                      />
+                    )}
+
                     {catalogueKeyOfField &&
                       (() => {
                         // The photos on screen belong to the last option the
@@ -412,103 +456,50 @@ export function ConfiguratorForm({
                       </p>
                     )}
                     {catalogueKeyOfField &&
+                      f.field_type !== "multi_select" &&
                       (() => {
                         const chosen = catalogueItems.find((i) => i.id === String(value));
                         const variants = chosen?.variants ?? null;
                         if (!variants) return null;
-                        const groups = [
-                          {
-                            name: cataloguePeopleVariable(f.variable_name),
-                            label: variants.people_label,
-                            choices: variants.people,
-                          },
-                          {
-                            name: catalogueHoursVariable(f.variable_name),
-                            label: variants.hours_label,
-                            choices: variants.hours,
-                          },
-                        ].filter((g) => g.choices.length > 0);
-
                         return (
-                          <div className="space-y-5">
-                            {groups.map((g) => {
-                              const current = String(values[g.name] ?? "");
-                              return (
-                                <div key={g.name} className="space-y-2">
-                                  <Label className="text-sm">
-                                    {g.label}
-                                    <span className="ml-1 text-destructive">*</span>
-                                  </Label>
-                                  <div
-                                    role="radiogroup"
-                                    className="divide-y divide-border border-y border-border"
-                                  >
-                                    {g.choices.map((c) => {
-                                      const selected = current === String(c.value);
-                                      return (
-                                        <button
-                                          key={c.value}
-                                          type="button"
-                                          role="radio"
-                                          aria-checked={selected}
-                                          disabled={e.disabled}
-                                          onClick={() => setVar(g.name, String(c.value))}
-                                          className={
-                                            selected
-                                              ? "flex min-h-12 w-full items-center justify-between px-0 py-3 text-left text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                              : "flex min-h-12 w-full items-center justify-between px-0 py-3 text-left text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                          }
-                                        >
-                                          <span>{c.value}</span>
-                                          <span
-                                            aria-hidden
-                                            className={
-                                              selected
-                                                ? "grid size-5 place-content-center rounded-full border border-foreground bg-foreground"
-                                                : "grid size-5 place-content-center rounded-full border border-muted-foreground/40"
-                                            }
-                                          >
-                                            {selected ? (
-                                              <span className="size-2 rounded-full bg-background" />
-                                            ) : null}
-                                          </span>
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
+                          <CatalogueVariantSteppers
+                            variableName={f.variable_name}
+                            itemId={chosen!.id}
+                            variants={variants}
+                            values={values}
+                            perItem={false}
+                            disabled={e.disabled}
+                            onChange={setVar}
+                          />
                         );
                       })()}
 
-                    {f.field_type === "multi_select" && (
-                      <ConfiguratorOptionList
-                        multiple
-                        options={options}
-                        value={
-                          Array.isArray(values[f.variable_name])
-                            ? (values[f.variable_name] as string[])
-                            : []
+                    {catalogueKeyOfField &&
+                      f.field_type === "multi_select" &&
+                      (Array.isArray(values[f.variable_name])
+                        ? (values[f.variable_name] as string[])
+                        : []
+                      ).map((id) => {
+                        const item = catalogueItems.find((i) => i.id === id);
+                        if (!item?.variants) return null;
+                        if (item.variants.people.length === 0 && item.variants.hours.length === 0) {
+                          return null;
                         }
-                        disabled={e.disabled}
-                        error={!!errorMessage}
-                        errorId={errorMessage ? errorId : undefined}
-                        labelledBy={labelId}
-                        onSelect={(internalValue) => {
-                          const list = Array.isArray(values[f.variable_name])
-                            ? (values[f.variable_name] as string[])
-                            : [];
-                          const on = list.includes(internalValue);
-                          set(
-                            f,
-                            on ? list.filter((x) => x !== internalValue) : [...list, internalValue],
-                          );
-                          if (!on) setShown((s) => ({ ...s, [f.id]: internalValue }));
-                        }}
-                      />
-                    )}
+                        return (
+                          <div key={id} className="space-y-4 border-t border-border pt-5">
+                            <p className="text-sm font-medium">{item.name}</p>
+                            <CatalogueVariantSteppers
+                              variableName={f.variable_name}
+                              itemId={id}
+                              variants={item.variants}
+                              values={values}
+                              perItem
+                              disabled={e.disabled}
+                              onChange={setVar}
+                            />
+                          </div>
+                        );
+                      })}
 
                     {(f.field_type === "quantity" || f.field_type === "number") && (
                       <Input
@@ -710,6 +701,77 @@ function CatalogueGallery({ photos, name }: { photos: string[]; name: string }) 
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function CatalogueVariantSteppers({
+  variableName,
+  itemId,
+  variants,
+  values,
+  perItem,
+  disabled,
+  onChange,
+}: {
+  variableName: string;
+  itemId: string;
+  variants: CatalogueVariants;
+  values: PreviewValues;
+  perItem: boolean;
+  disabled?: boolean;
+  onChange: (name: string, value: PreviewValues[string]) => void;
+}) {
+  const groups = [
+    {
+      kind: "people" as const,
+      name: perItem
+        ? catalogueItemPeopleVariable(variableName, itemId)
+        : cataloguePeopleVariable(variableName),
+      label: variants.people_label,
+      choices: variants.people,
+    },
+    {
+      kind: "hours" as const,
+      name: perItem
+        ? catalogueItemHoursVariable(variableName, itemId)
+        : catalogueHoursVariable(variableName),
+      label: variants.hours_label,
+      choices: variants.hours,
+    },
+  ].filter((g) => g.choices.length > 0);
+
+  if (groups.length === 0) return null;
+
+  return (
+    <div className="space-y-5">
+      {groups.map((g) => {
+        const n = catalogueItemChoiceValue(
+          values as Record<string, unknown>,
+          variableName,
+          itemId,
+          g.kind,
+          perItem,
+        );
+        const current = n == null ? "" : String(n);
+        return (
+          <div key={g.name} className="space-y-2">
+            <Label id={`${g.name}-label`} className="text-sm">
+              {g.label}
+              <span className="ml-1 text-destructive">*</span>
+            </Label>
+            <ConfiguratorQuantityStepper
+              choices={g.choices.map((c) => c.value)}
+              value={current}
+              disabled={!!disabled}
+              labelledBy={`${g.name}-label`}
+              decreaseLabel={`Decrease ${g.label}`}
+              increaseLabel={`Increase ${g.label}`}
+              onChange={(next) => onChange(g.name, next)}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -25,13 +25,13 @@ function ConfigureCta({ productId }: { productId: string }) {
 export function PackageLanding({ productId, title, summary, body, imageUrl }: PackageLandingProps) {
   return (
     <div className="mx-auto w-full max-w-[90rem]">
-      <Link to="/build-your-trip" className="cbr-editorial-cta text-muted-foreground">
+      <Link to="/home" className="cbr-editorial-cta text-muted-foreground">
         ← Back
       </Link>
 
       <div className="mt-6 grid gap-8 lg:mt-8 lg:grid-cols-12 lg:items-end lg:gap-12 xl:gap-16">
         {imageUrl ? (
-          <div className="relative isolate overflow-hidden bg-secondary lg:col-span-7">
+          <div className="cbr-photo-tile relative isolate overflow-hidden bg-secondary lg:col-span-7">
             <img
               src={imageUrl}
               alt={title}

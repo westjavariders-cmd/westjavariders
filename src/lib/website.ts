@@ -9,6 +9,25 @@
 
 export const WEBSITE_MEDIA_BUCKET = "website-media";
 
+/** Settings keys for chrome photos (public pages + header bar). */
+export const SITE_BACKGROUND_SETTING_KEY = "website_site_background_path";
+export const HEADER_BACKGROUND_SETTING_KEY = "website_header_background_path";
+export const WEBSITE_CHROME_SETTING_KEYS = [SITE_BACKGROUND_SETTING_KEY, HEADER_BACKGROUND_SETTING_KEY] as const;
+export type WebsiteChromeSlot = "site" | "header";
+
+export function chromeImageSettingKey(slot: WebsiteChromeSlot): string {
+  return slot === "header" ? HEADER_BACKGROUND_SETTING_KEY : SITE_BACKGROUND_SETTING_KEY;
+}
+
+export function isChromeImagePath(slot: WebsiteChromeSlot, path: string): boolean {
+  const folder = slot === "header" ? "header-background" : "site-background";
+  return new RegExp(`^${folder}/[A-Za-z0-9._-]+$`).test(path);
+}
+
+export function isSiteBackgroundPath(path: string): boolean {
+  return isChromeImagePath("site", path);
+}
+
 export const BLOCK_KINDS = [
   "hero",
   "image_text",
@@ -46,7 +65,7 @@ export const DESTINATION_LABELS: Record<DestinationKind, string> = {
   none: "No button",
   page: "Website page",
   product: "Product",
-  build_your_trip: "Build your trip",
+  build_your_trip: "First Waves",
   book_individually: "Book individually",
   external: "External link",
 };
@@ -56,7 +75,7 @@ export type MediaKind = (typeof MEDIA_KINDS)[number];
 
 export const HOME_SLUG = "home";
 export const BOOK_INDIVIDUALLY_SLUG = "book-individually";
-
+export const FIRST_WAVES_SLUG = "firstwaves";
 /**
  * Home has its own address so it stays reachable when the entry screen owns
  * the site root. Buttons pointing at Home therefore never loop back.
@@ -137,7 +156,7 @@ export type ResolvedDestination = { href: string; external: boolean };
 export function resolveDestination(destination: Destination): ResolvedDestination | null {
   switch (destination.kind) {
     case "build_your_trip":
-      return { href: "/build-your-trip", external: false };
+      return { href: `/pages/${FIRST_WAVES_SLUG}`, external: false };
     case "book_individually":
       return { href: `/pages/${BOOK_INDIVIDUALLY_SLUG}`, external: false };
     case "page": {
@@ -178,6 +197,24 @@ export function moveInOrder<T>(rows: T[], index: number, direction: -1 | 1): T[]
  */
 export function isPubliclyListable(productStatus: string | null | undefined): boolean {
   return productStatus === "active";
+}
+
+/** Stable public path segment for a CMS section used as a catalogue group. */
+export function assignGroupKeys(sections: { id: string; title: string | null }[]): Map<string, string> {
+  const keys = new Map<string, string>();
+  const used = new Set<string>();
+  for (const section of sections) {
+    const base = slugify(section.title ?? "") || section.id.replace(/[^a-z0-9]+/gi, "-").slice(0, 12);
+    let key = base;
+    let n = 2;
+    while (used.has(key)) {
+      key = `${base}-${n}`;
+      n += 1;
+    }
+    used.add(key);
+    keys.set(section.id, key);
+  }
+  return keys;
 }
 
 /**

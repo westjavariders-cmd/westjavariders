@@ -10,7 +10,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { BLOCK_KINDS, DESTINATION_KINDS, MEDIA_KINDS, WEBSITE_MEDIA_BUCKET, isSafeSlug } from "@/lib/website";
+import {
+  BLOCK_KINDS,
+  DESTINATION_KINDS,
+  MEDIA_KINDS,
+  WEBSITE_MEDIA_BUCKET,
+  chromeImageSettingKey,
+  isChromeImagePath,
+  isSafeSlug,
+  type WebsiteChromeSlot,
+} from "@/lib/website";
 
 const SAFE_ERROR = "This action could not be completed. Please check your input and try again.";
 
@@ -644,4 +653,60 @@ export const saveLanding = createServerFn({ method: "POST" })
       is_active: data.is_active,
     });
     return { id: landingId };
+  });
+
+export const getWebsiteChromeImages = createServerFn({ method: "POST" })
+  .inputValidator((data) => z.object({}).parse(data ?? {}))
+  .handler(async () => {
+    const { websiteChromeImages } = await import("@/lib/website.server");
+    return websiteChromeImages();
+  });
+
+export const saveChromeImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({ slot: z.enum(["site", "header"]), image_path: z.string().max(500).nullable() }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = ctx(context);
+    await assertAdmin(supabase);
+
+    const slot = data.slot as WebsiteChromeSlot;
+    const key = chromeImageSettingKey(slot);
+    const next = data.image_path?.trim() || null;
+    if (next && !isChromeImagePath(slot, next)) fail("This background file could not be saved.");
+
+    const { data: existing } = await supabase.from("settings").select("value").eq("key", key).maybeSingle();
+    const previous = typeof existing?.value === "string" && existing.value.trim() ? existing.value.trim() : null;
+
+    if (next) {
+      if (existing) {
+        const { error } = await supabase.from("settings").update({ value: next }).eq("key", key);
+        if (error) fail("The background could not be saved.");
+      } else {
+        const { error } = await supabase.from("settings").insert({
+          key,
+          value: next,
+          value_type: "string",
+          description:
+            slot === "header"
+              ? "Photo in the public header bar and menu button."
+              : "Photo behind public pages except the entry screen.",
+        });
+        if (error) fail("The background could not be saved.");
+      }
+    } else if (existing) {
+      const { error } = await supabase.from("settings").delete().eq("key", key);
+      if (error) fail("The background could not be removed.");
+    }
+
+    if (previous && previous !== next) {
+      await supabase.storage.from(WEBSITE_MEDIA_BUCKET).remove([previous]);
+    }
+
+    await audit(supabase, userId, "website.chrome_image.updated", "settings", null, key, {
+      slot,
+      has_image: Boolean(next),
+    });
+    return { ok: true };
   });

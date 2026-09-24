@@ -41,7 +41,7 @@ export function LandingScreen({ landing }: { landing: PublicLanding }) {
   }, [playVideo, landing.video_url]);
 
   return (
-    <div className="relative isolate h-[100svh] w-full overflow-x-hidden overflow-y-hidden text-neutral-50">
+    <div className="public-theme relative isolate h-[100svh] w-full overflow-x-hidden overflow-y-hidden text-neutral-50">
       {hasLiveMedia ? (
         <>
           {hasImage ? (

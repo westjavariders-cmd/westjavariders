@@ -6,10 +6,12 @@ import { toast } from "sonner";
 
 import { PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { saveLanding } from "@/lib/website.functions";
+import { saveChromeImage, saveLanding } from "@/lib/website.functions";
 import {
   DESTINATION_KINDS,
   DESTINATION_LABELS,
+  HEADER_BACKGROUND_SETTING_KEY,
+  SITE_BACKGROUND_SETTING_KEY,
   WEBSITE_MEDIA_BUCKET,
   type DestinationKind,
 } from "@/lib/website";
@@ -56,6 +58,7 @@ function WebsiteLandingScreen() {
   const pageOptions = useWebsitePageOptions();
   const products = useWebsiteProducts();
   const persist = useServerFn(saveLanding);
+  const persistChrome = useServerFn(saveChromeImage);
 
   const landing = useQuery({
     queryKey: ["website-landing"],
@@ -85,10 +88,28 @@ function WebsiteLandingScreen() {
     },
   });
 
+  const chromeImages = useQuery({
+    queryKey: ["website-chrome-image-paths"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("settings")
+        .select("key, value")
+        .in("key", [SITE_BACKGROUND_SETTING_KEY, HEADER_BACKGROUND_SETTING_KEY]);
+      if (error) throw new Error(error.message);
+      const byKey = new Map((data ?? []).map((row) => [row.key as string, ((row.value as string) ?? "").trim()]));
+      return {
+        site: byKey.get(SITE_BACKGROUND_SETTING_KEY) || null,
+        header: byKey.get(HEADER_BACKGROUND_SETTING_KEY) || null,
+      };
+    },
+  });
+
   const [form, setForm] = useState({
     is_active: false,
     video_path: null as string | null,
     image_path: null as string | null,
+    site_background_path: null as string | null,
+    header_background_path: null as string | null,
     image_alt: "",
     cta_kind: "page" as DestinationKind,
     cta_page_id: null as string | null,
@@ -106,6 +127,8 @@ function WebsiteLandingScreen() {
       is_active: row?.is_active ?? false,
       video_path: row?.video_path ?? null,
       image_path: row?.image_path ?? null,
+      site_background_path: chromeImages.data?.site ?? null,
+      header_background_path: chromeImages.data?.header ?? null,
       image_alt: row?.image_alt ?? "",
       cta_kind: row?.cta_kind ?? "page",
       cta_page_id: row?.cta_page_id ?? null,
@@ -115,11 +138,18 @@ function WebsiteLandingScreen() {
       subtitle: text?.subtitle ?? "",
       cta_label: text?.cta_label ?? "",
     });
-  }, [landing.data, translation.data]);
+  }, [landing.data, translation.data, chromeImages.data]);
 
-  const [previews, setPreviews] = useState<{ video: string | null; image: string | null }>({
+  const [previews, setPreviews] = useState<{
+    video: string | null;
+    image: string | null;
+    site: string | null;
+    header: string | null;
+  }>({
     video: null,
     image: null,
+    site: null,
+    header: null,
   });
 
   useEffect(() => {
@@ -130,28 +160,48 @@ function WebsiteLandingScreen() {
       return data?.signedUrl ?? null;
     }
     void (async () => {
-      const [video, image] = await Promise.all([sign(form.video_path), sign(form.image_path)]);
-      if (!cancelled) setPreviews({ video, image });
+      const [video, image, site, header] = await Promise.all([
+        sign(form.video_path),
+        sign(form.image_path),
+        sign(form.site_background_path),
+        sign(form.header_background_path),
+      ]);
+      if (!cancelled) setPreviews({ video, image, site, header });
     })();
     return () => {
       cancelled = true;
     };
-  }, [form.video_path, form.image_path]);
+  }, [form.video_path, form.image_path, form.site_background_path, form.header_background_path]);
 
   const videoInput = useRef<HTMLInputElement>(null);
   const imageInput = useRef<HTMLInputElement>(null);
+  const siteBackgroundInput = useRef<HTMLInputElement>(null);
+  const headerBackgroundInput = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
-  async function upload(files: FileList | null, kind: "video" | "image") {
+  async function upload(files: FileList | null, kind: "video" | "image" | "site" | "header") {
     const file = files?.[0];
     if (!file) return;
     setUploading(true);
     try {
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-      const path = `landing/${kind}-${Date.now()}-${safeName}`;
+      const path =
+        kind === "site"
+          ? `site-background/${Date.now()}-${safeName}`
+          : kind === "header"
+            ? `header-background/${Date.now()}-${safeName}`
+            : `landing/${kind}-${Date.now()}-${safeName}`;
       const { error } = await supabase.storage.from(WEBSITE_MEDIA_BUCKET).upload(path, file);
       if (error) throw new Error(error.message);
-      setForm((f) => (kind === "video" ? { ...f, video_path: path } : { ...f, image_path: path }));
+      setForm((f) =>
+        kind === "video"
+          ? { ...f, video_path: path }
+          : kind === "site"
+            ? { ...f, site_background_path: path }
+            : kind === "header"
+              ? { ...f, header_background_path: path }
+              : { ...f, image_path: path },
+      );
       toast.success("Uploaded. Save to keep it.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "This file could not be uploaded.");
@@ -180,8 +230,12 @@ function WebsiteLandingScreen() {
           cta_label: form.cta_label,
         },
       });
+      await persistChrome({ data: { slot: "site", image_path: form.site_background_path } });
+      await persistChrome({ data: { slot: "header", image_path: form.header_background_path } });
       await queryClient.invalidateQueries({ queryKey: ["website-landing"] });
       await queryClient.invalidateQueries({ queryKey: ["website-landing-text", activeLanguage] });
+      await queryClient.invalidateQueries({ queryKey: ["website-chrome-image-paths"] });
+      await queryClient.invalidateQueries({ queryKey: ["website-chrome-images"] });
       toast.success("Entry screen saved.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "This could not be saved.");
@@ -314,6 +368,85 @@ function WebsiteLandingScreen() {
               />
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Site pages background</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Shown behind Home, menus and the rest of the public site. The entry screen above keeps its own photo.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              ref={siteBackgroundInput}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => void upload(e.target.files, "site")}
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!canEdit || uploading}
+              onClick={() => siteBackgroundInput.current?.click()}
+            >
+              {form.site_background_path ? "Replace image" : "Upload image"}
+            </Button>
+            {form.site_background_path && (
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={!canEdit}
+                onClick={() => setForm((f) => ({ ...f, site_background_path: null }))}
+              >
+                Remove
+              </Button>
+            )}
+          </div>
+          {previews.site && <img src={previews.site} alt="" className="max-h-48 rounded-md" />}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Header bar image</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Fills the top menu bar and the Surf, Explore, Experience West Java button. If empty, the site pages
+            background is used instead.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              ref={headerBackgroundInput}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => void upload(e.target.files, "header")}
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!canEdit || uploading}
+              onClick={() => headerBackgroundInput.current?.click()}
+            >
+              {form.header_background_path ? "Replace image" : "Upload image"}
+            </Button>
+            {form.header_background_path && (
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={!canEdit}
+                onClick={() => setForm((f) => ({ ...f, header_background_path: null }))}
+              >
+                Remove
+              </Button>
+            )}
+          </div>
+          {previews.header && <img src={previews.header} alt="" className="max-h-48 rounded-md" />}
         </CardContent>
       </Card>
 

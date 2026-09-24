@@ -53,8 +53,8 @@ function PurchasePage() {
       {!view.isPending && !purchase && (
         <div className="mt-4 space-y-4">
           <p className="text-sm text-muted-foreground">This booking could not be found.</p>
-          <Link to="/build-your-trip" className="text-sm underline underline-offset-2">
-            Build your trip
+          <Link to="/home" className="text-sm underline underline-offset-2">
+            See the menu
           </Link>
         </div>
       )}

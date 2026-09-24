@@ -42,7 +42,7 @@ export function DoorCard({ block, featured = false, layout = "mosaic" }: DoorCar
   const inner = (
     <div
       className={cn(
-        "group relative isolate flex h-full min-h-[62vw] overflow-hidden bg-secondary",
+        "group relative isolate flex h-full min-h-[62vw] overflow-hidden bg-secondary cbr-photo-tile",
         layout === "mosaic" && "md:min-h-[28rem] lg:min-h-[34rem] xl:min-h-[38rem]",
         mosaicFeatured && "md:min-h-[34rem] lg:min-h-[42rem] xl:min-h-[46rem]",
         layout === "selection" && "md:min-h-[22rem] lg:min-h-[24rem]",
@@ -98,7 +98,7 @@ export function DoorCard({ block, featured = false, layout = "mosaic" }: DoorCar
     <a
       href={block.cta.href}
       {...(block.cta.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-      className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      className="block h-full rounded-[1.35rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
       {inner}
     </a>
