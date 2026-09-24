@@ -1,11 +1,91 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 
-/**
- * The old Build your trip catalogue is no longer a public menu.
- * Individual products still live at /build-your-trip/$productId.
- */
+import { PublicPage } from "@/components/public/SiteHeader";
+import { ProductCard } from "@/components/public/ProductCard";
+import { WebsiteRenderer } from "@/components/public/WebsiteRenderer";
+import { listPublicProducts } from "@/lib/public.functions";
+import { getWebsitePage } from "@/lib/website.functions";
+
 export const Route = createFileRoute("/build-your-trip/")({
-  beforeLoad: () => {
-    throw redirect({ to: "/home" });
-  },
+  head: () => ({
+    meta: [
+      { title: "Build Your Trip | West Java Riders" },
+      {
+        name: "description",
+        content:
+          "Choose a surf, travel or local experience in Cimaja, West Java, configure it your way and see your price instantly.",
+      },
+      { property: "og:title", content: "Build Your Trip — West Java Riders" },
+      {
+        property: "og:description",
+        content:
+          "Configure your surf trip, lessons or local experience in Cimaja, West Java and see your price instantly.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: BuildYourTrip,
 });
+
+function BuildYourTrip() {
+  const load = useServerFn(listPublicProducts);
+  const loadPage = useServerFn(getWebsitePage);
+  const products = useQuery({ queryKey: ["public-products"], queryFn: () => load() });
+  const configured = useQuery({
+    queryKey: ["website-page", "build-your-trip"],
+    queryFn: () => loadPage({ data: { slug: "build-your-trip" } }),
+  });
+
+  const page = configured.data?.page ?? null;
+  const hasConfigured = Boolean(page && page.sections.length > 0);
+
+  return (
+    <PublicPage width="full">
+      <header className="mx-auto max-w-6xl">
+        <h1 className="max-w-3xl text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
+          {page?.title ?? "Build your trip"}
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+          {page?.subtitle ??
+            "Pick an experience, choose your options and see your price straight away."}
+        </p>
+      </header>
+
+      {hasConfigured && page && (
+        <div className="mt-5 sm:mt-6">
+          <WebsiteRenderer page={page} showHeading={false} />
+        </div>
+      )}
+
+      {!hasConfigured && (
+        <div className="mx-auto mt-5 w-full max-w-[90rem] sm:mt-6">
+          {(products.isPending || configured.isPending) && (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          )}
+          {products.data?.products.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              Nothing is open for booking right now. Please check back soon.
+            </p>
+          )}
+          {products.data?.products && products.data.products.length > 0 && (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 xl:gap-6">
+              {products.data.products.map((p) => (
+                <ProductCard
+                  key={p.id}
+                  productId={p.id}
+                  title={p.title}
+                  summary={p.summary}
+                  imageUrl={p.image_url}
+                  bookable
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </PublicPage>
+  );
+}

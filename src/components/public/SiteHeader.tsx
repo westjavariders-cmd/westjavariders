@@ -6,7 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { X } from "lucide-react";
 
 import { getPublicCart } from "@/lib/public.functions";
-import { getWebsiteChromeImages, getWebsiteNav } from "@/lib/website.functions";
+import { getWebsiteNav } from "@/lib/website.functions";
 import { setFxCurrency } from "@/lib/fx.functions";
 import { formatIdr } from "@/lib/public-catalog";
 import { formatCustomerAmount } from "@/lib/fx";
@@ -71,11 +71,6 @@ function useWebsiteNav() {
 
 const DESKTOP_NAV = "(min-width: 1280px)";
 
-function useWebsiteChromeImages() {
-  const load = useServerFn(getWebsiteChromeImages);
-  return useQuery({ queryKey: ["website-chrome-images"], queryFn: () => load({ data: {} }) });
-}
-
 type CmsNavItem = {
   id: string;
   label: string;
@@ -88,18 +83,15 @@ function CmsNavLinks({
   items,
   variant,
   onNavigate,
-  ready,
 }: {
   items: CmsNavItem[];
   variant: "desktop" | "mobile";
   onNavigate?: () => void;
-  ready: boolean;
 }) {
-  if (!ready) return null;
   if (items.length === 0) {
     return (
       <Link
-        to="/home"
+        to="/build-your-trip"
         className={
           variant === "desktop"
             ? "text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground"
@@ -108,7 +100,7 @@ function CmsNavLinks({
         activeProps={{ className: "text-foreground" }}
         onClick={onNavigate}
       >
-        Home
+        Build your trip
       </Link>
     );
   }
@@ -118,10 +110,10 @@ function CmsNavLinks({
     const className =
       variant === "desktop"
         ? withImage
-          ? "group cbr-photo-tile cbr-photo-tile--compact relative flex h-[4.25rem] min-w-[5.5rem] max-w-[8.25rem] flex-1 items-end overflow-hidden px-2 py-2"
-          : "shrink-0 whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground"
+          ? "group relative flex h-[4.25rem] w-[8.25rem] shrink-0 items-end overflow-hidden px-2.5 py-2"
+          : "whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground"
         : withImage
-          ? "group cbr-photo-tile cbr-photo-tile--compact relative mb-3 flex h-32 shrink-0 items-end overflow-hidden px-4 py-3"
+          ? "group relative mb-3 flex h-32 shrink-0 items-end overflow-hidden px-4 py-3"
           : "block min-h-12 py-3 text-2xl font-medium tracking-tight text-foreground";
 
     return (
@@ -165,11 +157,8 @@ export function SiteHeader() {
   const menuId = useId();
   const [open, setOpen] = useState(false);
   const cart = usePublicCart();
-  const chrome = useWebsiteChromeImages();
-  const headerBarUrl = chrome.data?.header_url ?? null;
   const nav = useWebsiteNav();
   const navItems = nav.data?.items ?? [];
-  const navReady = nav.isSuccess;
   const hasNavImages = navItems.some((item) => Boolean(item.image_url));
   const total = displayTotal(
     cart.data?.payable_total_idr ?? 0,
@@ -230,21 +219,10 @@ export function SiteHeader() {
   }, [open]);
 
   return (
-    <header
-      className={cn(
-        "sticky top-0 z-40 relative overflow-hidden border-b border-border/40",
-        headerBarUrl ? "bg-transparent" : "bg-background/90 backdrop-blur-md",
-      )}
-    >
-      {headerBarUrl ? (
-        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-          <img src={headerBarUrl} alt="" className="size-full object-cover object-center" />
-          <div className="absolute inset-0 bg-black/45" />
-        </div>
-      ) : null}
+    <header className="sticky top-0 z-40 border-b border-border/40 bg-background/90 backdrop-blur-md">
       <div
         className={cn(
-          "relative mx-auto grid max-w-[90rem] grid-cols-[auto_1fr_auto] items-center gap-3 px-4 sm:px-6 lg:px-10 xl:grid-cols-[auto_minmax(0,1fr)_auto]",
+          "mx-auto grid max-w-[90rem] grid-cols-[auto_1fr_auto] items-center gap-3 px-4 sm:px-6 lg:px-10 xl:grid-cols-[1fr_auto_1fr]",
           hasNavImages ? "h-16 sm:h-[4.25rem] xl:h-[5.75rem]" : "h-16 sm:h-[4.25rem]",
         )}
       >
@@ -252,25 +230,14 @@ export function SiteHeader() {
           <button
             ref={openButtonRef}
             type="button"
-            className={cn(
-              "relative inline-flex min-h-11 max-w-[8.5rem] items-center justify-center gap-2 overflow-hidden rounded-md border px-3 py-2 text-left text-[10px] font-medium uppercase leading-tight tracking-[0.12em] sm:max-w-[16rem] md:max-w-[18rem] sm:text-[11px] sm:tracking-[0.14em] xl:hidden",
-              headerBarUrl
-                ? "border-white/35 text-white"
-                : "border-border bg-background transition-colors hover:bg-muted",
-            )}
+            className="inline-flex min-h-11 max-w-[8.5rem] items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-left text-[10px] font-medium uppercase leading-tight tracking-[0.12em] transition-colors hover:bg-muted sm:max-w-[16rem] md:max-w-[18rem] sm:text-[11px] sm:tracking-[0.14em] xl:hidden"
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
             aria-controls={menuId}
             onClick={() => setOpen((value) => !value)}
           >
-            {headerBarUrl ? (
-              <span className="pointer-events-none absolute inset-0" aria-hidden="true">
-                <img src={headerBarUrl} alt="" className="size-full object-cover object-center" />
-                <span className="absolute inset-0 bg-black/40" />
-              </span>
-            ) : null}
-            {open ? <X className="relative z-10 size-4 shrink-0" strokeWidth={1.5} /> : null}
-            <span className="relative z-10 truncate">Surf, Explore, Experience West Java</span>
+            {open ? <X className="size-4 shrink-0" strokeWidth={1.5} /> : null}
+            <span className="truncate">Surf, Explore, Experience West Java</span>
           </button>
           <Link
             to="/home"
@@ -289,12 +256,12 @@ export function SiteHeader() {
 
         <nav
           className={cn(
-            "hidden min-w-0 items-center justify-center xl:flex",
-            hasNavImages ? "gap-x-2" : "gap-x-7",
+            "hidden items-center justify-center xl:flex",
+            hasNavImages ? "gap-x-2.5" : "gap-x-7",
           )}
           aria-label="Primary"
         >
-          <CmsNavLinks items={navItems} variant="desktop" ready={navReady} />
+          <CmsNavLinks items={navItems} variant="desktop" />
         </nav>
 
         <div className="flex items-center justify-end gap-3 sm:gap-4">
@@ -344,7 +311,7 @@ export function SiteHeader() {
               </div>
 
               <nav className="mt-10 flex flex-1 flex-col overflow-y-auto" aria-label="Primary">
-                <CmsNavLinks items={navItems} variant="mobile" ready={navReady} onNavigate={() => setOpen(false)} />
+                <CmsNavLinks items={navItems} variant="mobile" onNavigate={() => setOpen(false)} />
               </nav>
 
               <Link
@@ -373,30 +340,19 @@ export function PublicPage({
   children: React.ReactNode;
   width?: PublicPageWidth;
 }) {
-  const chrome = useWebsiteChromeImages();
-  const backdropUrl = chrome.data?.site_url ?? null;
-
   return (
-    <div className={cn("public-theme relative min-h-screen text-foreground", !backdropUrl && "bg-background")}>
-      {backdropUrl ? (
-        <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
-          <img src={backdropUrl} alt="" className="size-full object-cover" />
-          <div className="absolute inset-0 bg-black/55" />
-        </div>
-      ) : null}
-      <div className="relative z-10">
-        <SiteHeader />
-        <main
-          className={cn(
-            "px-4 pb-20 pt-8 md:px-8 md:pt-10 lg:px-10 lg:pt-12 xl:px-12",
-            width === "readable" && "mx-auto w-full max-w-3xl",
-            width === "wide" && "mx-auto w-full max-w-6xl",
-            width === "full" && "w-full",
-          )}
-        >
-          {children}
-        </main>
-      </div>
+    <div className="public-theme min-h-screen bg-background text-foreground">
+      <SiteHeader />
+      <main
+        className={cn(
+          "px-4 pb-20 pt-8 md:px-8 md:pt-10 lg:px-10 lg:pt-12 xl:px-12",
+          width === "readable" && "mx-auto w-full max-w-3xl",
+          width === "wide" && "mx-auto w-full max-w-6xl",
+          width === "full" && "w-full",
+        )}
+      >
+        {children}
+      </main>
     </div>
   );
 }

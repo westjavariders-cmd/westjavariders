@@ -9,8 +9,6 @@ import { PRODUCT_MEDIA_BUCKET } from "@/lib/catalog";
 import { isPurchasable } from "@/lib/pricing";
 import {
   WEBSITE_MEDIA_BUCKET,
-  HEADER_BACKGROUND_SETTING_KEY,
-  SITE_BACKGROUND_SETTING_KEY,
   isPubliclyListable,
   pickTranslation,
   resolveDestination,
@@ -164,36 +162,6 @@ export async function websiteLanding(language?: string): Promise<PublicLanding |
     cta: destination && text?.cta_label ? { label: text.cta_label, ...destination } : null,
     language: wanted,
   };
-}
-
-export type PublicChromeImages = {
-  site_url: string | null;
-  header_url: string | null;
-};
-
-/** Signed URLs for interior wallpaper and the header bar. Not used on the entry screen. */
-export async function websiteChromeImages(): Promise<PublicChromeImages> {
-  const db = await admin();
-  const { data } = await db
-    .from("settings")
-    .select("key, value")
-    .in("key", [SITE_BACKGROUND_SETTING_KEY, HEADER_BACKGROUND_SETTING_KEY]);
-  const byKey = new Map<string, string>(
-    ((data ?? []) as { key: string; value: string }[])
-      .map((row) => [row.key, row.value.trim()] as const)
-      .filter((entry) => entry[1]),
-  );
-  const sitePath = byKey.get(SITE_BACKGROUND_SETTING_KEY) ?? "";
-  const headerPath = byKey.get(HEADER_BACKGROUND_SETTING_KEY) ?? "";
-  const [site_url, headerSigned] = await Promise.all([
-    signedMedia(db, sitePath || null),
-    signedMedia(db, headerPath || null),
-  ]);
-  return { site_url, header_url: headerSigned ?? site_url };
-}
-
-export async function websiteSiteBackground(): Promise<string | null> {
-  return (await websiteChromeImages()).site_url;
 }
 
 
@@ -426,10 +394,12 @@ export async function websiteNav(language?: string): Promise<PublicNavItem[]> {
   const fallback = await defaultLanguage(db);
   const wanted = language && language.trim() !== "" ? language : fallback;
 
-  const navColumns =
-    "id, destination_kind, destination_page_id, destination_product_id, destination_external_url, is_active, sort_order";
   const [items, pages] = await Promise.all([
-    db.from("website_nav_items").select(navColumns),
+    db
+      .from("website_nav_items")
+      .select(
+        "id, destination_kind, destination_page_id, destination_product_id, destination_external_url, is_active, sort_order, image_path",
+      ),
     db.from("website_pages").select("id, slug, is_active"),
   ]);
 
@@ -438,20 +408,6 @@ export async function websiteNav(language?: string): Promise<PublicNavItem[]> {
   );
   const active = visibleSorted(items.data ?? []);
   const ids = active.map((i: any) => i.id);
-
-  const imageById = new Map<string, string | null>();
-  if (ids.length > 0) {
-    try {
-      const images = await db.from("website_nav_items").select("id, image_path").in("id", ids);
-      if (!images.error) {
-        for (const row of images.data ?? []) {
-          imageById.set(row.id as string, (row.image_path as string | null) ?? null);
-        }
-      }
-    } catch {
-      // image_path may not exist until the migration is applied
-    }
-  }
 
   const translations = ids.length
     ? await db
@@ -479,7 +435,7 @@ export async function websiteNav(language?: string): Promise<PublicNavItem[]> {
           id: item.id,
           label: text.label,
           ...destination,
-          image_url: await signedMedia(db, imageById.get(item.id) ?? null),
+          image_url: await signedMedia(db, item.image_path ?? null),
         };
       }),
     )

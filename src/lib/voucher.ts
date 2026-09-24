@@ -181,12 +181,10 @@ function optionLabels(pkg: any): { label: string; value: string }[] {
   for (const sel of (pkg?.catalogue_selections ?? []) as any[]) {
     if (sel?.item_id && sel?.name) names[String(sel.item_id)] = String(sel.name);
     if (sel?.variable_name) {
-      const quantityNames = {
+      labels[String(sel.variable_name)] = {
         ...(sel?.people_label ? { _people: String(sel.people_label) } : {}),
         ...(sel?.hours_label ? { _hours: String(sel.hours_label) } : {}),
       };
-      labels[String(sel.variable_name)] = quantityNames;
-      if (sel?.item_id) labels[`${sel.variable_name}__${sel.item_id}`] = quantityNames;
     }
   }
   const suffixes = QUANTITY_SUFFIXES.map((q) => q.suffix);
@@ -201,41 +199,20 @@ function optionLabels(pkg: any): { label: string; value: string }[] {
       return UUID_LIKE.test(s) ? null : s;
     };
 
-    const pushQuantities = (prefix: string, labelKey: string) => {
-      for (const { suffix, label: qLabel } of QUANTITY_SUFFIXES) {
-        const q = answers[`${prefix}${suffix}`];
-        if (isEmptyAnswer(q)) continue;
-        const n = Number(q);
-        if (Number.isFinite(n) && n <= 0) continue;
-        out.push({ label: labels[labelKey]?.[suffix] || labels[key]?.[suffix] || qLabel, value: String(q) });
-      }
-    };
-
-    if (Array.isArray(raw)) {
-      const ids = raw.map(String).filter((v) => v !== "");
-      const hasPerItem = ids.some((id) =>
-        suffixes.some((suffix) => !isEmptyAnswer(answers[`${key}__${id}${suffix}`])),
-      );
-      if (hasPerItem) {
-        for (const id of ids) {
-          const name = resolve(id);
-          if (!name) continue;
-          out.push({ label, value: name });
-          pushQuantities(`${key}__${id}`, `${key}__${id}`);
-        }
-        continue;
-      }
-      const parts = ids.map(resolve).filter((v): v is string => !!v);
-      if (parts.length > 0) out.push({ label, value: parts.join(", ") });
-      pushQuantities(key, key);
-      continue;
-    }
-
     let value: string | null;
-    if (typeof raw === "boolean") value = null; // yes/no gates are not shown
+    if (Array.isArray(raw)) {
+      const parts = raw.map(resolve).filter((v): v is string => !!v);
+      value = parts.length > 0 ? parts.join(", ") : null;
+    } else if (typeof raw === "boolean") value = null; // yes/no gates are not shown
     else value = resolve(raw);
     if (value != null && value !== "") out.push({ label, value });
-    pushQuantities(key, key);
+    for (const { suffix, label: qLabel } of QUANTITY_SUFFIXES) {
+      const q = answers[`${key}${suffix}`];
+      if (isEmptyAnswer(q)) continue;
+      const n = Number(q);
+      if (Number.isFinite(n) && n <= 0) continue;
+      out.push({ label: labels[key]?.[suffix] || qLabel, value: String(q) });
+    }
   }
   return out;
 }

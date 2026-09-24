@@ -178,7 +178,7 @@ function CartPage() {
       {!cart.isPending && !cart.isError && packages.length === 0 && !draft && (
         <div className="mt-4 space-y-4">
           <p className="text-sm text-muted-foreground">Your cart is empty.</p>
-          <Button onClick={() => navigate({ to: "/home" })}>See the menu</Button>
+          <Button onClick={() => navigate({ to: "/build-your-trip" })}>Build your trip</Button>
         </div>
       )}
 
@@ -475,7 +475,7 @@ function CartPage() {
           <ContactUs />
 
           <Link
-            to="/home"
+            to="/build-your-trip"
             className="block text-center text-sm underline underline-offset-2"
           >
             Continue shopping
@@ -484,7 +484,7 @@ function CartPage() {
       )}
       {packages.length === 0 && draft && (
         <Link
-          to="/home"
+          to="/build-your-trip"
           className="mt-6 block text-center text-sm underline underline-offset-2"
         >
           Continue shopping

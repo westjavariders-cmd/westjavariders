@@ -525,9 +525,6 @@ function WebsitePageEditor() {
                   value={sectionDraft.title}
                   onChange={(e) => setSectionDraft({ ...sectionDraft, title: e.target.value })}
                 />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  On Book individually this is the first tile visitors tap (the group).
-                </p>
               </div>
             </div>
             <div>
@@ -758,9 +755,7 @@ function WebsitePageEditor() {
                   )}
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Give this block a Title — that becomes the second tile visitors tap. Use one
-                  catalogue per block so items stay in their own list. You do not need to set
-                  “Button goes to”; the photo tile is created automatically.
+                  Each bookable item links to its own booking page.
                 </p>
               </div>
             )}

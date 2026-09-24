@@ -1,12 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 
 import { WebsiteRenderer } from "@/components/public/WebsiteRenderer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getWebsiteNav } from "@/lib/website.functions";
 import {
   clearStoredPromoCode,
   readStoredPromoCode,
@@ -89,9 +86,6 @@ function PromoCodeEntry() {
 
 /** The configured Home content, shared by the site root and /home. */
 export function HomeContent({ page }: { page: PublicWebsitePage | null }) {
-  const loadNav = useServerFn(getWebsiteNav);
-  const nav = useQuery({ queryKey: ["website-nav"], queryFn: () => loadNav({ data: {} }) });
-
   return (
     <div className="py-0 sm:py-1">
       <div className="mx-auto max-w-6xl">
@@ -106,12 +100,12 @@ export function HomeContent({ page }: { page: PublicWebsitePage | null }) {
 
       {page && page.sections.length > 0 ? (
         <div className="mt-5 sm:mt-6">
-          <WebsiteRenderer page={page} showHeading={false} navItems={nav.data?.items ?? []} />
+          <WebsiteRenderer page={page} showHeading={false} />
         </div>
       ) : (
         <div className="mx-auto mt-6 flex max-w-6xl flex-wrap gap-x-6">
-          <Link to="/home" className="cbr-editorial-cta">
-            Where do you want to start?
+          <Link to="/build-your-trip" className="cbr-editorial-cta">
+            Build your trip
             <span aria-hidden="true">→</span>
           </Link>
           <Link to="/cart" className="cbr-editorial-cta text-muted-foreground">

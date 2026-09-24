@@ -7,13 +7,12 @@ import { Upload } from "lucide-react";
 
 import { PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { setProductImage, setProductLandingImage, setProductStatus } from "@/lib/catalog.functions";
+import { setProductImage, setProductStatus } from "@/lib/catalog.functions";
 import { recordAdminAction } from "@/lib/admin-audit";
 import {
   MASTER_LANGUAGE,
   PRODUCT_MEDIA_BUCKET,
   PRODUCT_STATUSES,
-  productLandingImagePath,
   productImagePath,
   validateBundle,
   type ProductBundle,
@@ -132,23 +131,19 @@ function PackageImageEditor({
   title,
   canEdit,
   reload,
-  slot,
 }: {
   productId: string;
   imagePath: string | null;
   title: string;
   canEdit: boolean;
   reload: () => void;
-  slot: "cover" | "landing";
 }) {
-  const saveCover = useServerFn(setProductImage);
-  const saveLanding = useServerFn(setProductLandingImage);
+  const saveImage = useServerFn(setProductImage);
   const fileInput = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const isLanding = slot === "landing";
 
   const preview = useQuery({
-    queryKey: ["product-image", slot, productId, imagePath],
+    queryKey: ["product-image", productId, imagePath],
     enabled: Boolean(imagePath),
     queryFn: async () => {
       const { data } = await supabase.storage
@@ -167,13 +162,10 @@ function PackageImageEditor({
     }
     setUploading(true);
     try {
-      const path = isLanding
-        ? productLandingImagePath(productId, file.name)
-        : productImagePath(productId, file.name);
+      const path = productImagePath(productId, file.name);
       const { error } = await supabase.storage.from(PRODUCT_MEDIA_BUCKET).upload(path, file);
       if (error) throw new Error(error.message);
-      if (isLanding) await saveLanding({ data: { productId, landing_image_path: path } });
-      else await saveCover({ data: { productId, image_path: path } });
+      await saveImage({ data: { productId, image_path: path } });
       toast.success("Image saved.");
       reload();
     } catch (e) {
@@ -187,8 +179,7 @@ function PackageImageEditor({
   async function remove() {
     setUploading(true);
     try {
-      if (isLanding) await saveLanding({ data: { productId, landing_image_path: null } });
-      else await saveCover({ data: { productId, image_path: null } });
+      await saveImage({ data: { productId, image_path: null } });
       toast.success("Image removed.");
       reload();
     } catch (e) {
@@ -200,12 +191,7 @@ function PackageImageEditor({
 
   return (
     <div className="space-y-2">
-      <Label className="text-xs">{isLanding ? "Intermediate page image" : "Package image"}</Label>
-      <p className="text-xs text-muted-foreground">
-        {isLanding
-          ? "Shown on the product page before configuration. If empty, the package image is used."
-          : "Shown on listing cards and in the configurator."}
-      </p>
+      <Label className="text-xs">Package image</Label>
       {imagePath ? (
         preview.data ? (
           <img
@@ -482,15 +468,6 @@ function ContentTab({ bundle, canEdit, reload }: TabProps) {
         title={draft.title || bundle.product.internal_name}
         canEdit={canEdit}
         reload={reload}
-        slot="cover"
-      />
-      <PackageImageEditor
-        productId={bundle.product.id}
-        imagePath={bundle.product.landing_image_path ?? null}
-        title={draft.title || bundle.product.internal_name}
-        canEdit={canEdit}
-        reload={reload}
-        slot="landing"
       />
       <div>
         <Label className="text-xs">Title</Label>

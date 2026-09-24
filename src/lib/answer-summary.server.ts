@@ -93,7 +93,7 @@ async function orderedAnswerDetails(
     );
     const targetVariable = matching?.variable_name ?? oldVariable;
     const storedLabels = catalogueLabels.get(selection?.catalogue_id) as any;
-    const quantityNames = {
+    quantityLabels[targetVariable] = {
       ...(selection?.people_label?.trim() || storedLabels?.people_label?.trim()
         ? { _people: selection?.people_label?.trim() || storedLabels?.people_label?.trim() }
         : {}),
@@ -101,19 +101,11 @@ async function orderedAnswerDetails(
         ? { _hours: selection?.hours_label?.trim() || storedLabels?.hours_label?.trim() }
         : {}),
     };
-    quantityLabels[targetVariable] = quantityNames;
-    const itemId = selection?.item_id ? String(selection.item_id) : "";
-    if (itemId) quantityLabels[`${targetVariable}__${itemId}`] = quantityNames;
     if (!matching || !isEmptyAnswer(answers[matching.variable_name])) continue;
     answers[matching.variable_name] = answers[oldVariable];
     for (const { suffix } of QUANTITY_SUFFIXES) {
       const oldQuantity = answers[`${oldVariable}${suffix}`];
       if (!isEmptyAnswer(oldQuantity)) answers[`${matching.variable_name}${suffix}`] = oldQuantity;
-      if (!itemId) continue;
-      const oldItemQuantity = answers[`${oldVariable}__${itemId}${suffix}`];
-      if (!isEmptyAnswer(oldItemQuantity)) {
-        answers[`${matching.variable_name}__${itemId}${suffix}`] = oldItemQuantity;
-      }
     }
   }
 

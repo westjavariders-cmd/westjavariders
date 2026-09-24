@@ -82,7 +82,7 @@ function ConfigurePage() {
             ? product.error.message
             : "This experience is not available."}
         </p>
-        <Link to="/home" className="cbr-editorial-cta mt-4">
+        <Link to="/build-your-trip" className="cbr-editorial-cta mt-4">
           ← Back
         </Link>
       </PublicPage>

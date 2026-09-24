@@ -344,7 +344,7 @@ export async function quotePackage(args: {
   ) as PreviewValues;
   const { selections, invalid } = resolveCatalogueSelections(
     catalogueFields as never,
-    answers as Record<string, unknown>,
+    visibleAnswers as Record<string, unknown>,
     catalogue,
     (f) => {
       const field = catalogueFields.find((x: any) => x.variable_name === f.variable_name) as any;

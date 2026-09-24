@@ -164,53 +164,6 @@ describe("entitlement", () => {
     ]);
   });
 
-  it("rebuilds one voucher line per multi-select activity", () => {
-    const lesson = "288bc324-a6fb-4723-90c4-2806478853f5";
-    const drone = "c1f780d5-bcb1-44df-84db-ac2561f14f53";
-    const legacy = {
-      packages: [
-        {
-          package_id: "pk1",
-          product_title: "Beginners week",
-          answers: {
-            activities: [lesson, drone],
-            [`activities__${lesson}_people`]: "2",
-            [`activities__${lesson}_hours`]: "3",
-            [`activities__${drone}_people`]: "1",
-            [`activities__${drone}_hours`]: "1",
-          },
-          catalogue_selections: [
-            {
-              variable_name: "activities",
-              item_id: lesson,
-              name: "Surf lesson",
-              people_label: "Surfers",
-              hours_label: "Days",
-            },
-            {
-              variable_name: "activities",
-              item_id: drone,
-              name: "Drone shot",
-              people_label: "People",
-              hours_label: "Days",
-            },
-          ],
-          total_idr: 900_000,
-        },
-      ],
-      customer: { full_name: "Ana Rivera" },
-    };
-    const built = buildEntitlement({ ...base, snapshot: legacy, voucherType: "STANDARD" });
-    expect(built.items[0]!.options).toEqual([
-      { label: "Activities", value: "Surf lesson" },
-      { label: "Surfers", value: "2" },
-      { label: "Days", value: "3" },
-      { label: "Activities", value: "Drone shot" },
-      { label: "People", value: "1" },
-      { label: "Days", value: "1" },
-    ]);
-  });
-
 });
 
 

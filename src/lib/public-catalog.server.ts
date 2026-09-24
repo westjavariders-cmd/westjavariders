@@ -94,7 +94,6 @@ export type PublicBundle = {
     summary: string | null;
     body: string | null;
     image_url: string | null;
-    landing_image_url: string | null;
   };
   bundle: ProductBundle;
   /** Active, customer-safe catalogue items per catalogue type used by the fields. */
@@ -110,15 +109,6 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
     .eq("id", productId)
     .maybeSingle();
   if (!product) fail("This product could not be found.");
-
-  const landingRead = await db
-    .from("products")
-    .select("landing_image_path")
-    .eq("id", productId)
-    .maybeSingle();
-  const landingPath = landingRead.error
-    ? null
-    : ((landingRead.data as { landing_image_path?: string | null } | null)?.landing_image_path ?? null);
 
   const { data: pricing } = await db
     .from("product_pricing")
@@ -157,8 +147,6 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
     db,
     (product as { image_path?: string | null }).image_path,
   );
-  const landingSigned = await signedProductImage(db, landingPath);
-  const landing_image_url = landingSigned ?? image_url;
 
   return {
     catalogue,
@@ -168,7 +156,6 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
       summary: translation.data?.summary ?? null,
       body: translation.data?.body ?? null,
       image_url,
-      landing_image_url,
     },
     bundle: {
       product: {
