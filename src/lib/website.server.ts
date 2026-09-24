@@ -429,7 +429,7 @@ export async function websiteNav(language?: string): Promise<PublicNavItem[]> {
 
   const navColumns =
     "id, destination_kind, destination_page_id, destination_product_id, destination_external_url, is_active, sort_order";
-  const [items, pages] = await Promise.all([
+  const [navRows, pages] = await Promise.all([
     db.from("website_nav_items").select(navColumns),
     db.from("website_pages").select("id, slug, is_active"),
   ]);
@@ -437,7 +437,7 @@ export async function websiteNav(language?: string): Promise<PublicNavItem[]> {
   const slug = new Map<string, string | null>(
     (pages.data ?? []).map((p: any) => [p.id, p.is_active ? p.slug : null]),
   );
-  const active = visibleSorted(items.data ?? []);
+  const active = visibleSorted(navRows.data ?? []);
   const ids = active.map((i: any) => i.id);
 
   const imageById = new Map<string, string | null>();
