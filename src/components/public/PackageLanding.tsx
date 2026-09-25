@@ -35,7 +35,7 @@ export function PackageLanding({ productId, title, summary, body, imageUrl }: Pa
             <img
               src={imageUrl}
               alt={title}
-              className="aspect-[4/5] w-full object-cover object-center sm:aspect-[16/10] lg:aspect-auto lg:h-[min(70svh,44rem)] lg:min-h-[36rem]"
+              className="aspect-[4/5] w-full object-cover object-center sm:aspect-[16/10] lg:aspect-auto lg:h-auto lg:w-full lg:object-contain lg:object-center"
             />
           </div>
         ) : null}
