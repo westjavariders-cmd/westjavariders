@@ -701,7 +701,7 @@ export const getWebsiteChromeImages = createServerFn({ method: "POST" })
 export const saveChromeImage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
-    z.object({ slot: z.enum(["site", "header"]), image_path: z.string().max(500).nullable() }).parse(data),
+    z.object({ slot: z.enum(["site", "header", "menu"]), image_path: z.string().max(500).nullable() }).parse(data),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = ctx(context);
@@ -726,8 +726,10 @@ export const saveChromeImage = createServerFn({ method: "POST" })
           value_type: "string",
           description:
             slot === "header"
-              ? "Photo in the public header bar and menu button."
-              : "Photo behind public pages except the entry screen.",
+              ? "Photo in the public header bar."
+              : slot === "menu"
+                ? "Photo in the public menu button."
+                : "Photo behind public pages except the entry screen.",
         });
         if (error) fail("The background could not be saved.");
       }

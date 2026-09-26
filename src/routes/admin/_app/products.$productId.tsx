@@ -7,12 +7,13 @@ import { Upload } from "lucide-react";
 
 import { PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { setProductImage, setProductLandingImage, setProductStatus } from "@/lib/catalog.functions";
+import { setProductConfigureCtaImage, setProductImage, setProductLandingImage, setProductStatus } from "@/lib/catalog.functions";
 import { recordAdminAction } from "@/lib/admin-audit";
 import {
   MASTER_LANGUAGE,
   PRODUCT_MEDIA_BUCKET,
   PRODUCT_STATUSES,
+  productConfigureCtaImagePath,
   productLandingImagePath,
   productImagePath,
   validateBundle,
@@ -139,13 +140,29 @@ function PackageImageEditor({
   title: string;
   canEdit: boolean;
   reload: () => void;
-  slot: "cover" | "landing";
+  slot: "cover" | "landing" | "cta";
 }) {
   const saveCover = useServerFn(setProductImage);
   const saveLanding = useServerFn(setProductLandingImage);
+  const saveCta = useServerFn(setProductConfigureCtaImage);
   const fileInput = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const isLanding = slot === "landing";
+
+  const copy =
+    slot === "landing"
+      ? {
+          label: "Intermediate page image",
+          hint: "Shown on the product page before configuration. If empty, the package image is used.",
+        }
+      : slot === "cta"
+        ? {
+            label: "Configure button photo",
+            hint: "Optional. Fills the Configure this trip button. If empty, the button stays plain.",
+          }
+        : {
+            label: "Package image",
+            hint: "Shown on listing cards and in the configurator.",
+          };
 
   const preview = useQuery({
     queryKey: ["product-image", slot, productId, imagePath],
@@ -167,12 +184,16 @@ function PackageImageEditor({
     }
     setUploading(true);
     try {
-      const path = isLanding
-        ? productLandingImagePath(productId, file.name)
-        : productImagePath(productId, file.name);
+      const path =
+        slot === "landing"
+          ? productLandingImagePath(productId, file.name)
+          : slot === "cta"
+            ? productConfigureCtaImagePath(productId, file.name)
+            : productImagePath(productId, file.name);
       const { error } = await supabase.storage.from(PRODUCT_MEDIA_BUCKET).upload(path, file);
       if (error) throw new Error(error.message);
-      if (isLanding) await saveLanding({ data: { productId, landing_image_path: path } });
+      if (slot === "landing") await saveLanding({ data: { productId, landing_image_path: path } });
+      else if (slot === "cta") await saveCta({ data: { productId, configure_cta_image_path: path } });
       else await saveCover({ data: { productId, image_path: path } });
       toast.success("Image saved.");
       reload();
@@ -187,7 +208,8 @@ function PackageImageEditor({
   async function remove() {
     setUploading(true);
     try {
-      if (isLanding) await saveLanding({ data: { productId, landing_image_path: null } });
+      if (slot === "landing") await saveLanding({ data: { productId, landing_image_path: null } });
+      else if (slot === "cta") await saveCta({ data: { productId, configure_cta_image_path: null } });
       else await saveCover({ data: { productId, image_path: null } });
       toast.success("Image removed.");
       reload();
@@ -200,12 +222,8 @@ function PackageImageEditor({
 
   return (
     <div className="space-y-2">
-      <Label className="text-xs">{isLanding ? "Intermediate page image" : "Package image"}</Label>
-      <p className="text-xs text-muted-foreground">
-        {isLanding
-          ? "Shown on the product page before configuration. If empty, the package image is used."
-          : "Shown on listing cards and in the configurator."}
-      </p>
+      <Label className="text-xs">{copy.label}</Label>
+      <p className="text-xs text-muted-foreground">{copy.hint}</p>
       {imagePath ? (
         preview.data ? (
           <img
@@ -491,6 +509,14 @@ function ContentTab({ bundle, canEdit, reload }: TabProps) {
         canEdit={canEdit}
         reload={reload}
         slot="landing"
+      />
+      <PackageImageEditor
+        productId={bundle.product.id}
+        imagePath={bundle.product.configure_cta_image_path ?? null}
+        title={draft.title || bundle.product.internal_name}
+        canEdit={canEdit}
+        reload={reload}
+        slot="cta"
       />
       <div>
         <Label className="text-xs">Title</Label>

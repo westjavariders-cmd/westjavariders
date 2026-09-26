@@ -40,6 +40,7 @@ function PackageLandingPage() {
         summary={p.summary}
         body={p.body}
         imageUrl={p.landing_image_url}
+        buttonImageUrl={p.configure_cta_image_url ?? null}
       />
     </PublicPage>
   );

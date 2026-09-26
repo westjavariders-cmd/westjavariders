@@ -103,6 +103,12 @@ export function productLandingImagePath(productId: string, fileName: string) {
   return `${productId}/landing/${crypto.randomUUID()}-${safe}`;
 }
 
+/** Private path for the optional Configure-this-trip button photo. */
+export function productConfigureCtaImagePath(productId: string, fileName: string) {
+  const safe = fileName.replace(/[^a-zA-Z0-9.\-_]/g, "-").slice(-80);
+  return `${productId}/configure-cta/${crypto.randomUUID()}-${safe}`;
+}
+
 /** Private path for an optional configurator-step photo. */
 export function productStepImagePath(productId: string, stepId: string, fileName: string) {
   const safe = fileName.replace(/[^a-zA-Z0-9.\-_]/g, "-").slice(-80);

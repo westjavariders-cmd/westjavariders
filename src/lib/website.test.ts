@@ -127,6 +127,8 @@ describe("chrome background storage paths", () => {
     expect(isSiteBackgroundPath("site-background/123-cimaja.jpg")).toBe(true);
     expect(isChromeImagePath("header", "header-background/bar.jpg")).toBe(true);
     expect(isChromeImagePath("header", "site-background/123-cimaja.jpg")).toBe(false);
+    expect(isChromeImagePath("menu", "menu-button/open.jpg")).toBe(true);
+    expect(isChromeImagePath("menu", "header-background/bar.jpg")).toBe(false);
     expect(isSiteBackgroundPath("landing/image.jpg")).toBe(false);
     expect(isSiteBackgroundPath("../secret")).toBe(false);
   });

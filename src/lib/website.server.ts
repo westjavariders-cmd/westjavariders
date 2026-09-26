@@ -12,6 +12,7 @@ import {
   WEBSITE_MEDIA_BUCKET,
   HEADER_BACKGROUND_SETTING_KEY,
   LANDING_CTA_IMAGE_SETTING_KEY,
+  MENU_BUTTON_IMAGE_SETTING_KEY,
   SITE_BACKGROUND_SETTING_KEY,
   isPubliclyListable,
   pickTranslation,
@@ -175,15 +176,16 @@ export async function websiteLanding(language?: string): Promise<PublicLanding |
 export type PublicChromeImages = {
   site_url: string | null;
   header_url: string | null;
+  menu_url: string | null;
 };
 
-/** Signed URLs for interior wallpaper and the header bar. Not used on the entry screen. */
+/** Signed URLs for interior wallpaper, the header bar and the menu button. */
 export async function websiteChromeImages(): Promise<PublicChromeImages> {
   const db = await admin();
   const { data } = await db
     .from("settings")
     .select("key, value")
-    .in("key", [SITE_BACKGROUND_SETTING_KEY, HEADER_BACKGROUND_SETTING_KEY]);
+    .in("key", [SITE_BACKGROUND_SETTING_KEY, HEADER_BACKGROUND_SETTING_KEY, MENU_BUTTON_IMAGE_SETTING_KEY]);
   const byKey = new Map<string, string>(
     ((data ?? []) as { key: string; value: string }[])
       .map((row) => [row.key, row.value.trim()] as const)
@@ -191,11 +193,13 @@ export async function websiteChromeImages(): Promise<PublicChromeImages> {
   );
   const sitePath = byKey.get(SITE_BACKGROUND_SETTING_KEY) ?? "";
   const headerPath = byKey.get(HEADER_BACKGROUND_SETTING_KEY) ?? "";
-  const [site_url, headerSigned] = await Promise.all([
+  const menuPath = byKey.get(MENU_BUTTON_IMAGE_SETTING_KEY) ?? "";
+  const [site_url, headerSigned, menu_url] = await Promise.all([
     signedMedia(db, sitePath || null),
     signedMedia(db, headerPath || null),
+    signedMedia(db, menuPath || null),
   ]);
-  return { site_url, header_url: headerSigned ?? site_url };
+  return { site_url, header_url: headerSigned ?? site_url, menu_url };
 }
 
 export async function websiteSiteBackground(): Promise<string | null> {

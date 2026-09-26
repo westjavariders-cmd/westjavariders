@@ -95,6 +95,7 @@ export type PublicBundle = {
     body: string | null;
     image_url: string | null;
     landing_image_url: string | null;
+    configure_cta_image_url: string | null;
   };
   bundle: ProductBundle;
   /** Active, customer-safe catalogue items per catalogue type used by the fields. */
@@ -121,6 +122,15 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
   const landingPath = landingRead.error
     ? null
     : ((landingRead.data as { landing_image_path?: string | null } | null)?.landing_image_path ?? null);
+  const ctaRead = await db
+    .from("products")
+    .select("configure_cta_image_path")
+    .eq("id", productId)
+    .maybeSingle();
+  const configureCtaPath = ctaRead.error
+    ? null
+    : ((ctaRead.data as { configure_cta_image_path?: string | null } | null)?.configure_cta_image_path ??
+      null);
 
   const { data: pricing } = await db
     .from("product_pricing")
@@ -161,6 +171,7 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
   );
   const landingSigned = await signedProductImage(db, landingPath);
   const landing_image_url = landingSigned ?? image_url;
+  const configure_cta_image_url = await signedProductImage(db, configureCtaPath);
   const stepImageUrls: Record<string, string> = {};
   await Promise.all(
     (steps as { id: string; image_path?: string | null }[]).map(async (s) => {
@@ -179,6 +190,7 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
       body: translation.data?.body ?? null,
       image_url,
       landing_image_url,
+      configure_cta_image_url,
     },
     bundle: {
       product: {

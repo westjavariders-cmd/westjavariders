@@ -167,6 +167,7 @@ export function SiteHeader() {
   const cart = usePublicCart();
   const chrome = useWebsiteChromeImages();
   const headerBarUrl = chrome.data?.header_url ?? null;
+  const menuButtonUrl = chrome.data?.menu_url ?? null;
   const nav = useWebsiteNav();
   const navItems = nav.data?.items ?? [];
   const navReady = nav.isSuccess;
@@ -254,7 +255,7 @@ export function SiteHeader() {
             type="button"
             className={cn(
               "relative inline-flex min-h-11 max-w-[8.5rem] items-center justify-center gap-2 overflow-hidden rounded-md border px-3 py-2 text-left text-[10px] font-medium uppercase leading-tight tracking-[0.12em] sm:max-w-[16rem] md:max-w-[18rem] sm:text-[11px] sm:tracking-[0.14em] xl:hidden",
-              headerBarUrl
+              menuButtonUrl
                 ? "border-white/35 text-white"
                 : "border-border bg-background transition-colors hover:bg-muted",
             )}
@@ -263,9 +264,9 @@ export function SiteHeader() {
             aria-controls={menuId}
             onClick={() => setOpen((value) => !value)}
           >
-            {headerBarUrl ? (
+            {menuButtonUrl ? (
               <span className="pointer-events-none absolute inset-0" aria-hidden="true">
-                <img src={headerBarUrl} alt="" className="size-full object-cover object-center" />
+                <img src={menuButtonUrl} alt="" className="size-full object-cover object-center" />
                 <span className="absolute inset-0 bg-black/40" />
               </span>
             ) : null}

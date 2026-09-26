@@ -12,16 +12,23 @@ export const WEBSITE_MEDIA_BUCKET = "website-media";
 /** Settings keys for chrome photos (public pages + header bar). */
 export const SITE_BACKGROUND_SETTING_KEY = "website_site_background_path";
 export const HEADER_BACKGROUND_SETTING_KEY = "website_header_background_path";
+export const MENU_BUTTON_IMAGE_SETTING_KEY = "website_menu_button_image_path";
 export const LANDING_CTA_IMAGE_SETTING_KEY = "website_landing_cta_image_path";
-export const WEBSITE_CHROME_SETTING_KEYS = [SITE_BACKGROUND_SETTING_KEY, HEADER_BACKGROUND_SETTING_KEY] as const;
-export type WebsiteChromeSlot = "site" | "header";
+export const WEBSITE_CHROME_SETTING_KEYS = [
+  SITE_BACKGROUND_SETTING_KEY,
+  HEADER_BACKGROUND_SETTING_KEY,
+  MENU_BUTTON_IMAGE_SETTING_KEY,
+] as const;
+export type WebsiteChromeSlot = "site" | "header" | "menu";
 
 export function chromeImageSettingKey(slot: WebsiteChromeSlot): string {
-  return slot === "header" ? HEADER_BACKGROUND_SETTING_KEY : SITE_BACKGROUND_SETTING_KEY;
+  if (slot === "header") return HEADER_BACKGROUND_SETTING_KEY;
+  if (slot === "menu") return MENU_BUTTON_IMAGE_SETTING_KEY;
+  return SITE_BACKGROUND_SETTING_KEY;
 }
 
 export function isChromeImagePath(slot: WebsiteChromeSlot, path: string): boolean {
-  const folder = slot === "header" ? "header-background" : "site-background";
+  const folder = slot === "header" ? "header-background" : slot === "menu" ? "menu-button" : "site-background";
   return new RegExp(`^${folder}/[A-Za-z0-9._-]+$`).test(path);
 }
 

@@ -1,28 +1,56 @@
 import { Link } from "@tanstack/react-router";
 
+import { cn } from "@/lib/utils";
+
 type PackageLandingProps = {
   productId: string;
   title: string;
   summary: string | null;
   body: string | null;
   imageUrl: string | null;
+  buttonImageUrl: string | null;
 };
 
-function ConfigureCta({ productId }: { productId: string }) {
+function ConfigureCta({
+  productId,
+  buttonImageUrl,
+}: {
+  productId: string;
+  buttonImageUrl: string | null;
+}) {
   return (
     <Link
       to="/build-your-trip/$productId/configure"
       params={{ productId }}
-      className="inline-flex min-h-12 items-center justify-center gap-2 border border-foreground bg-foreground px-6 text-[11px] font-medium uppercase tracking-[0.18em] text-background transition-opacity duration-150 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      className={cn(
+        "relative inline-flex min-h-12 items-center justify-center gap-2 overflow-hidden rounded-2xl border border-foreground/20 px-7 py-2.5 text-sm font-semibold tracking-tight shadow-[0_12px_28px_-12px_rgb(0_0_0_/_55%)] transition-opacity duration-150 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-base",
+        "[font-family:'Fraunces_Variable',ui-serif,Georgia,serif]",
+        buttonImageUrl ? "text-neutral-50" : "bg-foreground text-background",
+      )}
     >
-      Configure this trip
-      <span aria-hidden="true">→</span>
+      {buttonImageUrl ? (
+        <>
+          <img src={buttonImageUrl} alt="" className="absolute inset-0 size-full object-cover" />
+          <span className="absolute inset-0 bg-black/40" aria-hidden="true" />
+        </>
+      ) : null}
+      <span className="relative z-10">Configure this trip</span>
+      <span className="relative z-10" aria-hidden="true">
+        →
+      </span>
     </Link>
   );
 }
 
 /** Informational screen before the configurator. Does not start a draft. */
-export function PackageLanding({ productId, title, summary, body, imageUrl }: PackageLandingProps) {
+export function PackageLanding({
+  productId,
+  title,
+  summary,
+  body,
+  imageUrl,
+  buttonImageUrl,
+}: PackageLandingProps) {
   return (
     <div className="mx-auto w-full max-w-[90rem]">
       <Link to="/home" className="cbr-editorial-cta text-muted-foreground">
@@ -54,7 +82,7 @@ export function PackageLanding({ productId, title, summary, body, imageUrl }: Pa
             </p>
           )}
           <div>
-            <ConfigureCta productId={productId} />
+            <ConfigureCta productId={productId} buttonImageUrl={buttonImageUrl} />
           </div>
         </header>
       </div>
@@ -70,7 +98,7 @@ export function PackageLanding({ productId, title, summary, body, imageUrl }: Pa
             </p>
           </section>
           <div className="mt-12 sm:mt-16">
-            <ConfigureCta productId={productId} />
+            <ConfigureCta productId={productId} buttonImageUrl={buttonImageUrl} />
           </div>
         </>
       )}

@@ -278,6 +278,62 @@ export const setProductLandingImage = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const CONFIGURE_CTA_IMAGE_PENDING =
+  "The configure-button photo could not be saved until the database update is applied.";
+
+/** Records or clears the optional photo on the intermediate-page button. */
+export const setProductConfigureCtaImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        productId: z.string().uuid(),
+        configure_cta_image_path: z.string().min(1).max(500).nullable(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = ctx(context);
+    await assertAdmin(supabase);
+
+    const { data: row, error: readError } = await supabase
+      .from("products")
+      .select("configure_cta_image_path, internal_name")
+      .eq("id", data.productId)
+      .maybeSingle();
+    if (readError) fail(CONFIGURE_CTA_IMAGE_PENDING);
+    if (!row) fail("This product could not be found.");
+
+    const { error } = await supabase
+      .from("products")
+      .update({ configure_cta_image_path: data.configure_cta_image_path })
+      .eq("id", data.productId);
+    if (error) fail(CONFIGURE_CTA_IMAGE_PENDING);
+
+    const previous = row.configure_cta_image_path as string | null | undefined;
+    if (previous && previous !== data.configure_cta_image_path) {
+      const stillUsed = await supabase
+        .from("products")
+        .select("id", { count: "exact", head: true })
+        .eq("configure_cta_image_path", previous);
+      if ((stillUsed.count ?? 0) === 0) {
+        await supabase.storage.from(PRODUCT_MEDIA_BUCKET).remove([previous]);
+      }
+    }
+
+    await audit(
+      supabase,
+      userId,
+      data.configure_cta_image_path
+        ? "product_configure_cta_image_set"
+        : "product_configure_cta_image_removed",
+      data.productId,
+      row.internal_name,
+      {},
+    );
+    return { ok: true };
+  });
+
 const STEP_IMAGE_PENDING =
   "The step photo could not be saved until the database update is applied.";
 

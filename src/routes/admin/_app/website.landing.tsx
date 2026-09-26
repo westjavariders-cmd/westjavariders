@@ -12,6 +12,7 @@ import {
   DESTINATION_LABELS,
   HEADER_BACKGROUND_SETTING_KEY,
   LANDING_CTA_IMAGE_SETTING_KEY,
+  MENU_BUTTON_IMAGE_SETTING_KEY,
   SITE_BACKGROUND_SETTING_KEY,
   WEBSITE_MEDIA_BUCKET,
   type DestinationKind,
@@ -95,12 +96,18 @@ function WebsiteLandingScreen() {
       const { data, error } = await supabase
         .from("settings")
         .select("key, value")
-        .in("key", [SITE_BACKGROUND_SETTING_KEY, HEADER_BACKGROUND_SETTING_KEY, LANDING_CTA_IMAGE_SETTING_KEY]);
+        .in("key", [
+          SITE_BACKGROUND_SETTING_KEY,
+          HEADER_BACKGROUND_SETTING_KEY,
+          MENU_BUTTON_IMAGE_SETTING_KEY,
+          LANDING_CTA_IMAGE_SETTING_KEY,
+        ]);
       if (error) throw new Error(error.message);
       const byKey = new Map((data ?? []).map((row) => [row.key as string, ((row.value as string) ?? "").trim()]));
       return {
         site: byKey.get(SITE_BACKGROUND_SETTING_KEY) || null,
         header: byKey.get(HEADER_BACKGROUND_SETTING_KEY) || null,
+        menu: byKey.get(MENU_BUTTON_IMAGE_SETTING_KEY) || null,
         cta: byKey.get(LANDING_CTA_IMAGE_SETTING_KEY) || null,
       };
     },
@@ -112,6 +119,7 @@ function WebsiteLandingScreen() {
     image_path: null as string | null,
     site_background_path: null as string | null,
     header_background_path: null as string | null,
+    menu_button_path: null as string | null,
     image_alt: "",
     cta_kind: "page" as DestinationKind,
     cta_page_id: null as string | null,
@@ -132,6 +140,7 @@ function WebsiteLandingScreen() {
       image_path: row?.image_path ?? null,
       site_background_path: chromeImages.data?.site ?? null,
       header_background_path: chromeImages.data?.header ?? null,
+      menu_button_path: chromeImages.data?.menu ?? null,
       image_alt: row?.image_alt ?? "",
       cta_kind: row?.cta_kind ?? "page",
       cta_page_id: row?.cta_page_id ?? null,
@@ -149,12 +158,14 @@ function WebsiteLandingScreen() {
     image: string | null;
     site: string | null;
     header: string | null;
+    menu: string | null;
     cta: string | null;
   }>({
     video: null,
     image: null,
     site: null,
     header: null,
+    menu: null,
     cta: null,
   });
 
@@ -166,28 +177,30 @@ function WebsiteLandingScreen() {
       return data?.signedUrl ?? null;
     }
     void (async () => {
-      const [video, image, site, header, cta] = await Promise.all([
+      const [video, image, site, header, menu, cta] = await Promise.all([
         sign(form.video_path),
         sign(form.image_path),
         sign(form.site_background_path),
         sign(form.header_background_path),
+        sign(form.menu_button_path),
         sign(form.cta_image_path),
       ]);
-      if (!cancelled) setPreviews({ video, image, site, header, cta });
+      if (!cancelled) setPreviews({ video, image, site, header, menu, cta });
     })();
     return () => {
       cancelled = true;
     };
-  }, [form.video_path, form.image_path, form.site_background_path, form.header_background_path, form.cta_image_path]);
+  }, [form.video_path, form.image_path, form.site_background_path, form.header_background_path, form.menu_button_path, form.cta_image_path]);
 
   const videoInput = useRef<HTMLInputElement>(null);
   const imageInput = useRef<HTMLInputElement>(null);
   const siteBackgroundInput = useRef<HTMLInputElement>(null);
   const headerBackgroundInput = useRef<HTMLInputElement>(null);
+  const menuButtonInput = useRef<HTMLInputElement>(null);
   const ctaImageInput = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
-  async function upload(files: FileList | null, kind: "video" | "image" | "site" | "header" | "cta") {
+  async function upload(files: FileList | null, kind: "video" | "image" | "site" | "header" | "menu" | "cta") {
     const file = files?.[0];
     if (!file) return;
     setUploading(true);
@@ -198,9 +211,11 @@ function WebsiteLandingScreen() {
           ? `site-background/${Date.now()}-${safeName}`
           : kind === "header"
             ? `header-background/${Date.now()}-${safeName}`
-            : kind === "cta"
-              ? `landing/cta-${Date.now()}-${safeName}`
-              : `landing/${kind}-${Date.now()}-${safeName}`;
+            : kind === "menu"
+              ? `menu-button/${Date.now()}-${safeName}`
+              : kind === "cta"
+                ? `landing/cta-${Date.now()}-${safeName}`
+                : `landing/${kind}-${Date.now()}-${safeName}`;
       const { error } = await supabase.storage.from(WEBSITE_MEDIA_BUCKET).upload(path, file);
       if (error) throw new Error(error.message);
       setForm((f) =>
@@ -210,9 +225,11 @@ function WebsiteLandingScreen() {
             ? { ...f, site_background_path: path }
             : kind === "header"
               ? { ...f, header_background_path: path }
-              : kind === "cta"
-                ? { ...f, cta_image_path: path }
-                : { ...f, image_path: path },
+              : kind === "menu"
+                ? { ...f, menu_button_path: path }
+                : kind === "cta"
+                  ? { ...f, cta_image_path: path }
+                  : { ...f, image_path: path },
       );
       toast.success("Uploaded. Save to keep it.");
     } catch (e) {
@@ -245,6 +262,7 @@ function WebsiteLandingScreen() {
       });
       await persistChrome({ data: { slot: "site", image_path: form.site_background_path } });
       await persistChrome({ data: { slot: "header", image_path: form.header_background_path } });
+      await persistChrome({ data: { slot: "menu", image_path: form.menu_button_path } });
       await queryClient.invalidateQueries({ queryKey: ["website-landing"] });
       await queryClient.invalidateQueries({ queryKey: ["website-landing-text", activeLanguage] });
       await queryClient.invalidateQueries({ queryKey: ["website-chrome-image-paths"] });
@@ -429,8 +447,7 @@ function WebsiteLandingScreen() {
         </CardHeader>
         <CardContent className="space-y-2">
           <p className="text-xs text-muted-foreground">
-            Fills the top menu bar and the Surf, Explore, Experience West Java button. If empty, the site pages
-            background is used instead.
+            Fills the top bar. If empty, the site pages background is used instead.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <input
@@ -460,6 +477,45 @@ function WebsiteLandingScreen() {
             )}
           </div>
           {previews.header && <img src={previews.header} alt="" className="max-h-48 rounded-md" />}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Menu button image</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Only the Surf, Explore, Experience West Java button. If empty, the button has no photo.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              ref={menuButtonInput}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => void upload(e.target.files, "menu")}
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!canEdit || uploading}
+              onClick={() => menuButtonInput.current?.click()}
+            >
+              {form.menu_button_path ? "Replace image" : "Upload image"}
+            </Button>
+            {form.menu_button_path && (
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={!canEdit}
+                onClick={() => setForm((f) => ({ ...f, menu_button_path: null }))}
+              >
+                Remove
+              </Button>
+            )}
+          </div>
+          {previews.menu && <img src={previews.menu} alt="" className="h-12 max-w-xs rounded-md object-cover" />}
         </CardContent>
       </Card>
 
