@@ -120,7 +120,8 @@ export function LandingScreen({ landing }: { landing: PublicLanding }) {
               href={landing.cta.href}
               {...(landing.cta.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
               className={cn(
-                "relative inline-flex min-h-12 min-w-[2.75rem] items-center justify-center gap-2 overflow-hidden rounded-md border border-neutral-50 px-6 py-2 text-[11px] font-medium uppercase tracking-[0.18em] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-50 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 sm:text-xs",
+                "relative inline-flex min-h-12 min-w-[2.75rem] items-center justify-center gap-2 overflow-hidden rounded-md border border-neutral-50 px-7 py-2.5 text-sm font-semibold tracking-tight transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-50 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 sm:text-base",
+                "[font-family:'Fraunces_Variable',ui-serif,Georgia,serif]",
                 landing.cta.image_url
                   ? "text-neutral-50 hover:opacity-90"
                   : "bg-neutral-50 text-neutral-950 hover:bg-neutral-200",
