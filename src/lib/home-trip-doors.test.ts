@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyFirstWavesMenuLabel,
   applyHomeTripDoors,
+  applyNavDestinationsToHomeDoors,
   applyNavImagesToHomeDoors,
   HOME_TRIP_DOORS,
 } from "@/lib/home-trip-doors";
@@ -146,5 +147,21 @@ describe("applyFirstWavesMenuLabel", () => {
       "For adventurers who want to make their own decisions",
       "Explore West Java",
     ]);
+  });
+});
+
+describe("applyNavDestinationsToHomeDoors", () => {
+  it("uses the working menu address when a door shares the menu label", () => {
+    const doors = applyHomeTripDoors([
+      door({
+        id: "explore",
+        title: "Explore West Java",
+        cta: { label: "", href: "/pages/old-explore", external: false },
+      }),
+    ]);
+    const aligned = applyNavDestinationsToHomeDoors(doors, [
+      { label: "Explore West Java", href: "/pages/explore-west-java", image_url: null },
+    ]);
+    expect(aligned.find((b) => b.id === "explore")?.cta?.href).toBe("/pages/explore-west-java");
   });
 });

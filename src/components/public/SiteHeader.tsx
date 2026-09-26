@@ -182,14 +182,17 @@ export function SiteHeader() {
   const openButtonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const [isDesktopNav, setIsDesktopNav] = useState(false);
 
   useEffect(() => {
     const media = window.matchMedia(DESKTOP_NAV);
-    const collapse = () => {
+    const sync = () => {
+      setIsDesktopNav(media.matches);
       if (media.matches) setOpen(false);
     };
-    media.addEventListener("change", collapse);
-    return () => media.removeEventListener("change", collapse);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
   }, []);
 
   useEffect(() => {
@@ -246,16 +249,17 @@ export function SiteHeader() {
       ) : null}
       <div
         className={cn(
-          "relative mx-auto grid max-w-[90rem] grid-cols-[auto_1fr_auto] items-center gap-3 px-4 sm:px-6 lg:px-10 xl:grid-cols-[auto_minmax(0,1fr)_auto]",
+          "relative mx-auto grid max-w-[90rem] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 sm:px-6 lg:px-10",
           hasNavImages ? "h-16 sm:h-[4.25rem] xl:h-[5.75rem]" : "h-16 sm:h-[4.25rem]",
         )}
       >
-        <div className="flex items-center xl:justify-start">
+        <div className="col-start-1 row-start-1 flex items-center">
           <button
             ref={openButtonRef}
             type="button"
             className={cn(
-              "relative inline-flex h-12 w-[5.5rem] shrink-0 items-center justify-center overflow-hidden rounded-md border px-1 py-1 text-center text-[8px] font-medium uppercase leading-[1.12] tracking-[0.03em] sm:h-12 sm:w-[7.5rem] sm:px-2 sm:text-[9px] sm:tracking-[0.06em] xl:hidden",
+              "relative inline-flex h-12 w-[5.5rem] shrink-0 items-center justify-center overflow-hidden rounded-md border px-1 py-1 text-center text-[8px] font-medium uppercase leading-[1.12] tracking-[0.03em] sm:h-12 sm:w-[7.5rem] sm:px-2 sm:text-[9px] sm:tracking-[0.06em]",
+              isDesktopNav && "hidden",
               menuButtonUrl
                 ? "border-white/35 text-white"
                 : "border-border bg-background transition-colors hover:bg-muted",
@@ -278,25 +282,30 @@ export function SiteHeader() {
               Surf, Explore, Experience West Java
             </span>
           </button>
-          <Link
-            to="/home"
-            className="hidden text-[13px] font-semibold uppercase tracking-[0.22em] xl:inline"
-          >
-            West Java Riders
-          </Link>
+          {isDesktopNav ? (
+            <Link
+              to="/home"
+              className="text-[13px] font-semibold uppercase tracking-[0.22em]"
+            >
+              West Java Riders
+            </Link>
+          ) : null}
         </div>
 
         <nav
           className={cn(
-            "hidden min-w-0 items-center justify-center xl:flex",
-            hasNavImages ? "gap-x-2" : "gap-x-7",
+            "col-start-2 row-start-1 min-w-0 items-center justify-center",
+            isDesktopNav ? "flex" : "hidden",
+            hasNavImages ? "gap-x-2 overflow-x-auto" : "gap-x-7",
           )}
           aria-label="Primary"
         >
-          <CmsNavLinks items={navItems} variant="desktop" ready={navReady} />
+          {isDesktopNav ? (
+            <CmsNavLinks items={navItems} variant="desktop" ready={navReady} />
+          ) : null}
         </nav>
 
-        <div className="flex min-w-0 items-center justify-end gap-2 sm:gap-4">
+        <div className="col-start-3 row-start-1 flex min-w-0 items-center justify-end gap-2 sm:gap-4">
           <CurrencySelector />
           <Link
             to="/cart"
@@ -311,7 +320,7 @@ export function SiteHeader() {
 
       {open &&
         createPortal(
-          <div className="public-theme xl:hidden">
+          <div className={cn("public-theme", isDesktopNav && "hidden")}>
             <button
               type="button"
               tabIndex={-1}

@@ -11,7 +11,7 @@ import type { ReactNode } from "react";
 import { DoorCard } from "@/components/public/DoorCard";
 import { ProductCard } from "@/components/public/ProductCard";
 import { cn } from "@/lib/utils";
-import { applyHomeTripDoors, applyNavImagesToHomeDoors, type HomeNavImage } from "@/lib/home-trip-doors";
+import { applyHomeTripDoors, applyNavDestinationsToHomeDoors, applyNavImagesToHomeDoors, type HomeNavImage } from "@/lib/home-trip-doors";
 import { HOME_SLUG, assignGroupKeys } from "@/lib/website";
 import type { PublicBlock, PublicSection, PublicWebsitePage } from "@/lib/website.server";
 
@@ -231,7 +231,10 @@ function Section({
 }) {
   const sectionBlocks =
     doorLayout === "mosaic"
-      ? applyNavImagesToHomeDoors(applyHomeTripDoors(section.blocks), navItems)
+      ? applyNavDestinationsToHomeDoors(
+          applyNavImagesToHomeDoors(applyHomeTripDoors(section.blocks), navItems),
+          navItems,
+        )
       : section.blocks;
   const doors = onlyCatalogueId ? [] : sectionBlocks.filter((b) => b.kind === "door");
   const others = sectionBlocks.filter((b) => {

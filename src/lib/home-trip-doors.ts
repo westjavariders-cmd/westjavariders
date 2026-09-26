@@ -222,3 +222,21 @@ export function applyNavImagesToHomeDoors(blocks: PublicBlock[], nav: HomeNavIma
     return { ...block, media: { kind: "image", url: imageUrl } };
   });
 }
+
+/**
+ * Home mosaic and the header/drawer menu must open the same pages.
+ * When a door shares a label with a nav item, the nav href wins.
+ */
+export function applyNavDestinationsToHomeDoors(
+  blocks: PublicBlock[],
+  nav: HomeNavImage[],
+): PublicBlock[] {
+  if (nav.length === 0) return blocks;
+  return blocks.map((block) => {
+    if (block.kind !== "door" || !block.cta) return block;
+    const doorTitle = norm(block.title);
+    const match = nav.find((item) => norm(item.label) === doorTitle);
+    if (!match || pathOf(match.href) === pathOf(block.cta.href)) return block;
+    return { ...block, cta: { ...block.cta, href: match.href, external: false } };
+  });
+}
