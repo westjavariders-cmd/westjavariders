@@ -156,6 +156,7 @@ function ConfigurePage() {
               productTitle={product.data!.product.title}
               productSummary={product.data!.product.summary}
               imageUrl={product.data!.product.image_url}
+              stepImageUrls={product.data!.stepImageUrls ?? {}}
             />
           )
         )}

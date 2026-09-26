@@ -38,6 +38,7 @@ import { QuoteNotes, QuoteTotal } from "@/components/public/ConfiguratorSummary"
 import { ConfiguratorYesNo } from "@/components/public/ConfiguratorYesNo";
 import { ConfiguratorQuantityStepper } from "@/components/public/ConfiguratorQuantityStepper";
 import { integerQuantityChoices } from "@/lib/quantity-choices";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -94,6 +95,7 @@ export function ConfiguratorForm({
   productTitle,
   productSummary,
   imageUrl,
+  stepImageUrls = {},
 }: {
   bundle: ProductBundle;
   packageId: string;
@@ -104,6 +106,8 @@ export function ConfiguratorForm({
   productTitle: string;
   productSummary: string | null;
   imageUrl: string | null;
+  /** Signed URLs for optional per-step photos. Missing keys keep the package image. */
+  stepImageUrls?: Record<string, string>;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -270,23 +274,11 @@ export function ConfiguratorForm({
 
   return (
     <div className="space-y-10">
-      <header className="flex items-start gap-4 sm:gap-6">
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt=""
-            className="size-20 shrink-0 object-cover object-center sm:size-24"
-          />
-        ) : null}
-        <div className="min-w-0">
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{productTitle}</h1>
-          {productSummary ? (
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-              {productSummary}
-            </p>
-          ) : null}
-        </div>
-      </header>
+      <ConfiguratorPackageTile
+        title={productTitle}
+        summary={productSummary}
+        imageUrl={stepImageUrls[step.id] ?? imageUrl}
+      />
 
       <div className="min-w-0 space-y-10">
           <section aria-labelledby="configurator-step-title" className="space-y-8">
@@ -645,6 +637,52 @@ export function ConfiguratorForm({
           </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Package photo and title in one tile, same visual language as Home product
+ * cards. The image may swap per step; the package title does not.
+ */
+function ConfiguratorPackageTile({
+  title,
+  summary,
+  imageUrl,
+}: {
+  title: string;
+  summary: string | null;
+  imageUrl: string | null;
+}) {
+  return (
+    <article
+      className={cn(
+        "relative isolate flex overflow-hidden bg-secondary cbr-photo-tile",
+        "min-h-[52vw] sm:min-h-[18rem] md:min-h-[22rem] lg:min-h-[24rem]",
+      )}
+    >
+      {imageUrl ? (
+        <div className="absolute inset-0 overflow-hidden">
+          <img
+            src={imageUrl}
+            alt=""
+            className="absolute inset-0 size-full object-cover object-center"
+          />
+        </div>
+      ) : (
+        <div className="absolute inset-0 bg-secondary" aria-hidden="true" />
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-black/15" />
+      <div className="relative z-10 mt-auto flex w-full flex-col justify-end gap-2 p-5 sm:p-6">
+        <h1 className="text-balance text-2xl font-semibold tracking-tight text-neutral-50 sm:text-3xl lg:text-4xl">
+          {title}
+        </h1>
+        {summary ? (
+          <p className="max-w-md line-clamp-2 text-sm leading-relaxed text-neutral-200/90 sm:text-[0.95rem]">
+            {summary}
+          </p>
+        ) : null}
+      </div>
+    </article>
   );
 }
 

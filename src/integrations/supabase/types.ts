@@ -2224,6 +2224,7 @@ export type Database = {
           display_order: number
           flow_id: string
           id: string
+          image_path: string | null
           internal_name: string
           is_active: boolean
           updated_at: string
@@ -2235,6 +2236,7 @@ export type Database = {
           display_order?: number
           flow_id: string
           id?: string
+          image_path?: string | null
           internal_name: string
           is_active?: boolean
           updated_at?: string
@@ -2246,6 +2248,7 @@ export type Database = {
           display_order?: number
           flow_id?: string
           id?: string
+          image_path?: string | null
           internal_name?: string
           is_active?: boolean
           updated_at?: string

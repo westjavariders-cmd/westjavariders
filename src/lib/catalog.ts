@@ -103,6 +103,12 @@ export function productLandingImagePath(productId: string, fileName: string) {
   return `${productId}/landing/${crypto.randomUUID()}-${safe}`;
 }
 
+/** Private path for an optional configurator-step photo. */
+export function productStepImagePath(productId: string, stepId: string, fileName: string) {
+  const safe = fileName.replace(/[^a-zA-Z0-9.\-_]/g, "-").slice(-80);
+  return `${productId}/steps/${stepId}/${crypto.randomUUID()}-${safe}`;
+}
+
 /**
  * Activation check for one choice question, shared by the browser and the
  * server. A manual question needs at least one active option of its own; a

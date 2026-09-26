@@ -99,6 +99,8 @@ export type PublicBundle = {
   bundle: ProductBundle;
   /** Active, customer-safe catalogue items per catalogue type used by the fields. */
   catalogue: CatalogueItemsByKey;
+  /** Signed per-step photos. Empty until a step has its own image. */
+  stepImageUrls: Record<string, string>;
 };
 
 /** The saved Phase 3 configuration of one purchasable product, without internal data. */
@@ -159,9 +161,17 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
   );
   const landingSigned = await signedProductImage(db, landingPath);
   const landing_image_url = landingSigned ?? image_url;
+  const stepImageUrls: Record<string, string> = {};
+  await Promise.all(
+    (steps as { id: string; image_path?: string | null }[]).map(async (s) => {
+      const signed = await signedProductImage(db, s.image_path);
+      if (signed) stepImageUrls[s.id] = signed;
+    }),
+  );
 
   return {
     catalogue,
+    stepImageUrls,
     product: {
       id: product.id,
       title: getPublicProductTitle(translation.data?.title, product.internal_name),

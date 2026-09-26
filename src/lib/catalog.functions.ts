@@ -278,6 +278,70 @@ export const setProductLandingImage = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const STEP_IMAGE_PENDING =
+  "The step photo could not be saved until the database update is applied.";
+
+/** Records or clears the optional photo shown for one configurator step. */
+export const setStepImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        productId: z.string().uuid(),
+        stepId: z.string().uuid(),
+        image_path: z.string().min(1).max(500).nullable(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = ctx(context);
+    await assertAdmin(supabase);
+
+    const { data: flow } = await supabase
+      .from("config_flows")
+      .select("id")
+      .eq("product_id", data.productId)
+      .maybeSingle();
+    if (!flow) fail("This product could not be found.");
+
+    const { data: row, error: readError } = await supabase
+      .from("steps")
+      .select("id, image_path, internal_name, flow_id")
+      .eq("id", data.stepId)
+      .eq("flow_id", flow.id)
+      .maybeSingle();
+    if (readError) fail(STEP_IMAGE_PENDING);
+    if (!row) fail("This step could not be found.");
+
+    const { error } = await supabase
+      .from("steps")
+      .update({ image_path: data.image_path })
+      .eq("id", data.stepId)
+      .eq("flow_id", flow.id);
+    if (error) fail(STEP_IMAGE_PENDING);
+
+    const previous = row.image_path as string | null | undefined;
+    if (previous && previous !== data.image_path) {
+      const stillUsed = await supabase
+        .from("steps")
+        .select("id", { count: "exact", head: true })
+        .eq("image_path", previous);
+      if ((stillUsed.count ?? 0) === 0) {
+        await supabase.storage.from(PRODUCT_MEDIA_BUCKET).remove([previous]);
+      }
+    }
+
+    await audit(
+      supabase,
+      userId,
+      data.image_path ? "configurator_step_image_set" : "configurator_step_image_removed",
+      data.stepId,
+      row.internal_name,
+      { product_id: data.productId },
+    );
+    return { ok: true };
+  });
+
 /**
  * Activation gate recomputed on the server. The browser also shows these
  * problems, but the server never trusts the browser's verdict.
