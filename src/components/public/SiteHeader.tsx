@@ -11,6 +11,7 @@ import { setFxCurrency } from "@/lib/fx.functions";
 import { formatIdr } from "@/lib/public-catalog";
 import { formatCustomerAmount } from "@/lib/fx";
 import { cn } from "@/lib/utils";
+import { PublicSiteFooter } from "@/components/public/PublicSiteFooter";
 
 /** One display rule for every customer-facing total. */
 export function displayTotal(
@@ -254,7 +255,7 @@ export function SiteHeader() {
             ref={openButtonRef}
             type="button"
             className={cn(
-              "relative inline-flex min-h-11 max-w-[8.5rem] items-center justify-center gap-2 overflow-hidden rounded-md border px-3 py-2 text-left text-[10px] font-medium uppercase leading-tight tracking-[0.12em] sm:max-w-[16rem] md:max-w-[18rem] sm:text-[11px] sm:tracking-[0.14em] xl:hidden",
+              "relative inline-flex h-12 w-[5.5rem] shrink-0 items-center justify-center overflow-hidden rounded-md border px-1 py-1 text-center text-[8px] font-medium uppercase leading-[1.12] tracking-[0.03em] sm:h-12 sm:w-[7.5rem] sm:px-2 sm:text-[9px] sm:tracking-[0.06em] xl:hidden",
               menuButtonUrl
                 ? "border-white/35 text-white"
                 : "border-border bg-background transition-colors hover:bg-muted",
@@ -270,8 +271,12 @@ export function SiteHeader() {
                 <span className="absolute inset-0 bg-black/40" />
               </span>
             ) : null}
-            {open ? <X className="relative z-10 size-4 shrink-0" strokeWidth={1.5} /> : null}
-            <span className="relative z-10 truncate">Surf, Explore, Experience West Java</span>
+            {open ? (
+              <X className="absolute right-0.5 top-0.5 z-10 size-3" strokeWidth={1.5} />
+            ) : null}
+            <span className="relative z-10 text-balance">
+              Surf, Explore, Experience West Java
+            </span>
           </button>
           <Link
             to="/home"
@@ -280,13 +285,6 @@ export function SiteHeader() {
             West Java Riders
           </Link>
         </div>
-
-        <Link
-          to="/home"
-          className="justify-self-center whitespace-nowrap text-center text-[12px] font-semibold uppercase tracking-[0.22em] xl:hidden"
-        >
-          West Java Riders
-        </Link>
 
         <nav
           className={cn(
@@ -298,11 +296,11 @@ export function SiteHeader() {
           <CmsNavLinks items={navItems} variant="desktop" ready={navReady} />
         </nav>
 
-        <div className="flex items-center justify-end gap-3 sm:gap-4">
+        <div className="flex min-w-0 items-center justify-end gap-2 sm:gap-4">
           <CurrencySelector />
           <Link
             to="/cart"
-            className="inline-flex min-h-11 items-center whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.18em]"
+            className="inline-flex min-h-11 min-w-0 max-w-full items-center text-[11px] font-medium uppercase leading-tight tracking-[0.12em] sm:whitespace-nowrap sm:tracking-[0.18em]"
           >
             <span className="sr-only">Cart </span>
             <span className="hidden sm:inline">TOTAL PRICE — </span>
@@ -397,9 +395,7 @@ export function PublicPage({
         >
           {children}
         </main>
-        <footer className="px-4 pb-10 md:px-8 lg:px-10 xl:px-12">
-          <p className="text-xs text-muted-foreground">Services offered by Cimaja Boardriders</p>
-        </footer>
+        <PublicSiteFooter />
       </div>
     </div>
   );

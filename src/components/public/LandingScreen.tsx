@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { PublicSiteFooter } from "@/components/public/PublicSiteFooter";
 import type { PublicLanding } from "@/lib/website.server";
 import { cn } from "@/lib/utils";
 
@@ -144,7 +145,7 @@ export function LandingScreen({ landing }: { landing: PublicLanding }) {
             </a>
           )}
         </div>
-        <p className="mt-10 text-[11px] text-neutral-200/65">Services offered by Cimaja Boardriders</p>
+        <PublicSiteFooter tone="landing" />
       </main>
     </div>
   );

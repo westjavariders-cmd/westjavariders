@@ -2,11 +2,17 @@
  * Contact us — server layer.
  *
  * A customer question is stored once and emailed to the configured business
- * address together with the vouchers of the cart it was sent from, so the
- * administrator immediately sees what the customer was configuring. Nothing
- * here prices, re-quotes, pays or issues anything.
+ * address. Cart enquiries include the vouchers of the cart they were sent
+ * from. Website enquiries do not attach a cart. Nothing here prices,
+ * re-quotes, pays or issues anything.
  */
 import { currentCart, fail } from "@/lib/cart.server";
+import {
+  composeContactEmail,
+  CONTACT_RATE_LIMIT,
+  isOverContactRate,
+  type ContactEmailSource,
+} from "@/lib/contact";
 import { DEFAULT_BUSINESS_NAME } from "@/lib/voucher-delivery";
 
 async function admin() {
@@ -20,19 +26,13 @@ export type ContactInput = {
   email: string;
   message: string;
   token?: string;
+  source?: ContactEmailSource;
 };
 
 function idr(value: unknown): string {
   const n = Number(value);
   if (!Number.isFinite(n)) return "—";
   return `Rp ${Math.round(n).toLocaleString("en-US")}`;
-}
-
-function escape(value: unknown): string {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
 }
 
 type VoucherRow = {
@@ -79,14 +79,15 @@ function voucherText(vouchers: VoucherRow[]): string {
 }
 
 /**
- * Stores the enquiry and emails it to the business address with the vouchers
- * of the current cart attached as readable detail.
+ * Stores the enquiry and emails it to the business address. Cart source
+ * attaches the current cart's vouchers; website source does not.
  */
 export async function submitContactRequest(input: ContactInput): Promise<{
   ok: true;
   emailed: boolean;
   voucher_codes: string[];
 }> {
+  const source: ContactEmailSource = input.source ?? "cart";
   const name = input.full_name.trim();
   const email = input.email.trim();
   const message = input.message.trim();
@@ -96,7 +97,20 @@ export async function submitContactRequest(input: ContactInput): Promise<{
   }
 
   const db = await admin();
-  const cart = await currentCart(false, input.token);
+
+  const since = new Date(
+    Date.now() - CONTACT_RATE_LIMIT.windowHours * 60 * 60 * 1000,
+  ).toISOString();
+  const { count } = await db
+    .from("contact_requests")
+    .select("id", { count: "exact", head: true })
+    .eq("email", email)
+    .gte("created_at", since);
+  if (isOverContactRate(count ?? 0)) {
+    fail("Please wait before sending another message.");
+  }
+
+  const cart = source === "cart" ? await currentCart(false, input.token) : null;
 
   const { data: voucherRows } = cart
     ? await db
@@ -129,30 +143,16 @@ export async function submitContactRequest(input: ContactInput): Promise<{
   const to = map.get("contact_email") ?? "";
   const business = map.get("business_name") ?? DEFAULT_BUSINESS_NAME;
 
-  const detail = voucherText(vouchers);
-  const subject = codes.length
-    ? `Customer question — ${codes.join(", ")}`
-    : "Customer question from the cart";
-  const text = [
-    `A customer sent a question from the cart on ${business}.`,
-    "",
-    `Name: ${name}`,
-    `Email: ${email}`,
-    `WhatsApp / phone: ${phone ?? "—"}`,
-    "",
-    "Message:",
+  const mail = composeContactEmail({
+    source,
+    business,
+    name,
+    email,
+    phone,
     message,
-    "",
-    "Vouchers in their cart:",
-    detail,
-  ].join("\n");
-  const html = `<p>A customer sent a question from the cart on ${escape(business)}.</p>
-<p><strong>Name:</strong> ${escape(name)}<br/>
-<strong>Email:</strong> ${escape(email)}<br/>
-<strong>WhatsApp / phone:</strong> ${escape(phone ?? "—")}</p>
-<p><strong>Message</strong><br/>${escape(message).replace(/\n/g, "<br/>")}</p>
-<p><strong>Vouchers in their cart</strong></p>
-<pre style="font-family:monospace;white-space:pre-wrap">${escape(detail)}</pre>`;
+    voucherDetail: voucherText(vouchers),
+    voucherCodes: codes,
+  });
 
   let emailed = false;
   let error: string | null = null;
@@ -160,9 +160,9 @@ export async function submitContactRequest(input: ContactInput): Promise<{
     const { sendEmail } = await import("@/lib/email.server");
     const result = await sendEmail({
       to,
-      subject,
-      html,
-      text,
+      subject: mail.subject,
+      html: mail.html,
+      text: mail.text,
       ...(request?.id ? { idempotencyKey: `contact-${request.id}` } : {}),
     });
     emailed = result.sent;
@@ -176,6 +176,10 @@ export async function submitContactRequest(input: ContactInput): Promise<{
       .from("contact_requests")
       .update({ email_status: emailed ? "SENT" : "SEND_FAILED", email_error: error })
       .eq("id", request.id);
+  }
+
+  if (source === "website" && !emailed) {
+    fail(error ?? "This message could not be sent.");
   }
 
   return { ok: true, emailed, voucher_codes: codes };
