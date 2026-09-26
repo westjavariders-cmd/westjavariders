@@ -34,6 +34,9 @@ import { Route as AdminAppPromoCodesRouteImport } from './routes/admin/_app/prom
 import { Route as AdminAppReviewsRouteImport } from './routes/admin/_app/reviews'
 import { Route as AdminAppTeamRouteImport } from './routes/admin/_app/team'
 import { Route as BookCatalogueIdItemIdRouteImport } from './routes/book.$catalogueId.$itemId'
+import { Route as BuildYourTripProductIdIndexRouteImport } from './routes/build-your-trip.$productId.index'
+import { Route as BuildYourTripProductIdConfigureRouteImport } from './routes/build-your-trip.$productId.configure'
+import { Route as PagesSlugGroupRouteImport } from './routes/pages.$slug.$group'
 import { Route as AdminAppHotelsIndexRouteImport } from './routes/admin/_app/hotels.index'
 import { Route as AdminAppHotelsAccommodationIdRouteImport } from './routes/admin/_app/hotels.$accommodationId'
 import { Route as AdminAppMotorbikesIndexRouteImport } from './routes/admin/_app/motorbikes.index'
@@ -57,6 +60,8 @@ import { Route as AdminAppWebsitePageIdRouteImport } from './routes/admin/_app/w
 import { Route as AdminAppWebsiteLandingRouteImport } from './routes/admin/_app/website.landing'
 import { Route as AdminAppWebsiteNavigationRouteImport } from './routes/admin/_app/website.navigation'
 import { Route as ApiPublicPaymentsXenditRouteImport } from './routes/api/public/payments/xendit'
+import { Route as PagesSlugGroupIndexRouteImport } from './routes/pages.$slug.$group.index'
+import { Route as PagesSlugGroupCatalogueRouteImport } from './routes/pages.$slug.$group.$catalogue'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -183,6 +188,23 @@ const BookCatalogueIdItemIdRoute = BookCatalogueIdItemIdRouteImport.update({
   path: '/book/$catalogueId/$itemId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BuildYourTripProductIdIndexRoute =
+  BuildYourTripProductIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => BuildYourTripProductIdRoute,
+  } as any)
+const BuildYourTripProductIdConfigureRoute =
+  BuildYourTripProductIdConfigureRouteImport.update({
+    id: '/configure',
+    path: '/configure',
+    getParentRoute: () => BuildYourTripProductIdRoute,
+  } as any)
+const PagesSlugGroupRoute = PagesSlugGroupRouteImport.update({
+  id: '/$group',
+  path: '/$group',
+  getParentRoute: () => PagesSlugRoute,
+} as any)
 const AdminAppHotelsIndexRoute = AdminAppHotelsIndexRouteImport.update({
   id: '/hotels/',
   path: '/hotels/',
@@ -307,6 +329,16 @@ const ApiPublicPaymentsXenditRoute = ApiPublicPaymentsXenditRouteImport.update({
   path: '/api/public/payments/xendit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PagesSlugGroupIndexRoute = PagesSlugGroupIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PagesSlugGroupRoute,
+} as any)
+const PagesSlugGroupCatalogueRoute = PagesSlugGroupCatalogueRouteImport.update({
+  id: '/$catalogue',
+  path: '/$catalogue',
+  getParentRoute: () => PagesSlugGroupRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -316,8 +348,8 @@ export interface FileRoutesByFullPath {
   '/admin/login': typeof AdminLoginRoute
   '/admin/no-access': typeof AdminNoAccessRoute
   '/admin/setup': typeof AdminSetupRoute
-  '/build-your-trip/$productId': typeof BuildYourTripProductIdRoute
-  '/pages/$slug': typeof PagesSlugRoute
+  '/build-your-trip/$productId': typeof BuildYourTripProductIdRouteWithChildren
+  '/pages/$slug': typeof PagesSlugRouteWithChildren
   '/purchase/$purchaseId': typeof PurchasePurchaseIdRoute
   '/trip/$code': typeof TripCodeRoute
   '/build-your-trip/': typeof BuildYourTripIndexRoute
@@ -332,7 +364,10 @@ export interface FileRoutesByFullPath {
   '/admin/reviews': typeof AdminAppReviewsRoute
   '/admin/team': typeof AdminAppTeamRoute
   '/book/$catalogueId/$itemId': typeof BookCatalogueIdItemIdRoute
+  '/build-your-trip/$productId/configure': typeof BuildYourTripProductIdConfigureRoute
+  '/pages/$slug/$group': typeof PagesSlugGroupRouteWithChildren
   '/admin/': typeof AdminAppIndexRoute
+  '/build-your-trip/$productId/': typeof BuildYourTripProductIdIndexRoute
   '/admin/hotels/$accommodationId': typeof AdminAppHotelsAccommodationIdRoute
   '/admin/motorbikes/$motorbikeId': typeof AdminAppMotorbikesMotorbikeIdRoute
   '/admin/orders/$purchaseId': typeof AdminAppOrdersPurchaseIdRoute
@@ -348,6 +383,7 @@ export interface FileRoutesByFullPath {
   '/admin/website/landing': typeof AdminAppWebsiteLandingRoute
   '/admin/website/navigation': typeof AdminAppWebsiteNavigationRoute
   '/api/public/payments/xendit': typeof ApiPublicPaymentsXenditRoute
+  '/pages/$slug/$group/$catalogue': typeof PagesSlugGroupCatalogueRoute
   '/admin/hotels/': typeof AdminAppHotelsIndexRoute
   '/admin/motorbikes/': typeof AdminAppMotorbikesIndexRoute
   '/admin/orders/': typeof AdminAppOrdersIndexRoute
@@ -356,6 +392,7 @@ export interface FileRoutesByFullPath {
   '/admin/transport/': typeof AdminAppTransportIndexRoute
   '/admin/vouchers/': typeof AdminAppVouchersIndexRoute
   '/admin/website/': typeof AdminAppWebsiteIndexRoute
+  '/pages/$slug/$group/': typeof PagesSlugGroupIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -365,8 +402,7 @@ export interface FileRoutesByTo {
   '/admin/login': typeof AdminLoginRoute
   '/admin/no-access': typeof AdminNoAccessRoute
   '/admin/setup': typeof AdminSetupRoute
-  '/build-your-trip/$productId': typeof BuildYourTripProductIdRoute
-  '/pages/$slug': typeof PagesSlugRoute
+  '/pages/$slug': typeof PagesSlugRouteWithChildren
   '/purchase/$purchaseId': typeof PurchasePurchaseIdRoute
   '/trip/$code': typeof TripCodeRoute
   '/build-your-trip': typeof BuildYourTripIndexRoute
@@ -381,6 +417,8 @@ export interface FileRoutesByTo {
   '/admin/reviews': typeof AdminAppReviewsRoute
   '/admin/team': typeof AdminAppTeamRoute
   '/book/$catalogueId/$itemId': typeof BookCatalogueIdItemIdRoute
+  '/build-your-trip/$productId/configure': typeof BuildYourTripProductIdConfigureRoute
+  '/build-your-trip/$productId': typeof BuildYourTripProductIdIndexRoute
   '/admin/hotels/$accommodationId': typeof AdminAppHotelsAccommodationIdRoute
   '/admin/motorbikes/$motorbikeId': typeof AdminAppMotorbikesMotorbikeIdRoute
   '/admin/orders/$purchaseId': typeof AdminAppOrdersPurchaseIdRoute
@@ -396,6 +434,7 @@ export interface FileRoutesByTo {
   '/admin/website/landing': typeof AdminAppWebsiteLandingRoute
   '/admin/website/navigation': typeof AdminAppWebsiteNavigationRoute
   '/api/public/payments/xendit': typeof ApiPublicPaymentsXenditRoute
+  '/pages/$slug/$group/$catalogue': typeof PagesSlugGroupCatalogueRoute
   '/admin/hotels': typeof AdminAppHotelsIndexRoute
   '/admin/motorbikes': typeof AdminAppMotorbikesIndexRoute
   '/admin/orders': typeof AdminAppOrdersIndexRoute
@@ -404,6 +443,7 @@ export interface FileRoutesByTo {
   '/admin/transport': typeof AdminAppTransportIndexRoute
   '/admin/vouchers': typeof AdminAppVouchersIndexRoute
   '/admin/website': typeof AdminAppWebsiteIndexRoute
+  '/pages/$slug/$group': typeof PagesSlugGroupIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -415,8 +455,8 @@ export interface FileRoutesById {
   '/admin/login': typeof AdminLoginRoute
   '/admin/no-access': typeof AdminNoAccessRoute
   '/admin/setup': typeof AdminSetupRoute
-  '/build-your-trip/$productId': typeof BuildYourTripProductIdRoute
-  '/pages/$slug': typeof PagesSlugRoute
+  '/build-your-trip/$productId': typeof BuildYourTripProductIdRouteWithChildren
+  '/pages/$slug': typeof PagesSlugRouteWithChildren
   '/purchase/$purchaseId': typeof PurchasePurchaseIdRoute
   '/trip/$code': typeof TripCodeRoute
   '/build-your-trip/': typeof BuildYourTripIndexRoute
@@ -431,7 +471,10 @@ export interface FileRoutesById {
   '/admin/_app/reviews': typeof AdminAppReviewsRoute
   '/admin/_app/team': typeof AdminAppTeamRoute
   '/book/$catalogueId/$itemId': typeof BookCatalogueIdItemIdRoute
+  '/build-your-trip/$productId/configure': typeof BuildYourTripProductIdConfigureRoute
+  '/pages/$slug/$group': typeof PagesSlugGroupRouteWithChildren
   '/admin/_app/': typeof AdminAppIndexRoute
+  '/build-your-trip/$productId/': typeof BuildYourTripProductIdIndexRoute
   '/admin/_app/hotels/$accommodationId': typeof AdminAppHotelsAccommodationIdRoute
   '/admin/_app/motorbikes/$motorbikeId': typeof AdminAppMotorbikesMotorbikeIdRoute
   '/admin/_app/orders/$purchaseId': typeof AdminAppOrdersPurchaseIdRoute
@@ -447,6 +490,7 @@ export interface FileRoutesById {
   '/admin/_app/website/landing': typeof AdminAppWebsiteLandingRoute
   '/admin/_app/website/navigation': typeof AdminAppWebsiteNavigationRoute
   '/api/public/payments/xendit': typeof ApiPublicPaymentsXenditRoute
+  '/pages/$slug/$group/$catalogue': typeof PagesSlugGroupCatalogueRoute
   '/admin/_app/hotels/': typeof AdminAppHotelsIndexRoute
   '/admin/_app/motorbikes/': typeof AdminAppMotorbikesIndexRoute
   '/admin/_app/orders/': typeof AdminAppOrdersIndexRoute
@@ -455,6 +499,7 @@ export interface FileRoutesById {
   '/admin/_app/transport/': typeof AdminAppTransportIndexRoute
   '/admin/_app/vouchers/': typeof AdminAppVouchersIndexRoute
   '/admin/_app/website/': typeof AdminAppWebsiteIndexRoute
+  '/pages/$slug/$group/': typeof PagesSlugGroupIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -482,7 +527,10 @@ export interface FileRouteTypes {
     | '/admin/reviews'
     | '/admin/team'
     | '/book/$catalogueId/$itemId'
+    | '/build-your-trip/$productId/configure'
+    | '/pages/$slug/$group'
     | '/admin/'
+    | '/build-your-trip/$productId/'
     | '/admin/hotels/$accommodationId'
     | '/admin/motorbikes/$motorbikeId'
     | '/admin/orders/$purchaseId'
@@ -498,6 +546,7 @@ export interface FileRouteTypes {
     | '/admin/website/landing'
     | '/admin/website/navigation'
     | '/api/public/payments/xendit'
+    | '/pages/$slug/$group/$catalogue'
     | '/admin/hotels/'
     | '/admin/motorbikes/'
     | '/admin/orders/'
@@ -506,6 +555,7 @@ export interface FileRouteTypes {
     | '/admin/transport/'
     | '/admin/vouchers/'
     | '/admin/website/'
+    | '/pages/$slug/$group/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -515,7 +565,6 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/no-access'
     | '/admin/setup'
-    | '/build-your-trip/$productId'
     | '/pages/$slug'
     | '/purchase/$purchaseId'
     | '/trip/$code'
@@ -531,6 +580,8 @@ export interface FileRouteTypes {
     | '/admin/reviews'
     | '/admin/team'
     | '/book/$catalogueId/$itemId'
+    | '/build-your-trip/$productId/configure'
+    | '/build-your-trip/$productId'
     | '/admin/hotels/$accommodationId'
     | '/admin/motorbikes/$motorbikeId'
     | '/admin/orders/$purchaseId'
@@ -546,6 +597,7 @@ export interface FileRouteTypes {
     | '/admin/website/landing'
     | '/admin/website/navigation'
     | '/api/public/payments/xendit'
+    | '/pages/$slug/$group/$catalogue'
     | '/admin/hotels'
     | '/admin/motorbikes'
     | '/admin/orders'
@@ -554,6 +606,7 @@ export interface FileRouteTypes {
     | '/admin/transport'
     | '/admin/vouchers'
     | '/admin/website'
+    | '/pages/$slug/$group'
   id:
     | '__root__'
     | '/'
@@ -580,7 +633,10 @@ export interface FileRouteTypes {
     | '/admin/_app/reviews'
     | '/admin/_app/team'
     | '/book/$catalogueId/$itemId'
+    | '/build-your-trip/$productId/configure'
+    | '/pages/$slug/$group'
     | '/admin/_app/'
+    | '/build-your-trip/$productId/'
     | '/admin/_app/hotels/$accommodationId'
     | '/admin/_app/motorbikes/$motorbikeId'
     | '/admin/_app/orders/$purchaseId'
@@ -596,6 +652,7 @@ export interface FileRouteTypes {
     | '/admin/_app/website/landing'
     | '/admin/_app/website/navigation'
     | '/api/public/payments/xendit'
+    | '/pages/$slug/$group/$catalogue'
     | '/admin/_app/hotels/'
     | '/admin/_app/motorbikes/'
     | '/admin/_app/orders/'
@@ -604,6 +661,7 @@ export interface FileRouteTypes {
     | '/admin/_app/transport/'
     | '/admin/_app/vouchers/'
     | '/admin/_app/website/'
+    | '/pages/$slug/$group/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -611,8 +669,8 @@ export interface RootRouteChildren {
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   CartRoute: typeof CartRoute
   HomeRoute: typeof HomeRoute
-  BuildYourTripProductIdRoute: typeof BuildYourTripProductIdRoute
-  PagesSlugRoute: typeof PagesSlugRoute
+  BuildYourTripProductIdRoute: typeof BuildYourTripProductIdRouteWithChildren
+  PagesSlugRoute: typeof PagesSlugRouteWithChildren
   PurchasePurchaseIdRoute: typeof PurchasePurchaseIdRoute
   TripCodeRoute: typeof TripCodeRoute
   BuildYourTripIndexRoute: typeof BuildYourTripIndexRoute
@@ -797,6 +855,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookCatalogueIdItemIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/build-your-trip/$productId/': {
+      id: '/build-your-trip/$productId/'
+      path: '/'
+      fullPath: '/build-your-trip/$productId/'
+      preLoaderRoute: typeof BuildYourTripProductIdIndexRouteImport
+      parentRoute: typeof BuildYourTripProductIdRoute
+    }
+    '/build-your-trip/$productId/configure': {
+      id: '/build-your-trip/$productId/configure'
+      path: '/configure'
+      fullPath: '/build-your-trip/$productId/configure'
+      preLoaderRoute: typeof BuildYourTripProductIdConfigureRouteImport
+      parentRoute: typeof BuildYourTripProductIdRoute
+    }
+    '/pages/$slug/$group': {
+      id: '/pages/$slug/$group'
+      path: '/$group'
+      fullPath: '/pages/$slug/$group'
+      preLoaderRoute: typeof PagesSlugGroupRouteImport
+      parentRoute: typeof PagesSlugRoute
+    }
     '/admin/_app/hotels/': {
       id: '/admin/_app/hotels/'
       path: '/hotels'
@@ -958,6 +1037,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPaymentsXenditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pages/$slug/$group/': {
+      id: '/pages/$slug/$group/'
+      path: '/'
+      fullPath: '/pages/$slug/$group/'
+      preLoaderRoute: typeof PagesSlugGroupIndexRouteImport
+      parentRoute: typeof PagesSlugGroupRoute
+    }
+    '/pages/$slug/$group/$catalogue': {
+      id: '/pages/$slug/$group/$catalogue'
+      path: '/$catalogue'
+      fullPath: '/pages/$slug/$group/$catalogue'
+      preLoaderRoute: typeof PagesSlugGroupCatalogueRouteImport
+      parentRoute: typeof PagesSlugGroupRoute
+    }
   }
 }
 
@@ -1055,13 +1148,55 @@ const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
   AdminRouteRouteChildren,
 )
 
+interface BuildYourTripProductIdRouteChildren {
+  BuildYourTripProductIdConfigureRoute: typeof BuildYourTripProductIdConfigureRoute
+  BuildYourTripProductIdIndexRoute: typeof BuildYourTripProductIdIndexRoute
+}
+
+const BuildYourTripProductIdRouteChildren: BuildYourTripProductIdRouteChildren =
+  {
+    BuildYourTripProductIdConfigureRoute: BuildYourTripProductIdConfigureRoute,
+    BuildYourTripProductIdIndexRoute: BuildYourTripProductIdIndexRoute,
+  }
+
+const BuildYourTripProductIdRouteWithChildren =
+  BuildYourTripProductIdRoute._addFileChildren(
+    BuildYourTripProductIdRouteChildren,
+  )
+
+interface PagesSlugGroupRouteChildren {
+  PagesSlugGroupCatalogueRoute: typeof PagesSlugGroupCatalogueRoute
+  PagesSlugGroupIndexRoute: typeof PagesSlugGroupIndexRoute
+}
+
+const PagesSlugGroupRouteChildren: PagesSlugGroupRouteChildren = {
+  PagesSlugGroupCatalogueRoute: PagesSlugGroupCatalogueRoute,
+  PagesSlugGroupIndexRoute: PagesSlugGroupIndexRoute,
+}
+
+const PagesSlugGroupRouteWithChildren = PagesSlugGroupRoute._addFileChildren(
+  PagesSlugGroupRouteChildren,
+)
+
+interface PagesSlugRouteChildren {
+  PagesSlugGroupRoute: typeof PagesSlugGroupRouteWithChildren
+}
+
+const PagesSlugRouteChildren: PagesSlugRouteChildren = {
+  PagesSlugGroupRoute: PagesSlugGroupRouteWithChildren,
+}
+
+const PagesSlugRouteWithChildren = PagesSlugRoute._addFileChildren(
+  PagesSlugRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRouteRoute: AdminRouteRouteWithChildren,
   CartRoute: CartRoute,
   HomeRoute: HomeRoute,
-  BuildYourTripProductIdRoute: BuildYourTripProductIdRoute,
-  PagesSlugRoute: PagesSlugRoute,
+  BuildYourTripProductIdRoute: BuildYourTripProductIdRouteWithChildren,
+  PagesSlugRoute: PagesSlugRouteWithChildren,
   PurchasePurchaseIdRoute: PurchasePurchaseIdRoute,
   TripCodeRoute: TripCodeRoute,
   BuildYourTripIndexRoute: BuildYourTripIndexRoute,

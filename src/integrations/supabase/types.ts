@@ -1869,9 +1869,11 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          image_path: string | null
           internal_name: string
           internal_ref: string | null
           kind: Database["public"]["Enums"]["product_kind"]
+          landing_image_path: string | null
           sort_order: number
           status: string
           updated_at: string
@@ -1880,9 +1882,11 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          image_path?: string | null
           internal_name: string
           internal_ref?: string | null
           kind: Database["public"]["Enums"]["product_kind"]
+          landing_image_path?: string | null
           sort_order?: number
           status?: string
           updated_at?: string
@@ -1891,9 +1895,11 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          image_path?: string | null
           internal_name?: string
           internal_ref?: string | null
           kind?: Database["public"]["Enums"]["product_kind"]
+          landing_image_path?: string | null
           sort_order?: number
           status?: string
           updated_at?: string
@@ -2218,6 +2224,7 @@ export type Database = {
           display_order: number
           flow_id: string
           id: string
+          image_path: string | null
           internal_name: string
           is_active: boolean
           updated_at: string
@@ -2229,6 +2236,7 @@ export type Database = {
           display_order?: number
           flow_id: string
           id?: string
+          image_path?: string | null
           internal_name: string
           is_active?: boolean
           updated_at?: string
@@ -2240,6 +2248,7 @@ export type Database = {
           display_order?: number
           flow_id?: string
           id?: string
+          image_path?: string | null
           internal_name?: string
           is_active?: boolean
           updated_at?: string
@@ -2967,6 +2976,7 @@ export type Database = {
           destination_page_id: string | null
           destination_product_id: string | null
           id: string
+          image_path: string | null
           internal_name: string
           is_active: boolean
           sort_order: number
@@ -2979,6 +2989,7 @@ export type Database = {
           destination_page_id?: string | null
           destination_product_id?: string | null
           id?: string
+          image_path?: string | null
           internal_name: string
           is_active?: boolean
           sort_order?: number
@@ -2991,6 +3002,7 @@ export type Database = {
           destination_page_id?: string | null
           destination_product_id?: string | null
           id?: string
+          image_path?: string | null
           internal_name?: string
           is_active?: boolean
           sort_order?: number

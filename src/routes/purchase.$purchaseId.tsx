@@ -12,16 +12,16 @@ import { Card, CardContent } from "@/components/ui/card";
 export const Route = createFileRoute("/purchase/$purchaseId")({
   head: () => ({
     meta: [
-      { title: "Your Booking | Cimaja Boardriders" },
+      { title: "Your Booking | West Java Riders" },
       {
         name: "description",
         content:
-          "Your Cimaja Boardriders booking: what you reserved, the deposit paid and the balance still to settle.",
+          "Your West Java Riders booking: what you reserved, the deposit paid and the balance still to settle.",
       },
-      { property: "og:title", content: "Your Booking — Cimaja Boardriders" },
+      { property: "og:title", content: "Your Booking — West Java Riders" },
       {
         property: "og:description",
-        content: "Your Cimaja Boardriders booking summary and payment status.",
+        content: "Your West Java Riders booking summary and payment status.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -53,8 +53,8 @@ function PurchasePage() {
       {!view.isPending && !purchase && (
         <div className="mt-4 space-y-4">
           <p className="text-sm text-muted-foreground">This booking could not be found.</p>
-          <Link to="/build-your-trip" className="text-sm underline underline-offset-2">
-            Build your trip
+          <Link to="/home" className="text-sm underline underline-offset-2">
+            See the menu
           </Link>
         </div>
       )}

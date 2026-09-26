@@ -45,7 +45,7 @@ export const Route = createFileRoute("/home")({
 function HomeRoute() {
   const { page } = Route.useLoaderData();
   return (
-    <PublicPage>
+    <PublicPage width="full">
       <HomeContent page={page} />
     </PublicPage>
   );

@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { PRODUCT_MEDIA_BUCKET } from "@/lib/catalog";
 
 /**
  * Catalog server operations that must be atomic or validated server-side:
@@ -137,10 +138,20 @@ export const deleteProduct = createServerFn({ method: "POST" })
 
     const { data: product, error } = await supabase
       .from("products")
-      .select("internal_name")
+      .select("internal_name, image_path")
       .eq("id", data.productId)
       .maybeSingle();
     if (error || !product) fail("This product could not be found.");
+
+    const landingRead = await supabase
+      .from("products")
+      .select("landing_image_path")
+      .eq("id", data.productId)
+      .maybeSingle();
+    const previousLanding = landingRead.error
+      ? null
+      : ((landingRead.data as { landing_image_path?: string | null } | null)?.landing_image_path ??
+        null);
 
     const { count } = await supabase
       .from("packages")
@@ -156,7 +167,178 @@ export const deleteProduct = createServerFn({ method: "POST" })
       .eq("id", data.productId);
     if (delError) fail(SAFE_ERROR);
 
+    const previous = product.image_path as string | null | undefined;
+    const toRemove = [previous, previousLanding].filter((p): p is string => Boolean(p));
+    if (toRemove.length > 0) {
+      await supabase.storage.from(PRODUCT_MEDIA_BUCKET).remove(toRemove);
+    }
+
     await audit(supabase, userId, "product_deleted", data.productId, product.internal_name, {});
+    return { ok: true };
+  });
+
+/** Records or clears the optional package hero image. */
+export const setProductImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        productId: z.string().uuid(),
+        image_path: z.string().min(1).max(500).nullable(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = ctx(context);
+    await assertAdmin(supabase);
+
+    const { data: row } = await supabase
+      .from("products")
+      .select("image_path, internal_name")
+      .eq("id", data.productId)
+      .maybeSingle();
+    if (!row) fail("This product could not be found.");
+
+    const { error } = await supabase
+      .from("products")
+      .update({ image_path: data.image_path })
+      .eq("id", data.productId);
+    if (error) fail(SAFE_ERROR);
+
+    const previous = row.image_path as string | null | undefined;
+    if (previous && previous !== data.image_path) {
+      const stillUsed = await supabase
+        .from("products")
+        .select("id", { count: "exact", head: true })
+        .eq("image_path", previous);
+      if ((stillUsed.count ?? 0) === 0) {
+        await supabase.storage.from(PRODUCT_MEDIA_BUCKET).remove([previous]);
+      }
+    }
+
+    await audit(
+      supabase,
+      userId,
+      data.image_path ? "product_image_set" : "product_image_removed",
+      data.productId,
+      row.internal_name,
+      {},
+    );
+    return { ok: true };
+  });
+
+/** Records or clears the optional intermediate-page photo. */
+export const setProductLandingImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        productId: z.string().uuid(),
+        landing_image_path: z.string().min(1).max(500).nullable(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = ctx(context);
+    await assertAdmin(supabase);
+
+    const { data: row, error: readError } = await supabase
+      .from("products")
+      .select("landing_image_path, internal_name")
+      .eq("id", data.productId)
+      .maybeSingle();
+    if (readError) fail("The intermediate-page photo could not be saved until the database update is applied.");
+    if (!row) fail("This product could not be found.");
+
+    const { error } = await supabase
+      .from("products")
+      .update({ landing_image_path: data.landing_image_path })
+      .eq("id", data.productId);
+    if (error) fail("The intermediate-page photo could not be saved until the database update is applied.");
+
+    const previous = row.landing_image_path as string | null | undefined;
+    if (previous && previous !== data.landing_image_path) {
+      const stillUsed = await supabase
+        .from("products")
+        .select("id", { count: "exact", head: true })
+        .eq("landing_image_path", previous);
+      if ((stillUsed.count ?? 0) === 0) {
+        await supabase.storage.from(PRODUCT_MEDIA_BUCKET).remove([previous]);
+      }
+    }
+
+    await audit(
+      supabase,
+      userId,
+      data.landing_image_path ? "product_landing_image_set" : "product_landing_image_removed",
+      data.productId,
+      row.internal_name,
+      {},
+    );
+    return { ok: true };
+  });
+
+const STEP_IMAGE_PENDING =
+  "The step photo could not be saved until the database update is applied.";
+
+/** Records or clears the optional photo shown for one configurator step. */
+export const setStepImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        productId: z.string().uuid(),
+        stepId: z.string().uuid(),
+        image_path: z.string().min(1).max(500).nullable(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = ctx(context);
+    await assertAdmin(supabase);
+
+    const { data: flow } = await supabase
+      .from("config_flows")
+      .select("id")
+      .eq("product_id", data.productId)
+      .maybeSingle();
+    if (!flow) fail("This product could not be found.");
+
+    const { data: row, error: readError } = await supabase
+      .from("steps")
+      .select("id, image_path, internal_name, flow_id")
+      .eq("id", data.stepId)
+      .eq("flow_id", flow.id)
+      .maybeSingle();
+    if (readError) fail(STEP_IMAGE_PENDING);
+    if (!row) fail("This step could not be found.");
+
+    const { error } = await supabase
+      .from("steps")
+      .update({ image_path: data.image_path })
+      .eq("id", data.stepId)
+      .eq("flow_id", flow.id);
+    if (error) fail(STEP_IMAGE_PENDING);
+
+    const previous = row.image_path as string | null | undefined;
+    if (previous && previous !== data.image_path) {
+      const stillUsed = await supabase
+        .from("steps")
+        .select("id", { count: "exact", head: true })
+        .eq("image_path", previous);
+      if ((stillUsed.count ?? 0) === 0) {
+        await supabase.storage.from(PRODUCT_MEDIA_BUCKET).remove([previous]);
+      }
+    }
+
+    await audit(
+      supabase,
+      userId,
+      data.image_path ? "configurator_step_image_set" : "configurator_step_image_removed",
+      data.stepId,
+      row.internal_name,
+      { product_id: data.productId },
+    );
     return { ok: true };
   });
 

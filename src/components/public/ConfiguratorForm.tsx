@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -9,28 +9,38 @@ import {
   stripInactiveAnswers,
   visibleStepFields,
   visibleSteps,
-
   type Field,
   type PreviewValues,
   type ProductBundle,
 } from "@/lib/catalog";
 import { formatIdr } from "@/lib/public-catalog";
+import {
+  REQUIRED_FIELD_MESSAGE,
+  isMissingRequiredAnswer,
+  missingRequiredFields,
+} from "@/lib/configurator-step-validation";
 import { readStoredPromoCode } from "@/lib/promo-code-storage";
 import {
   catalogueHoursVariable,
+  catalogueItemChoiceValue,
+  catalogueItemHoursVariable,
+  catalogueItemPeopleVariable,
   cataloguePeopleVariable,
   fieldCatalogueKey,
   type CatalogueItemsByKey,
+  type CatalogueVariants,
 } from "@/lib/catalogue-bridge";
 
 import { completePackage, savePackageConfiguration } from "@/lib/cart.functions";
-import { formatCustomerAmount } from "@/lib/fx";
-import { CurrencySelector, PUBLIC_CART_KEY, usePublicCart } from "@/components/public/SiteHeader";
-import { Button } from "@/components/ui/button";
+import { PUBLIC_CART_KEY, usePublicCart } from "@/components/public/SiteHeader";
+import { ConfiguratorOptionList } from "@/components/public/ConfiguratorOptionList";
+import { QuoteNotes, QuoteTotal } from "@/components/public/ConfiguratorSummary";
+import { ConfiguratorYesNo } from "@/components/public/ConfiguratorYesNo";
+import { ConfiguratorQuantityStepper } from "@/components/public/ConfiguratorQuantityStepper";
+import { integerQuantityChoices } from "@/lib/quantity-choices";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Card, CardContent } from "@/components/ui/card";
 
 type Quote = {
   purchasable: boolean;
@@ -82,6 +92,9 @@ export function ConfiguratorForm({
   savedAnswers,
   savedPromo,
   catalogue = {},
+  productTitle,
+  imageUrl,
+  stepImageUrls = {},
 }: {
   bundle: ProductBundle;
   packageId: string;
@@ -89,6 +102,10 @@ export function ConfiguratorForm({
   savedPromo: string | null;
   /** Active catalogue items per catalogue, resolved server-side. */
   catalogue?: CatalogueItemsByKey;
+  productTitle: string;
+  imageUrl: string | null;
+  /** Signed URLs for optional per-step photos. Missing keys keep the package image. */
+  stepImageUrls?: Record<string, string>;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -114,38 +131,58 @@ export function ConfiguratorForm({
   const [booking, setBooking] = useState(false);
   // Which catalogue item's photos are on screen per question, and which photo.
   const [shown, setShown] = useState<Record<string, string>>({});
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const fieldEls = useRef<Record<string, HTMLElement | null>>({});
+  const stepHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const seq = useRef(0);
+  const saveChain = useRef(Promise.resolve());
+  const [savedKey, setSavedKey] = useState<string | null>(null);
 
-  // Live server quote. Debounced; the newest answer always wins.
-  useEffect(() => {
+  const configKey = JSON.stringify({
+    packageId,
+    values,
+    promo: promo.trim() || null,
+    cartCurrency,
+  });
+  const unsaved = savedKey !== configKey;
+
+  // Debounced save+quote. Requests are serialised so an older write cannot
+  // land in the DB after a newer one. seq ignores stale responses in the UI.
+  useLayoutEffect(() => {
     const id = ++seq.current;
+    const payload = {
+      packageId,
+      answers: values as never,
+      month: null as null,
+      promoCode: promo.trim() ? promo.trim() : null,
+    };
+    const key = configKey;
     setQuoting(true);
-    const timer = setTimeout(async () => {
-      try {
-        const res = await save({
-          data: {
-            packageId,
-            answers: values as never,
-            month: null,
-            promoCode: promo.trim() ? promo.trim() : null,
-          },
-        });
-        if (seq.current === id) {
+    const timer = setTimeout(() => {
+      saveChain.current = saveChain.current.then(async () => {
+        if (seq.current !== id) return;
+        try {
+          const res = await save({ data: payload });
+          if (seq.current !== id) return;
           setQuote(res.quote as Quote);
           setDisplay({
             fx: (res as any).fx ?? null,
             total_customer: (res as any).total_customer ?? null,
           });
+          setSavedKey(key);
+        } catch (e) {
+          if (seq.current !== id) return;
+          setQuote(null);
+          setDisplay(null);
+          toast.error(e instanceof Error ? e.message : "Price unavailable.");
+        } finally {
+          if (seq.current === id) setQuoting(false);
         }
-      } catch (e) {
-        if (seq.current === id) toast.error(e instanceof Error ? e.message : "Price unavailable.");
-      } finally {
-        if (seq.current === id) setQuoting(false);
-      }
+      });
     }, 500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values, promo, packageId, cartCurrency]);
+  }, [configKey]);
 
   const evaluated = useMemo(() => evaluateDependencies(bundle, values), [bundle, values]);
 
@@ -172,7 +209,6 @@ export function ConfiguratorForm({
     setValues((v) => ({ ...v, [name]: value }));
   }
 
-
   // Only show a second amount when there is a real customer currency and rate.
   const showCustomer =
     !!quote &&
@@ -182,13 +218,38 @@ export function ConfiguratorForm({
 
   const stepFields = step ? visibleStepFields(bundle, step.id, evaluated) : [];
 
+  useEffect(() => {
+    setFieldErrors((prev) => {
+      const ids = Object.keys(prev);
+      if (ids.length === 0) return prev;
+      let changed = false;
+      const next = { ...prev };
+      for (const id of ids) {
+        const f = bundle.fields.find((x) => x.id === id);
+        if (!f || !isMissingRequiredAnswer(f, evaluated.fields[id], values)) {
+          delete next[id];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [bundle.fields, evaluated, values]);
+
+  useEffect(() => {
+    stepHeadingRef.current?.focus({ preventScroll: true });
+  }, [stepIndex]);
+
   const ready =
     !!quote &&
+    !unsaved &&
+    !quoting &&
     quote.purchasable &&
     quote.configuration_issues.length === 0 &&
     quote.errors.length === 0;
+  const nearEnd = activeSteps.length <= 2 || stepIndex >= activeSteps.length - 2;
 
   async function book() {
+    if (!ready || !nearEnd) return;
     setBooking(true);
     try {
       await complete({ data: { packageId } });
@@ -210,325 +271,408 @@ export function ConfiguratorForm({
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-        Step {stepIndex + 1} of {activeSteps.length}
-      </p>
+    <div className="space-y-10">
+      <ConfiguratorPackageTile
+        title={productTitle}
+        imageUrl={stepImageUrls[step.id] ?? imageUrl}
+      />
 
-      <Card>
-        <CardContent className="space-y-5 p-4">
-          <div key={stepIndex} className={dir === 1 ? "cbr-step-next" : "cbr-step-prev"}>
-            <div>
-              <h2 className="text-lg font-medium">{step.customer_title || step.internal_name}</h2>
-              {step.customer_description && (
-                <p className="mt-1 text-sm text-muted-foreground">{step.customer_description}</p>
-              )}
-            </div>
-
-          {stepFields.map((f) => {
-            const e = evaluated.fields[f.id]!;
-            const value = e.forcedValue ?? values[f.variable_name] ?? "";
-            const catalogueKeyOfField = fieldCatalogueKey(f as never);
-            const catalogueItems = catalogueKeyOfField ? (catalogue[catalogueKeyOfField] ?? []) : [];
-            const options = catalogueKeyOfField
-              ? catalogueItems.map((item) => ({
-                  id: item.id,
-                  internal_value: item.id,
-                  description: item.description,
-                  customer_label:
-                    item.customer_price_idr == null
-                      ? item.name
-                      : `${item.name} · ${formatIdr(item.customer_price_idr)}`,
-                }))
-
-              : bundle.options
-                  .filter((o) => o.field_id === f.id && o.is_active)
-                  .filter((o) => !evaluated.hiddenOptionIds.has(o.id));
-
-            if (f.field_type === "info_block") {
-              return (
-                <div key={f.id} className="rounded-md bg-muted/50 p-3 text-sm">
-                  <p className="font-medium">{f.customer_label ?? f.internal_name}</p>
-                  {f.help_text && <p className="text-muted-foreground">{f.help_text}</p>}
-                </div>
-              );
-            }
-
-            return (
-              <div key={f.id} className="space-y-1.5">
-                <Label className="text-sm">
-                  {f.customer_label ?? f.internal_name}
-                  {e.required && <span className="ml-1 text-destructive">*</span>}
-                </Label>
-                {f.help_text && <p className="text-xs text-muted-foreground">{f.help_text}</p>}
-
-                {f.field_type === "single_select" && (
-                  <div className="flex flex-wrap gap-2">
-                    {options.map((o) => (
-                      <Button
-                        key={o.id}
-                        type="button"
-                        size="sm"
-                        disabled={e.disabled}
-                        variant={value === o.internal_value ? "default" : "outline"}
-                        onClick={() =>
-                          set(f, value === o.internal_value && !e.required ? "" : o.internal_value)
-                        }
-                      >
-                        {o.customer_label ?? o.internal_value}
-                      </Button>
-                    ))}
-                  </div>
+      <div className="min-w-0 space-y-10">
+          <section aria-labelledby="configurator-step-title" className="space-y-8">
+            <div
+              key={stepIndex}
+              className={`space-y-8 ${dir === 1 ? "cbr-step-next" : "cbr-step-prev"}`}
+            >
+              <div className="space-y-3">
+                {step.customer_title?.trim() ? (
+                  <h2
+                    id="configurator-step-title"
+                    ref={stepHeadingRef}
+                    tabIndex={-1}
+                    className="text-2xl font-semibold tracking-tight outline-none"
+                  >
+                    {step.customer_title.trim()}
+                  </h2>
+                ) : (
+                  <h2
+                    id="configurator-step-title"
+                    ref={stepHeadingRef}
+                    tabIndex={-1}
+                    className="sr-only"
+                  >
+                    Step {stepIndex + 1}
+                  </h2>
                 )}
-
-                {catalogueKeyOfField &&
-                  (() => {
-                    // The photos on screen belong to the last option the
-                    // customer picked; earlier ones are taken as already seen.
-                    const list = Array.isArray(values[f.variable_name])
-                      ? (values[f.variable_name] as string[]).map(String)
-                      : [];
-                    const id =
-                      f.field_type === "multi_select"
-                        ? list.includes(shown[f.id] ?? "")
-                          ? (shown[f.id] as string)
-                          : (list[list.length - 1] ?? "")
-                        : String(value);
-                    const item = catalogueItems.find((i) => i.id === id);
-                    if (!item) return null;
-                    return (
-                      <CatalogueItemPresentation
-                        key={id}
-                        photos={item.photo_urls}
-                        name={item.name}
-                        details={item.details}
-                        size={f.photo_display_size}
-                      />
-                    );
-                  })()}
-
-                {catalogueKeyOfField && options.length === 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    No choices are available right now.
+                {step.customer_description && (
+                  <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+                    {step.customer_description}
                   </p>
                 )}
-                {catalogueKeyOfField &&
-                  (() => {
-                    const chosen = catalogueItems.find((i) => i.id === String(value));
-                    const variants = chosen?.variants ?? null;
-                    if (!variants) return null;
-                    const groups = [
-                      {
-                        name: cataloguePeopleVariable(f.variable_name),
-                        label: variants.people_label,
-                        choices: variants.people,
-                      },
-                      {
-                        name: catalogueHoursVariable(f.variable_name),
-                        label: variants.hours_label,
-                        choices: variants.hours,
-                      },
-                    ].filter((g) => g.choices.length > 0);
-
-                    return (
-                      <div className="space-y-3 rounded-md border p-3">
-                        {groups.map((g) => {
-                          const current = String(values[g.name] ?? "");
-                          return (
-                            <div key={g.name} className="space-y-1.5">
-                              <Label className="text-sm">
-                                {g.label}
-                                <span className="ml-1 text-destructive">*</span>
-                              </Label>
-                              <div className="flex flex-wrap gap-2">
-                                {g.choices.map((c) => (
-                                  <Button
-                                    key={c.value}
-                                    type="button"
-                                    size="sm"
-                                    disabled={e.disabled}
-                                    variant={current === String(c.value) ? "default" : "outline"}
-                                    onClick={() => setVar(g.name, String(c.value))}
-                                  >
-                                    {c.value}
-                                  </Button>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
-
-
-
-
-                {f.field_type === "multi_select" && (
-                  <div className="flex flex-wrap gap-2">
-                    {options.map((o) => {
-                      const list = Array.isArray(values[f.variable_name])
-                        ? (values[f.variable_name] as string[])
-                        : [];
-                      const on = list.includes(o.internal_value);
-                      return (
-                        <Button
-                          key={o.id}
-                          type="button"
-                          size="sm"
-                          disabled={e.disabled}
-                          variant={on ? "default" : "outline"}
-                          onClick={() => {
-                            set(
-                              f,
-                              on
-                                ? list.filter((x) => x !== o.internal_value)
-                                : [...list, o.internal_value],
-                            );
-                            if (!on) setShown((s) => ({ ...s, [f.id]: o.internal_value }));
-                          }}
-                        >
-                          {o.customer_label ?? o.internal_value}
-                        </Button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {(f.field_type === "quantity" || f.field_type === "number") && (
-                  <Input
-                    inputMode="decimal"
-                    disabled={e.disabled}
-                    value={String(value)}
-                    min={e.min ?? undefined}
-                    max={e.max ?? undefined}
-                    onChange={(ev) => set(f, ev.target.value)}
-                  />
-                )}
-
-                {f.field_type === "text" && (
-                  <Input
-                    disabled={e.disabled}
-                    value={String(value)}
-                    onChange={(ev) => set(f, ev.target.value)}
-                  />
-                )}
-
-                {(f.field_type === "date" || f.field_type === "date_range") && (
-                  <Input
-                    type="date"
-                    disabled={e.disabled}
-                    value={String(value)}
-                    onChange={(ev) => set(f, ev.target.value)}
-                  />
-                )}
-
-                {f.field_type === "boolean" && (
-                  <Switch
-                    checked={values[f.variable_name] === true}
-                    disabled={e.disabled}
-                    onCheckedChange={(v) => set(f, v)}
-                  />
-                )}
               </div>
-            );
-          })}
 
-          {stepFields.length === 0 && (
-            <p className="text-sm text-muted-foreground">Nothing to choose in this step.</p>
-          )}
-          </div>
+              {stepFields.map((f) => {
+                const e = evaluated.fields[f.id]!;
+                const value = e.forcedValue ?? values[f.variable_name] ?? "";
+                const fieldLabel = f.customer_label?.trim() ?? "";
+                const labelId = fieldLabel || e.required ? `${f.id}-label` : undefined;
+                const catalogueKeyOfField = fieldCatalogueKey(f as never);
+                const catalogueItems = catalogueKeyOfField
+                  ? (catalogue[catalogueKeyOfField] ?? [])
+                  : [];
+                const options = catalogueKeyOfField
+                  ? catalogueItems.map((item) => ({
+                      id: item.id,
+                      internal_value: item.id,
+                      description: item.description,
+                      customer_label:
+                        item.customer_price_idr == null
+                          ? item.name
+                          : `${item.name} · ${formatIdr(item.customer_price_idr)}`,
+                    }))
+                  : bundle.options
+                      .filter((o) => o.field_id === f.id && o.is_active)
+                      .filter((o) => !evaluated.hiddenOptionIds.has(o.id));
 
-          <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={stepIndex === 0}
-              onClick={() => {
-                setDir(-1);
-                setStepIndex((i) => i - 1);
-              }}
-            >
-              Back
-            </Button>
-            <Button
-              size="sm"
-              disabled={stepIndex >= activeSteps.length - 1}
-              onClick={() => {
-                setDir(1);
-                setStepIndex((i) => i + 1);
-              }}
-            >
-              Next
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+                if (f.field_type === "info_block") {
+                  if (!fieldLabel && !f.help_text) return null;
+                  return (
+                    <div key={f.id} className="border-l border-border py-1 pl-4 text-sm">
+                      {fieldLabel ? <p className="font-medium">{fieldLabel}</p> : null}
+                      {f.help_text && <p className="mt-1 leading-relaxed text-muted-foreground">{f.help_text}</p>}
+                    </div>
+                  );
+                }
 
-      <Card>
-        <CardContent className="space-y-3 p-4">
-          {quote?.promo_rejection && (
-            <p className="text-xs text-destructive">{quote.promo_rejection}</p>
-          )}
+                const errorId = `${f.id}-error`;
+                const errorMessage = fieldErrors[f.id];
 
-          <div className="flex items-start justify-between gap-3 border-t border-border pt-3">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                {quoting ? "Updating price…" : "Your price"}
-              </span>
-              <CurrencySelector />
-            </div>
-            <div className="text-right">
-              {showCustomer ? (
-                <>
-                  <span className="block text-2xl font-semibold">
-                    {formatCustomerAmount(
-                      display!.total_customer!,
-                      display!.fx!.currency_code,
-                      display!.fx!.symbol,
+                return (
+                  <div
+                    key={f.id}
+                    ref={(node) => {
+                      fieldEls.current[f.id] = node;
+                    }}
+                    className="space-y-1.5"
+                  >
+                    {(fieldLabel || e.required) && (
+                      <Label className="text-sm" id={labelId}>
+                        {fieldLabel}
+                        {e.required && <span className="ml-1 text-destructive">*</span>}
+                      </Label>
                     )}
-                  </span>
-                  <span className="block text-xs text-muted-foreground">
-                    {formatIdr(quote!.total_idr)}
-                  </span>
-                </>
-              ) : (
-                <span className="block text-2xl font-semibold">
-                  {quote ? formatIdr(quote.total_idr) : "—"}
-                </span>
+                    {f.help_text && <p className="text-xs text-muted-foreground">{f.help_text}</p>}
+
+                    {f.field_type === "single_select" && (
+                      <ConfiguratorOptionList
+                        multiple={false}
+                        options={options}
+                        value={typeof value === "string" ? value : String(value ?? "")}
+                        disabled={e.disabled}
+                        error={!!errorMessage}
+                        errorId={errorMessage ? errorId : undefined}
+                        labelledBy={labelId}
+                        onSelect={(internalValue) =>
+                          set(f, value === internalValue && !e.required ? "" : internalValue)
+                        }
+                      />
+                    )}
+
+                    {f.field_type === "multi_select" && (
+                      <ConfiguratorOptionList
+                        multiple
+                        options={options}
+                        value={
+                          Array.isArray(values[f.variable_name])
+                            ? (values[f.variable_name] as string[])
+                            : []
+                        }
+                        disabled={e.disabled}
+                        error={!!errorMessage}
+                        errorId={errorMessage ? errorId : undefined}
+                        labelledBy={labelId}
+                        onSelect={(internalValue) => {
+                          const list = Array.isArray(values[f.variable_name])
+                            ? (values[f.variable_name] as string[])
+                            : [];
+                          const on = list.includes(internalValue);
+                          setValues((v) => {
+                            const current = Array.isArray(v[f.variable_name])
+                              ? (v[f.variable_name] as string[])
+                              : [];
+                            const next: PreviewValues = {
+                              ...v,
+                              [f.variable_name]: on
+                                ? current.filter((x) => x !== internalValue)
+                                : [...current, internalValue],
+                            };
+                            if (on) {
+                              delete next[catalogueItemPeopleVariable(f.variable_name, internalValue)];
+                              delete next[catalogueItemHoursVariable(f.variable_name, internalValue)];
+                            }
+                            return next;
+                          });
+                          if (!on) setShown((s) => ({ ...s, [f.id]: internalValue }));
+                        }}
+                      />
+                    )}
+
+                    {catalogueKeyOfField &&
+                      (() => {
+                        // The photos on screen belong to the last option the
+                        // customer picked; earlier ones are taken as already seen.
+                        const list = Array.isArray(values[f.variable_name])
+                          ? (values[f.variable_name] as string[]).map(String)
+                          : [];
+                        const id =
+                          f.field_type === "multi_select"
+                            ? list.includes(shown[f.id] ?? "")
+                              ? (shown[f.id] as string)
+                              : (list[list.length - 1] ?? "")
+                            : String(value);
+                        const item = catalogueItems.find((i) => i.id === id);
+                        if (!item) return null;
+                        return (
+                          <CatalogueItemPresentation
+                            key={id}
+                            photos={item.photo_urls}
+                            name={item.name}
+                            details={item.details}
+                            size={f.photo_display_size}
+                          />
+                        );
+                      })()}
+
+                    {catalogueKeyOfField && options.length === 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        No choices are available right now.
+                      </p>
+                    )}
+                    {catalogueKeyOfField &&
+                      f.field_type !== "multi_select" &&
+                      (() => {
+                        const chosen = catalogueItems.find((i) => i.id === String(value));
+                        const variants = chosen?.variants ?? null;
+                        if (!variants) return null;
+                        return (
+                          <CatalogueVariantSteppers
+                            variableName={f.variable_name}
+                            itemId={chosen!.id}
+                            variants={variants}
+                            values={values}
+                            perItem={false}
+                            disabled={e.disabled}
+                            onChange={setVar}
+                          />
+                        );
+                      })()}
+
+                    {catalogueKeyOfField &&
+                      f.field_type === "multi_select" &&
+                      (Array.isArray(values[f.variable_name])
+                        ? (values[f.variable_name] as string[])
+                        : []
+                      ).map((id) => {
+                        const item = catalogueItems.find((i) => i.id === id);
+                        if (!item?.variants) return null;
+                        if (item.variants.people.length === 0 && item.variants.hours.length === 0) {
+                          return null;
+                        }
+                        return (
+                          <div key={id} className="space-y-4 border-t border-border pt-5">
+                            <p className="text-sm font-medium">{item.name}</p>
+                            <CatalogueVariantSteppers
+                              variableName={f.variable_name}
+                              itemId={id}
+                              variants={item.variants}
+                              values={values}
+                              perItem
+                              disabled={e.disabled}
+                              onChange={setVar}
+                            />
+                          </div>
+                        );
+                      })}
+
+                    {(f.field_type === "quantity" || f.field_type === "number") && (
+                      <ConfiguratorQuantityStepper
+                        choices={integerQuantityChoices(e.min, e.max)}
+                        value={String(value)}
+                        disabled={e.disabled}
+                        error={!!errorMessage}
+                        errorId={errorMessage ? errorId : undefined}
+                        labelledBy={labelId}
+                        decreaseLabel={`Decrease ${fieldLabel || f.internal_name}`}
+                        increaseLabel={`Increase ${fieldLabel || f.internal_name}`}
+                        onChange={(next) => set(f, next)}
+                      />
+                    )}
+
+                    {f.field_type === "text" && (
+                      <Input
+                        id={f.id}
+                        disabled={e.disabled}
+                        value={String(value)}
+                        aria-invalid={errorMessage ? true : undefined}
+                        aria-describedby={errorMessage ? errorId : undefined}
+                        className="cbr-config-field"
+                        onChange={(ev) => set(f, ev.target.value)}
+                      />
+                    )}
+
+                    {(f.field_type === "date" || f.field_type === "date_range") && (
+                      <Input
+                        id={f.id}
+                        type="date"
+                        disabled={e.disabled}
+                        value={String(value)}
+                        aria-invalid={f.field_type === "date" && errorMessage ? true : undefined}
+                        aria-describedby={
+                          f.field_type === "date" && errorMessage ? errorId : undefined
+                        }
+                        className="cbr-config-field"
+                        onChange={(ev) => set(f, ev.target.value)}
+                      />
+                    )}
+
+                    {f.field_type === "boolean" && (
+                      <ConfiguratorYesNo
+                        value={
+                          values[f.variable_name] === true
+                            ? true
+                            : values[f.variable_name] === false
+                              ? false
+                              : undefined
+                        }
+                        disabled={e.disabled}
+                        error={!!errorMessage}
+                        errorId={errorMessage ? errorId : undefined}
+                        labelledBy={labelId}
+                        onSelect={(v) => set(f, v)}
+                      />
+                    )}
+                    {errorMessage ? (
+                      <p id={errorId} role="alert" className="text-xs text-destructive">
+                        {errorMessage}
+                      </p>
+                    ) : null}
+                  </div>
+                );
+              })}
+
+              {stepFields.length === 0 && (
+                <p className="text-sm text-muted-foreground">Nothing to choose in this step.</p>
               )}
             </div>
+
+            <div className="flex items-center justify-between gap-3 border-t border-border pt-6">
+              <button
+                type="button"
+                className="cbr-config-nav"
+                disabled={stepIndex === 0}
+                onClick={() => {
+                  setFieldErrors({});
+                  setDir(-1);
+                  setStepIndex((i) => i - 1);
+                }}
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                className="cbr-config-nav"
+                disabled={stepIndex >= activeSteps.length - 1}
+                onClick={() => {
+                  const missing = missingRequiredFields(stepFields, evaluated.fields, values);
+                  if (missing.length > 0) {
+                    setFieldErrors(
+                      Object.fromEntries(missing.map((f) => [f.id, REQUIRED_FIELD_MESSAGE])),
+                    );
+                    const first = missing[0];
+                    if (!first) return;
+                    requestAnimationFrame(() => {
+                      const root = fieldEls.current[first.id];
+                      root?.scrollIntoView({ behavior: "smooth", block: "center" });
+                      root
+                        ?.querySelector<HTMLElement>(
+                          "input:not([disabled]), textarea:not([disabled]), button:not([disabled]), [role='switch']:not([data-disabled])",
+                        )
+                        ?.focus();
+                    });
+                    return;
+                  }
+                  setFieldErrors({});
+                  setDir(1);
+                  setStepIndex((i) => i + 1);
+                }}
+              >
+                Next
+              </button>
+            </div>
+          </section>
+
+          <div className="space-y-5 border-t border-border pt-8">
+              <QuoteTotal
+                quote={quote}
+                display={display}
+                quoting={quoting}
+                unsaved={unsaved}
+                showCustomer={showCustomer}
+              />
+              <QuoteNotes quote={quote} />
+              <button
+                type="button"
+                className="cbr-config-primary"
+                disabled={!ready || !nearEnd || booking}
+                aria-busy={booking || undefined}
+                onClick={book}
+              >
+                {booking ? "Adding…" : "Add to cart"}
+              </button>
+              <p className="text-center text-[11px] text-muted-foreground">
+                Prices set in IDR (RP). Your bank sets the final exchange rate.
+              </p>
           </div>
-          {quote && (quote.season_discount_idr > 0 || quote.promo_discount_idr > 0) && (
-            <p className="text-xs text-muted-foreground">
-              Before discount {formatIdr(quote.subtotal_idr)} · saving{" "}
-              {formatIdr(quote.season_discount_idr + quote.promo_discount_idr)}
-            </p>
-          )}
-
-          {quote && quote.configuration_issues.length > 0 && (
-            <ul className="space-y-1 text-xs text-muted-foreground">
-              {quote.configuration_issues.map((i) => (
-                <li key={i}>{i}</li>
-              ))}
-            </ul>
-          )}
-          {quote && quote.errors.length > 0 && (
-            <p className="text-xs text-destructive">
-              Please finish the questions above to see your final price.
-            </p>
-          )}
-
-
-          <Button className="w-full" disabled={!ready || quoting || booking} onClick={book}>
-            {booking ? "Adding…" : "Add to cart"}
-          </Button>
-          <p className="text-center text-[11px] text-muted-foreground">
-            Prices set in IDR (RP). Your bank sets the final exchange rate.
-          </p>
-        </CardContent>
-      </Card>
+      </div>
     </div>
+  );
+}
+
+/**
+ * Package photo and title in one tile, same visual language as Home product
+ * cards. The image may swap per step; the package title does not.
+ */
+function ConfiguratorPackageTile({
+  title,
+  imageUrl,
+}: {
+  title: string;
+  imageUrl: string | null;
+}) {
+  return (
+    <article
+      className={cn(
+        "relative isolate flex overflow-hidden bg-secondary cbr-photo-tile",
+        "min-h-[52vw] sm:min-h-[18rem] md:min-h-[22rem] lg:min-h-[24rem]",
+      )}
+    >
+      {imageUrl ? (
+        <div className="absolute inset-0 overflow-hidden">
+          <img
+            src={imageUrl}
+            alt=""
+            className="absolute inset-0 size-full object-cover object-center"
+          />
+        </div>
+      ) : (
+        <div className="absolute inset-0 bg-secondary" aria-hidden="true" />
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-black/15" />
+      <div className="relative z-10 mt-auto flex w-full flex-col justify-end p-5 sm:p-6">
+        <h1 className="text-balance text-2xl font-semibold tracking-tight text-neutral-50 sm:text-3xl lg:text-4xl">
+          {title}
+        </h1>
+      </div>
+    </article>
   );
 }
 
@@ -543,12 +687,12 @@ function CatalogueGallery({ photos, name }: { photos: string[]; name: string }) 
 
   return (
     <div className="space-y-2">
-      <div className="relative overflow-hidden rounded-md border border-border bg-muted/30">
+      <div className="relative isolate overflow-hidden bg-secondary">
         <img
           src={photos[i]}
           alt={name}
           loading="lazy"
-          className="aspect-[4/3] w-full object-cover"
+          className="aspect-[4/3] w-full object-cover object-center"
         />
         {photos.length > 1 && (
           <>
@@ -556,7 +700,7 @@ function CatalogueGallery({ photos, name }: { photos: string[]; name: string }) 
               type="button"
               aria-label="Previous photo"
               onClick={() => go(-1)}
-              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 px-2 py-1 text-sm"
+              className="absolute left-2 top-1/2 -translate-y-1/2 min-h-11 min-w-11 bg-background/70 px-2 text-sm"
             >
               ‹
             </button>
@@ -564,11 +708,11 @@ function CatalogueGallery({ photos, name }: { photos: string[]; name: string }) 
               type="button"
               aria-label="Next photo"
               onClick={() => go(1)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 px-2 py-1 text-sm"
+              className="absolute right-2 top-1/2 -translate-y-1/2 min-h-11 min-w-11 bg-background/70 px-2 text-sm"
             >
               ›
             </button>
-            <span className="absolute bottom-2 right-2 rounded-full bg-background/80 px-2 py-0.5 text-[11px]">
+            <span className="absolute bottom-2 right-2 bg-background/70 px-2 py-0.5 text-[11px] uppercase tracking-[0.14em]">
               {i + 1} / {photos.length}
             </span>
           </>
@@ -587,6 +731,77 @@ function CatalogueGallery({ photos, name }: { photos: string[]; name: string }) 
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function CatalogueVariantSteppers({
+  variableName,
+  itemId,
+  variants,
+  values,
+  perItem,
+  disabled,
+  onChange,
+}: {
+  variableName: string;
+  itemId: string;
+  variants: CatalogueVariants;
+  values: PreviewValues;
+  perItem: boolean;
+  disabled?: boolean;
+  onChange: (name: string, value: PreviewValues[string]) => void;
+}) {
+  const groups = [
+    {
+      kind: "people" as const,
+      name: perItem
+        ? catalogueItemPeopleVariable(variableName, itemId)
+        : cataloguePeopleVariable(variableName),
+      label: variants.people_label,
+      choices: variants.people,
+    },
+    {
+      kind: "hours" as const,
+      name: perItem
+        ? catalogueItemHoursVariable(variableName, itemId)
+        : catalogueHoursVariable(variableName),
+      label: variants.hours_label,
+      choices: variants.hours,
+    },
+  ].filter((g) => g.choices.length > 0);
+
+  if (groups.length === 0) return null;
+
+  return (
+    <div className="space-y-5">
+      {groups.map((g) => {
+        const n = catalogueItemChoiceValue(
+          values as Record<string, unknown>,
+          variableName,
+          itemId,
+          g.kind,
+          perItem,
+        );
+        const current = n == null ? "" : String(n);
+        return (
+          <div key={g.name} className="space-y-2">
+            <Label id={`${g.name}-label`} className="text-sm">
+              {g.label}
+              <span className="ml-1 text-destructive">*</span>
+            </Label>
+            <ConfiguratorQuantityStepper
+              choices={g.choices.map((c) => c.value)}
+              value={current}
+              disabled={!!disabled}
+              labelledBy={`${g.name}-label`}
+              decreaseLabel={`Decrease ${g.label}`}
+              increaseLabel={`Increase ${g.label}`}
+              onChange={(next) => onChange(g.name, next)}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }

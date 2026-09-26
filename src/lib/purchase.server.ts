@@ -29,6 +29,7 @@ import { validateGift, type GiftData, type GiftInput } from "@/lib/voucher";
 import { fxContext, freezeFx, displayAmount } from "@/lib/fx.server";
 import { toPublicFx, type PublicFxContext } from "@/lib/fx.functions";
 import { orderedAnswerSummary, withOrderedSnapshotAnswers } from "@/lib/answer-summary.server";
+import { DEFAULT_BUSINESS_NAME } from "@/lib/voucher-delivery";
 
 
 export { CartError };
@@ -694,7 +695,9 @@ export async function ensurePaymentLink(purchaseId: string, kind: PaymentRequest
     amountIdr: Number(request.amount_idr),
     currencyCode: request.currency_code,
     description:
-      kind === "first_payment" ? "Cimaja Boardriders booking deposit" : "Cimaja Boardriders balance",
+      kind === "first_payment"
+        ? `${DEFAULT_BUSINESS_NAME} booking deposit`
+        : `${DEFAULT_BUSINESS_NAME} balance`,
     returnUrl: `${origin()}/purchase/${purchaseId}`,
   });
 

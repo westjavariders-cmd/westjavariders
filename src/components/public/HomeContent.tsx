@@ -1,9 +1,12 @@
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 
 import { WebsiteRenderer } from "@/components/public/WebsiteRenderer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getWebsiteNav } from "@/lib/website.functions";
 import {
   clearStoredPromoCode,
   readStoredPromoCode,
@@ -86,30 +89,39 @@ function PromoCodeEntry() {
 
 /** The configured Home content, shared by the site root and /home. */
 export function HomeContent({ page }: { page: PublicWebsitePage | null }) {
+  const loadNav = useServerFn(getWebsiteNav);
+  const nav = useQuery({ queryKey: ["website-nav"], queryFn: () => loadNav({ data: {} }) });
+
   return (
-    <div className="py-8">
-      <h1 className="text-3xl font-semibold tracking-tight">
-        {page?.title ?? "Surf, travel and local experiences in Cimaja"}
-      </h1>
-      <p className="mt-3 text-sm text-muted-foreground">
-        {page?.subtitle ??
-          "West Java's warm-water pointbreaks, local guides and trips built exactly the way you want them."}
-      </p>
+    <div className="py-0 sm:py-1">
+      <div className="mx-auto max-w-6xl">
+        <h1 className="max-w-3xl text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
+          {page?.title ?? "Surf, travel and local experiences in Cimaja"}
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:mt-2.5">
+          {page?.subtitle ??
+            "West Java's warm-water pointbreaks, local guides and trips built exactly the way you want them."}
+        </p>
+      </div>
 
       {page && page.sections.length > 0 ? (
-        <WebsiteRenderer page={page} showHeading={false} />
+        <div className="mt-5 sm:mt-6">
+          <WebsiteRenderer page={page} showHeading={false} navItems={nav.data?.items ?? []} />
+        </div>
       ) : (
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Button asChild>
-            <Link to="/build-your-trip">Build your trip</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link to="/cart">View your cart</Link>
-          </Button>
+        <div className="mx-auto mt-6 flex max-w-6xl flex-wrap gap-x-6">
+          <Link to="/home" className="cbr-editorial-cta">
+            Where do you want to start?
+            <span aria-hidden="true">→</span>
+          </Link>
+          <Link to="/cart" className="cbr-editorial-cta text-muted-foreground">
+            View your cart
+            <span aria-hidden="true">→</span>
+          </Link>
         </div>
       )}
 
-      <div className="mt-10 space-y-2">
+      <div className="mx-auto mt-16 max-w-6xl space-y-2 sm:mt-20">
         <PromoCodeEntry />
         <p className="text-xs text-muted-foreground">
           <Link to="/admin" className="underline underline-offset-2">

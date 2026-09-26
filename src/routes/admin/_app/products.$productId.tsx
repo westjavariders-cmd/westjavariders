@@ -1,16 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { Upload } from "lucide-react";
 
 import { PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { setProductStatus } from "@/lib/catalog.functions";
+import { setProductImage, setProductLandingImage, setProductStatus } from "@/lib/catalog.functions";
 import { recordAdminAction } from "@/lib/admin-audit";
 import {
   MASTER_LANGUAGE,
+  PRODUCT_MEDIA_BUCKET,
   PRODUCT_STATUSES,
+  productLandingImagePath,
+  productImagePath,
   validateBundle,
   type ProductBundle,
 } from "@/lib/catalog";
@@ -121,6 +125,130 @@ function ProductEditor() {
 }
 
 type TabProps = { bundle: ProductBundle; canEdit: boolean; reload: () => void };
+
+function PackageImageEditor({
+  productId,
+  imagePath,
+  title,
+  canEdit,
+  reload,
+  slot,
+}: {
+  productId: string;
+  imagePath: string | null;
+  title: string;
+  canEdit: boolean;
+  reload: () => void;
+  slot: "cover" | "landing";
+}) {
+  const saveCover = useServerFn(setProductImage);
+  const saveLanding = useServerFn(setProductLandingImage);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const isLanding = slot === "landing";
+
+  const preview = useQuery({
+    queryKey: ["product-image", slot, productId, imagePath],
+    enabled: Boolean(imagePath),
+    queryFn: async () => {
+      const { data } = await supabase.storage
+        .from(PRODUCT_MEDIA_BUCKET)
+        .createSignedUrl(imagePath!, 3600);
+      return data?.signedUrl ?? null;
+    },
+  });
+
+  async function upload(files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const path = isLanding
+        ? productLandingImagePath(productId, file.name)
+        : productImagePath(productId, file.name);
+      const { error } = await supabase.storage.from(PRODUCT_MEDIA_BUCKET).upload(path, file);
+      if (error) throw new Error(error.message);
+      if (isLanding) await saveLanding({ data: { productId, landing_image_path: path } });
+      else await saveCover({ data: { productId, image_path: path } });
+      toast.success("Image saved.");
+      reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "The image could not be uploaded.");
+    } finally {
+      setUploading(false);
+      if (fileInput.current) fileInput.current.value = "";
+    }
+  }
+
+  async function remove() {
+    setUploading(true);
+    try {
+      if (isLanding) await saveLanding({ data: { productId, landing_image_path: null } });
+      else await saveCover({ data: { productId, image_path: null } });
+      toast.success("Image removed.");
+      reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "The image could not be removed.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs">{isLanding ? "Intermediate page image" : "Package image"}</Label>
+      <p className="text-xs text-muted-foreground">
+        {isLanding
+          ? "Shown on the product page before configuration. If empty, the package image is used."
+          : "Shown on listing cards and in the configurator."}
+      </p>
+      {imagePath ? (
+        preview.data ? (
+          <img
+            src={preview.data}
+            alt={title}
+            className="h-40 w-full max-w-sm rounded-md border object-cover"
+          />
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            {preview.isPending ? "Loading preview…" : "Preview unavailable."}
+          </p>
+        )
+      ) : (
+        <p className="text-xs text-muted-foreground">No image yet.</p>
+      )}
+      {canEdit && (
+        <div className="flex flex-wrap gap-2">
+          <input
+            ref={fileInput}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => void upload(e.target.files)}
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={uploading}
+            onClick={() => fileInput.current?.click()}
+          >
+            <Upload className="mr-1.5 h-3.5 w-3.5" />
+            {uploading ? "Uploading…" : imagePath ? "Replace image" : "Upload image"}
+          </Button>
+          {imagePath && (
+            <Button size="sm" variant="ghost" disabled={uploading} onClick={() => void remove()}>
+              Remove image
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function DetailsTab({ bundle, canEdit, reload }: TabProps) {
   const [draft, setDraft] = useState({
@@ -348,6 +476,22 @@ function ContentTab({ bundle, canEdit, reload }: TabProps) {
       <p className="text-xs text-muted-foreground">
         English is the master language. Other languages come with the translation phase.
       </p>
+      <PackageImageEditor
+        productId={bundle.product.id}
+        imagePath={bundle.product.image_path}
+        title={draft.title || bundle.product.internal_name}
+        canEdit={canEdit}
+        reload={reload}
+        slot="cover"
+      />
+      <PackageImageEditor
+        productId={bundle.product.id}
+        imagePath={bundle.product.landing_image_path ?? null}
+        title={draft.title || bundle.product.internal_name}
+        canEdit={canEdit}
+        reload={reload}
+        slot="landing"
+      />
       <div>
         <Label className="text-xs">Title</Label>
         <Input

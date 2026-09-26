@@ -50,7 +50,7 @@ function Index() {
   if (landing) return <LandingScreen landing={landing} />;
 
   return (
-    <PublicPage>
+    <PublicPage width="full">
       <HomeContent page={page} />
     </PublicPage>
   );

@@ -5,7 +5,7 @@
  * every read here is performed server-side and stripped of internal data
  * (supplier costs, internal notes, margins are never returned).
  */
-import { MASTER_LANGUAGE, type ProductBundle } from "@/lib/catalog";
+import { MASTER_LANGUAGE, PRODUCT_MEDIA_BUCKET, type ProductBundle } from "@/lib/catalog";
 import {
   fieldCatalogueRefs,
   type CatalogueItem,
@@ -14,7 +14,7 @@ import {
 import { resolveCatalogues } from "@/lib/catalogue-bridge.server";
 import { isPurchasable } from "@/lib/pricing";
 import { fail, listCart } from "@/lib/cart.server";
-import type { AnswerSummaryLine } from "@/lib/public-catalog";
+import { getPublicProductTitle, type AnswerSummaryLine } from "@/lib/public-catalog";
 import { orderedAnswerSummary } from "@/lib/answer-summary.server";
 
 async function admin() {
@@ -25,18 +25,35 @@ async function admin() {
 import { fxContext, displayAmount } from "@/lib/fx.server";
 import { toPublicFx, type PublicFxContext } from "@/lib/fx.functions";
 
+const SIGNED_URL_SECONDS = 60 * 60;
+
+async function signedProductImage(
+  db: any,
+  path: string | null | undefined,
+): Promise<string | null> {
+  if (!path) return null;
+  const { data } = await db.storage
+    .from(PRODUCT_MEDIA_BUCKET)
+    .createSignedUrl(path, SIGNED_URL_SECONDS);
+  return data?.signedUrl ?? null;
+}
+
 export type PublicProduct = {
   id: string;
   title: string;
   summary: string | null;
   categories: string[];
+  image_url: string | null;
 };
 
 /** Products that are commercially purchasable (active product + active pricing). */
 export async function listPurchasableProducts(): Promise<PublicProduct[]> {
   const db = await admin();
   const [products, pricing, translations, links, categories] = await Promise.all([
-    db.from("products").select("id, internal_name, voucher_name, status, kind").order("sort_order"),
+    db
+      .from("products")
+      .select("id, internal_name, voucher_name, status, kind, image_path")
+      .order("sort_order"),
     db.from("product_pricing").select("product_id, status"),
     db
       .from("product_translations")
@@ -54,24 +71,36 @@ export async function listPurchasableProducts(): Promise<PublicProduct[]> {
     (categories.data ?? []).filter((c: any) => c.is_active).map((c: any) => [c.id, c.name]),
   );
 
-  return (products.data ?? [])
-    .filter((p: any) => isPurchasable(p.status, pricingStatus.get(p.id)))
-    .map((p: any) => ({
-      id: p.id,
-      title: p.voucher_name?.trim() || translation.get(p.id)?.title || p.internal_name,
-      summary: translation.get(p.id)?.summary ?? null,
-      categories: (links.data ?? [])
-        .filter((l: any) => l.product_id === p.id)
-        .map((l: any) => categoryName.get(l.category_id))
-        .filter((n: unknown): n is string => typeof n === "string"),
-    }));
+  return Promise.all(
+    (products.data ?? [])
+      .filter((p: any) => isPurchasable(p.status, pricingStatus.get(p.id)))
+      .map(async (p: any) => ({
+        id: p.id,
+        title: getPublicProductTitle(translation.get(p.id)?.title, p.internal_name),
+        summary: translation.get(p.id)?.summary ?? null,
+        categories: (links.data ?? [])
+          .filter((l: any) => l.product_id === p.id)
+          .map((l: any) => categoryName.get(l.category_id))
+          .filter((n: unknown): n is string => typeof n === "string"),
+        image_url: await signedProductImage(db, p.image_path),
+      })),
+  );
 }
 
 export type PublicBundle = {
-  product: { id: string; title: string; summary: string | null; body: string | null };
+  product: {
+    id: string;
+    title: string;
+    summary: string | null;
+    body: string | null;
+    image_url: string | null;
+    landing_image_url: string | null;
+  };
   bundle: ProductBundle;
   /** Active, customer-safe catalogue items per catalogue type used by the fields. */
   catalogue: CatalogueItemsByKey;
+  /** Signed per-step photos. Empty until a step has its own image. */
+  stepImageUrls: Record<string, string>;
 };
 
 /** The saved Phase 3 configuration of one purchasable product, without internal data. */
@@ -79,10 +108,19 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
   const db = await admin();
   const { data: product } = await db
     .from("products")
-    .select("id, internal_name, voucher_name, status, kind")
+    .select("id, internal_name, voucher_name, status, kind, image_path")
     .eq("id", productId)
     .maybeSingle();
   if (!product) fail("This product could not be found.");
+
+  const landingRead = await db
+    .from("products")
+    .select("landing_image_path")
+    .eq("id", productId)
+    .maybeSingle();
+  const landingPath = landingRead.error
+    ? null
+    : ((landingRead.data as { landing_image_path?: string | null } | null)?.landing_image_path ?? null);
 
   const { data: pricing } = await db
     .from("product_pricing")
@@ -117,16 +155,39 @@ export async function publicProductBundle(productId: string): Promise<PublicBund
     fieldCatalogueRefs((fields.data ?? []).filter((f: any) => f.is_active) as never),
   );
 
+  const image_url = await signedProductImage(
+    db,
+    (product as { image_path?: string | null }).image_path,
+  );
+  const landingSigned = await signedProductImage(db, landingPath);
+  const landing_image_url = landingSigned ?? image_url;
+  const stepImageUrls: Record<string, string> = {};
+  await Promise.all(
+    (steps as { id: string; image_path?: string | null }[]).map(async (s) => {
+      const signed = await signedProductImage(db, s.image_path);
+      if (signed) stepImageUrls[s.id] = signed;
+    }),
+  );
+
   return {
     catalogue,
+    stepImageUrls,
     product: {
       id: product.id,
-      title: (product as any).voucher_name?.trim() || translation.data?.title || product.internal_name,
+      title: getPublicProductTitle(translation.data?.title, product.internal_name),
       summary: translation.data?.summary ?? null,
       body: translation.data?.body ?? null,
+      image_url,
+      landing_image_url,
     },
     bundle: {
-      product,
+      product: {
+        id: product.id,
+        internal_name: product.internal_name,
+        voucher_name: (product as { voucher_name?: string | null }).voucher_name ?? null,
+        status: product.status,
+        kind: product.kind,
+      } as ProductBundle["product"],
       translation: null,
       categoryIds: [],
       placements: [],
@@ -146,6 +207,8 @@ export type PublicCartPackage = {
   /** Null on direct catalogue bookings, which have no product. */
   product_id: string | null;
   product_title: string;
+  /** Signed public URL; null when the product has no image. */
+  image_url: string | null;
   status: string;
   total_idr: number;
   subtotal_idr: number;
@@ -185,7 +248,7 @@ export async function publicCart(token?: string): Promise<PublicCartView> {
     new Set(rows.map((r) => r.product_id).filter((id): id is string => Boolean(id))),
   );
   const [products, translations, fields] = await Promise.all([
-    db.from("products").select("id, internal_name, voucher_name").in("id", productIds),
+    db.from("products").select("id, internal_name, voucher_name, image_path").in("id", productIds),
     db
       .from("product_translations")
       .select("product_id, title")
@@ -207,6 +270,12 @@ export async function publicCart(token?: string): Promise<PublicCartView> {
     if (display) titles.set(p.id, display);
   }
 
+  const imageUrls = new Map<string, string | null>();
+  await Promise.all(
+    (products.data ?? []).map(async (p: { id: string; image_path?: string | null }) => {
+      imageUrls.set(p.id, await signedProductImage(db, p.image_path));
+    }),
+  );
 
   const view = async (row: any): Promise<PublicCartPackage> => ({
     id: row.id,
@@ -215,6 +284,7 @@ export async function publicCart(token?: string): Promise<PublicCartView> {
       row.line_kind === "catalogue_item"
         ? (row.item_title ?? "Item")
         : (titles.get(row.product_id) ?? "Package"),
+    image_url: row.product_id ? (imageUrls.get(row.product_id) ?? null) : null,
     status: row.status,
     total_idr: Number(row.total_idr),
     subtotal_idr: Number(row.subtotal_idr),

@@ -20,16 +20,59 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { sendContactRequest } from "@/lib/contact.functions";
 
+const CART_PAYMENT_SUMMARY_KEY = ["cart-payment-summary"] as const;
+
+function CartConfigSummary({
+  lines,
+  promoCode,
+  expanded,
+  onToggle,
+}: {
+  lines: { label: string; value: string }[];
+  promoCode: string | null;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  if (lines.length === 0 && !promoCode) return null;
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        className="text-xs uppercase tracking-[0.14em] text-muted-foreground underline"
+        onClick={onToggle}
+      >
+        {expanded ? "Hide details" : "View details"}
+      </button>
+      {expanded ? (
+        <dl className="space-y-1 text-sm">
+          {lines.map((line) => (
+            <div key={`${line.label}\u0000${line.value}`} className="flex justify-between gap-4">
+              <dt className="min-w-0 truncate text-muted-foreground">{line.label}</dt>
+              <dd className="max-w-[60%] truncate text-right">{line.value}</dd>
+            </div>
+          ))}
+          {promoCode && (
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Promo code</dt>
+              <dd className="truncate">{promoCode}</dd>
+            </div>
+          )}
+        </dl>
+      ) : null}
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/cart")({
   head: () => ({
     meta: [
-      { title: "Your Cart | Cimaja Boardriders" },
+      { title: "Your Cart | West Java Riders" },
       {
         name: "description",
         content:
           "Review the packages you have built for your Cimaja surf and travel trip before booking.",
       },
-      { property: "og:title", content: "Your Cart — Cimaja Boardriders" },
+      { property: "og:title", content: "Your Cart — West Java Riders" },
       {
         property: "og:description",
         content: "Review the packages you have built for your Cimaja surf and travel trip.",
@@ -58,11 +101,11 @@ function CartPage() {
 
   // Server-authoritative amounts: what would be charged right now.
   const summary = useQuery({
-    queryKey: ["cart-payment-summary"],
+    queryKey: CART_PAYMENT_SUMMARY_KEY,
     queryFn: () => summaryFn({ data: undefined as never }),
     refetchOnWindowFocus: false,
   });
-  const money = summary.data;
+  const money = summary.isError ? undefined : summary.data;
   const blockers = money?.blockers ?? [];
 
   async function payNow() {
@@ -98,6 +141,7 @@ function CartPage() {
     try {
       await fn();
       await queryClient.invalidateQueries({ queryKey: PUBLIC_CART_KEY });
+      await queryClient.invalidateQueries({ queryKey: CART_PAYMENT_SUMMARY_KEY });
       await cart.refetch();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : failure);
@@ -115,48 +159,54 @@ function CartPage() {
 
       {cart.isPending && <p className="mt-4 text-sm text-muted-foreground">Loading…</p>}
 
-      {!cart.isPending && packages.length === 0 && !draft && (
+      {cart.isError && (
         <div className="mt-4 space-y-4">
-          <p className="text-sm text-muted-foreground">Your cart is empty.</p>
-          <Button onClick={() => navigate({ to: "/build-your-trip" })}>Build your trip</Button>
+          <p role="alert" className="text-sm text-muted-foreground">
+            {cart.error instanceof Error ? cart.error.message : "Your cart could not be loaded."}
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => {
+              void cart.refetch();
+            }}
+          >
+            Try again
+          </Button>
         </div>
       )}
 
+      {!cart.isPending && !cart.isError && packages.length === 0 && !draft && (
+        <div className="mt-4 space-y-4">
+          <p className="text-sm text-muted-foreground">Your cart is empty.</p>
+          <Button onClick={() => navigate({ to: "/home" })}>See the menu</Button>
+        </div>
+      )}
+
+      {!cart.isError && (
+      <>
       <div className="mt-6 space-y-3">
-        {packages.map((p) => (
+        {packages.map((p) => {
+          const quoted = money?.packages.find((row) => row.package_id === p.id);
+          return (
           <Card key={p.id}>
             <CardContent className="space-y-3 p-4">
               <div className="flex items-baseline justify-between gap-3">
-                <p className="text-sm font-medium">
-                  {p.product_id
-                    ? `${p.product_title.toUpperCase()} — PACKAGE`
-                    : p.product_title.toUpperCase()}
+                <p className="min-w-0 text-sm font-medium">
+                  {`${p.product_title.toUpperCase()} — PACKAGE`}
                 </p>
-                <p className="text-base font-semibold">{formatIdr(p.total_idr)}</p>
+                <p className="shrink-0 text-base font-semibold">{formatIdr(p.total_idr)}</p>
               </div>
-              <button
-                type="button"
-                className="text-xs uppercase tracking-[0.14em] text-muted-foreground underline"
-                onClick={() => setOpen((o) => ({ ...o, [p.id]: !o[p.id] }))}
-              >
-                {open[p.id] ? "Hide details" : "View details"}
-              </button>
-              {open[p.id] && (
-                <dl className="space-y-1 border-t border-border pt-3 text-sm">
-                  {p.summary.map((line) => (
-                    <div key={line.label} className="flex justify-between gap-4">
-                      <dt className="text-muted-foreground">{line.label}</dt>
-                      <dd className="text-right">{line.value}</dd>
-                    </div>
-                  ))}
-                  {p.promo_code && (
-                    <div className="flex justify-between gap-4">
-                      <dt className="text-muted-foreground">Promo code</dt>
-                      <dd>{p.promo_code}</dd>
-                    </div>
-                  )}
-                </dl>
+              {quoted?.price_changed && (
+                <p className="text-xs text-muted-foreground">
+                  Current price {formatIdr(quoted.total_idr)}
+                </p>
               )}
+              <CartConfigSummary
+                lines={p.summary}
+                promoCode={p.promo_code}
+                expanded={Boolean(open[p.id])}
+                onToggle={() => setOpen((o) => ({ ...o, [p.id]: !o[p.id] }))}
+              />
               <Button
                 variant="outline"
                 size="sm"
@@ -173,27 +223,34 @@ function CartPage() {
               </Button>
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
 
         {draft && (
           <Card className="border-dashed">
             <CardContent className="space-y-3 p-4">
               <div className="flex items-baseline justify-between gap-3">
-                <p className="text-sm font-medium">
+                <p className="min-w-0 text-sm font-medium">
                   {draft.product_title.toUpperCase()} — CURRENT PACKAGE
                 </p>
-                <p className="text-base font-semibold">{formatIdr(draft.total_idr)}</p>
+                <p className="shrink-0 text-base font-semibold">{formatIdr(draft.total_idr)}</p>
               </div>
               <p className="text-xs text-muted-foreground">
                 Not finished yet, so it is not part of your total.
               </p>
+              <CartConfigSummary
+                lines={draft.summary}
+                promoCode={draft.promo_code}
+                expanded={Boolean(open[draft.id])}
+                onToggle={() => setOpen((o) => ({ ...o, [draft.id]: !o[draft.id] }))}
+              />
               <div className="flex flex-wrap gap-2">
                 {draft.product_id && (
                   <Button
                     size="sm"
                     onClick={() =>
                       navigate({
-                        to: "/build-your-trip/$productId",
+                        to: "/build-your-trip/$productId/configure",
                         params: { productId: draft.product_id as string },
                       })
                     }
@@ -217,8 +274,26 @@ function CartPage() {
         )}
       </div>
 
-      {(packages.length > 0 || draft) && (
+      {packages.length > 0 && (
         <div className="mt-6 space-y-3 border-t border-border pt-4">
+          {summary.isError ? (
+            <div className="space-y-3">
+              <p role="alert" className="text-sm text-muted-foreground">
+                {summary.error instanceof Error
+                  ? summary.error.message
+                  : "This total could not be verified."}
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  void summary.refetch();
+                }}
+              >
+                Try again
+              </Button>
+            </div>
+          ) : (
+            <>
           {money && (
             <>
               <div className="flex items-baseline justify-between">
@@ -384,7 +459,8 @@ function CartPage() {
                   busy === "pay" ||
                   blockers.length > 0 ||
                   !riskAccepted ||
-                  summary.isPending
+                  summary.isPending ||
+                  summary.isError
                 }
                 onClick={payNow}
               >
@@ -392,17 +468,29 @@ function CartPage() {
               </Button>
             </>
           )}
+            </>
+          )}
 
           {packages.length > 0 && <ShareTrip />}
           <ContactUs />
 
           <Link
-            to="/build-your-trip"
+            to="/home"
             className="block text-center text-sm underline underline-offset-2"
           >
             Continue shopping
           </Link>
         </div>
+      )}
+      {packages.length === 0 && draft && (
+        <Link
+          to="/home"
+          className="mt-6 block text-center text-sm underline underline-offset-2"
+        >
+          Continue shopping
+        </Link>
+      )}
+      </>
       )}
     </PublicPage>
   );

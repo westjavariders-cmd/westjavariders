@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { buildEntitlement } from "@/lib/voucher";
-import { buildDocumentModel, readContactSettings } from "@/lib/voucher-delivery";
+import { buildDocumentModel, DEFAULT_BUSINESS_NAME, readContactSettings } from "@/lib/voucher-delivery";
 import { renderVoucherPdf } from "@/lib/voucher-pdf.server";
 import { sendEmail } from "@/lib/email.server";
 
 const check = readContactSettings([
-  { key: "business_name", value: "Cimaja Boardriders" },
+  { key: "business_name", value: DEFAULT_BUSINESS_NAME },
   { key: "contact_email", value: "reservations@cimaja.example" },
   { key: "contact_whatsapp", value: "+62 811 111 222" },
   { key: "contact_location", value: "Cimaja, West Java" },

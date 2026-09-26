@@ -10,7 +10,18 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { BLOCK_KINDS, DESTINATION_KINDS, MEDIA_KINDS, isSafeSlug } from "@/lib/website";
+import {
+  BLOCK_KINDS,
+  DESTINATION_KINDS,
+  LANDING_CTA_IMAGE_SETTING_KEY,
+  MEDIA_KINDS,
+  WEBSITE_MEDIA_BUCKET,
+  chromeImageSettingKey,
+  isChromeImagePath,
+  isLandingCtaImagePath,
+  isSafeSlug,
+  type WebsiteChromeSlot,
+} from "@/lib/website";
 
 const SAFE_ERROR = "This action could not be completed. Please check your input and try again.";
 
@@ -451,6 +462,7 @@ export const saveNavItem = createServerFn({ method: "POST" })
         destination_product_id: z.string().uuid().nullable().optional(),
         destination_external_url: z.string().max(2000).nullable().optional(),
         is_active: z.boolean(),
+        image_path: z.string().max(500).nullable().optional(),
         language,
         label: text(80),
       })
@@ -468,7 +480,7 @@ export const saveNavItem = createServerFn({ method: "POST" })
       fail("An external link must start with https://");
     }
 
-    const row = {
+    const row: Record<string, unknown> = {
       internal_name: data.internal_name,
       destination_kind: data.destination_kind,
       destination_page_id: data.destination_kind === "page" ? (data.destination_page_id ?? null) : null,
@@ -477,9 +489,19 @@ export const saveNavItem = createServerFn({ method: "POST" })
       destination_external_url: external,
       is_active: data.is_active,
     };
+    if (data.image_path !== undefined) row["image_path"] = data.image_path;
 
     let itemId = data.id ?? null;
+    let previousImage: string | null = null;
     if (itemId) {
+      if (data.image_path !== undefined) {
+        const { data: current } = await supabase
+          .from("website_nav_items")
+          .select("image_path")
+          .eq("id", itemId)
+          .maybeSingle();
+        previousImage = (current?.image_path as string | null) ?? null;
+      }
       const { error } = await supabase.from("website_nav_items").update(row).eq("id", itemId);
       if (error) fail("This menu item could not be saved.");
     } else {
@@ -490,6 +512,16 @@ export const saveNavItem = createServerFn({ method: "POST" })
         .single();
       if (error || !created) fail("This menu item could not be created.");
       itemId = created.id as string;
+    }
+
+    if (previousImage && previousImage !== (data.image_path ?? null)) {
+      const stillUsed = await supabase
+        .from("website_nav_items")
+        .select("id", { count: "exact", head: true })
+        .eq("image_path", previousImage);
+      if ((stillUsed.count ?? 0) === 0) {
+        await supabase.storage.from(WEBSITE_MEDIA_BUCKET).remove([previousImage]);
+      }
     }
 
     await upsertTranslation(
@@ -517,8 +549,16 @@ export const deleteNavItem = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = ctx(context);
     await assertAdmin(supabase);
+    const { data: item } = await supabase
+      .from("website_nav_items")
+      .select("image_path")
+      .eq("id", data.id)
+      .maybeSingle();
     const { error } = await supabase.from("website_nav_items").delete().eq("id", data.id);
     if (error) fail("This menu item could not be removed.");
+    if (item?.image_path) {
+      await supabase.storage.from(WEBSITE_MEDIA_BUCKET).remove([item.image_path as string]);
+    }
     await audit(supabase, userId, "website.nav.deleted", "website_nav_items", data.id, null);
     return { ok: true };
   });
@@ -562,6 +602,7 @@ export const saveLanding = createServerFn({ method: "POST" })
         title: text(200),
         subtitle: text(500),
         cta_label: text(80),
+        cta_image_path: z.string().max(500).nullable().optional(),
       })
       .parse(data),
   )
@@ -611,8 +652,97 @@ export const saveLanding = createServerFn({ method: "POST" })
       data.language,
       { title: data.title ?? null, subtitle: data.subtitle ?? null, cta_label: data.cta_label ?? null },
     );
+    if (data.cta_image_path !== undefined) {
+      await saveLandingCtaImage(supabase, data.cta_image_path);
+    }
     await audit(supabase, userId, "website.landing.updated", "website_landing", landingId, null, {
       is_active: data.is_active,
     });
     return { id: landingId };
+  });
+
+async function saveLandingCtaImage(supabase: any, imagePath: string | null) {
+  const next = imagePath?.trim() || null;
+  if (next && !isLandingCtaImagePath(next)) fail("This button photo could not be saved.");
+  const key = LANDING_CTA_IMAGE_SETTING_KEY;
+  const { data: existing } = await supabase.from("settings").select("value").eq("key", key).maybeSingle();
+  const previous = typeof existing?.value === "string" && existing.value.trim() ? existing.value.trim() : null;
+
+  if (next) {
+    if (existing) {
+      const { error } = await supabase.from("settings").update({ value: next }).eq("key", key);
+      if (error) fail("The button photo could not be saved.");
+    } else {
+      const { error } = await supabase.from("settings").insert({
+        key,
+        value: next,
+        value_type: "string",
+        description: "Photo filling the entry-screen button.",
+      });
+      if (error) fail("The button photo could not be saved.");
+    }
+  } else if (existing) {
+    const { error } = await supabase.from("settings").delete().eq("key", key);
+    if (error) fail("The button photo could not be removed.");
+  }
+
+  if (previous && previous !== next) {
+    await supabase.storage.from(WEBSITE_MEDIA_BUCKET).remove([previous]);
+  }
+}
+
+export const getWebsiteChromeImages = createServerFn({ method: "POST" })
+  .inputValidator((data) => z.object({}).parse(data ?? {}))
+  .handler(async () => {
+    const { websiteChromeImages } = await import("@/lib/website.server");
+    return websiteChromeImages();
+  });
+
+export const saveChromeImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({ slot: z.enum(["site", "header"]), image_path: z.string().max(500).nullable() }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = ctx(context);
+    await assertAdmin(supabase);
+
+    const slot = data.slot as WebsiteChromeSlot;
+    const key = chromeImageSettingKey(slot);
+    const next = data.image_path?.trim() || null;
+    if (next && !isChromeImagePath(slot, next)) fail("This background file could not be saved.");
+
+    const { data: existing } = await supabase.from("settings").select("value").eq("key", key).maybeSingle();
+    const previous = typeof existing?.value === "string" && existing.value.trim() ? existing.value.trim() : null;
+
+    if (next) {
+      if (existing) {
+        const { error } = await supabase.from("settings").update({ value: next }).eq("key", key);
+        if (error) fail("The background could not be saved.");
+      } else {
+        const { error } = await supabase.from("settings").insert({
+          key,
+          value: next,
+          value_type: "string",
+          description:
+            slot === "header"
+              ? "Photo in the public header bar and menu button."
+              : "Photo behind public pages except the entry screen.",
+        });
+        if (error) fail("The background could not be saved.");
+      }
+    } else if (existing) {
+      const { error } = await supabase.from("settings").delete().eq("key", key);
+      if (error) fail("The background could not be removed.");
+    }
+
+    if (previous && previous !== next) {
+      await supabase.storage.from(WEBSITE_MEDIA_BUCKET).remove([previous]);
+    }
+
+    await audit(supabase, userId, "website.chrome_image.updated", "settings", null, key, {
+      slot,
+      has_image: Boolean(next),
+    });
+    return { ok: true };
   });

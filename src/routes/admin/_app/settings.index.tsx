@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
+import { WEBSITE_CHROME_SETTING_KEYS } from "@/lib/website";
 import { updateSetting } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,7 +99,9 @@ function SettingsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {settings.data?.map((row) => {
+              {settings.data
+                ?.filter((row) => !(WEBSITE_CHROME_SETTING_KEYS as readonly string[]).includes(row.key))
+                .map((row) => {
                 const draft = drafts[row.key] ?? row.value;
                 const dirty = draft !== row.value;
                 return (

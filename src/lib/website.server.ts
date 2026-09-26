@@ -5,9 +5,14 @@
  * here, stripped to what is safe to publish, and joined to the existing
  * product system for product references. No pricing happens in this file.
  */
+import { PRODUCT_MEDIA_BUCKET } from "@/lib/catalog";
+import { applyFirstWavesMenuLabel } from "@/lib/home-trip-doors";
 import { isPurchasable } from "@/lib/pricing";
 import {
   WEBSITE_MEDIA_BUCKET,
+  HEADER_BACKGROUND_SETTING_KEY,
+  LANDING_CTA_IMAGE_SETTING_KEY,
+  SITE_BACKGROUND_SETTING_KEY,
   isPubliclyListable,
   pickTranslation,
   resolveDestination,
@@ -29,6 +34,17 @@ async function signedMedia(db: any, path: string | null): Promise<string | null>
   return data?.signedUrl ?? null;
 }
 
+async function signedProductImage(
+  db: any,
+  path: string | null | undefined,
+): Promise<string | null> {
+  if (!path) return null;
+  const { data } = await db.storage
+    .from(PRODUCT_MEDIA_BUCKET)
+    .createSignedUrl(path, SIGNED_URL_SECONDS);
+  return data?.signedUrl ?? null;
+}
+
 /** The configured default language; content falls back to it. */
 export async function defaultLanguage(db: any): Promise<string> {
   const { data } = await db
@@ -46,6 +62,7 @@ export type PublicBlockProduct = {
   summary: string | null;
   href: string;
   bookable: boolean;
+  image_url: string | null;
 };
 
 export type PublicBlockCatalogueItem = {
@@ -85,7 +102,13 @@ export type PublicWebsitePage = {
   sections: PublicSection[];
 };
 
-export type PublicNavItem = { id: string; label: string; href: string; external: boolean };
+export type PublicNavItem = {
+  id: string;
+  label: string;
+  href: string;
+  external: boolean;
+  image_url: string | null;
+};
 
 export type PublicLanding = {
   title: string | null;
@@ -93,7 +116,7 @@ export type PublicLanding = {
   video_url: string | null;
   image_url: string | null;
   image_alt: string | null;
-  cta: { label: string; href: string; external: boolean } | null;
+  cta: { label: string; href: string; external: boolean; image_url: string | null } | null;
   language: string;
 };
 
@@ -114,7 +137,7 @@ export async function websiteLanding(language?: string): Promise<PublicLanding |
     .maybeSingle();
   if (!landing || landing.is_active !== true) return null;
 
-  const [translations, ctaPage, video, image] = await Promise.all([
+  const [translations, ctaPage, video, image, ctaImageSetting] = await Promise.all([
     db
       .from("website_landing_translations")
       .select("language_code, title, subtitle, cta_label")
@@ -124,6 +147,7 @@ export async function websiteLanding(language?: string): Promise<PublicLanding |
       : Promise.resolve({ data: null }),
     signedMedia(db, landing.video_path),
     signedMedia(db, landing.image_path),
+    db.from("settings").select("value").eq("key", LANDING_CTA_IMAGE_SETTING_KEY).maybeSingle(),
   ]);
 
   const text = pickTranslation<any>((translations.data ?? []) as any[], wanted, fallback);
@@ -133,6 +157,9 @@ export async function websiteLanding(language?: string): Promise<PublicLanding |
     productId: landing.cta_product_id,
     externalUrl: landing.cta_external_url,
   });
+  const ctaImagePath =
+    typeof ctaImageSetting.data?.value === "string" ? ctaImageSetting.data.value.trim() : "";
+  const cta_image_url = await signedMedia(db, ctaImagePath || null);
 
   return {
     title: text?.title ?? null,
@@ -140,9 +167,39 @@ export async function websiteLanding(language?: string): Promise<PublicLanding |
     video_url: video,
     image_url: image,
     image_alt: landing.image_alt ?? null,
-    cta: destination && text?.cta_label ? { label: text.cta_label, ...destination } : null,
+    cta: destination && text?.cta_label ? { label: text.cta_label, ...destination, image_url: cta_image_url } : null,
     language: wanted,
   };
+}
+
+export type PublicChromeImages = {
+  site_url: string | null;
+  header_url: string | null;
+};
+
+/** Signed URLs for interior wallpaper and the header bar. Not used on the entry screen. */
+export async function websiteChromeImages(): Promise<PublicChromeImages> {
+  const db = await admin();
+  const { data } = await db
+    .from("settings")
+    .select("key, value")
+    .in("key", [SITE_BACKGROUND_SETTING_KEY, HEADER_BACKGROUND_SETTING_KEY]);
+  const byKey = new Map<string, string>(
+    ((data ?? []) as { key: string; value: string }[])
+      .map((row) => [row.key, row.value.trim()] as const)
+      .filter((entry) => entry[1]),
+  );
+  const sitePath = byKey.get(SITE_BACKGROUND_SETTING_KEY) ?? "";
+  const headerPath = byKey.get(HEADER_BACKGROUND_SETTING_KEY) ?? "";
+  const [site_url, headerSigned] = await Promise.all([
+    signedMedia(db, sitePath || null),
+    signedMedia(db, headerPath || null),
+  ]);
+  return { site_url, header_url: headerSigned ?? site_url };
+}
+
+export async function websiteSiteBackground(): Promise<string | null> {
+  return (await websiteChromeImages()).site_url;
 }
 
 
@@ -153,7 +210,7 @@ async function resolveProducts(db: any, productIds: string[]) {
 
   const language = await defaultLanguage(db);
   const [products, pricing, translations] = await Promise.all([
-    db.from("products").select("id, internal_name, status").in("id", productIds),
+    db.from("products").select("id, internal_name, status, image_path").in("id", productIds),
     db.from("product_pricing").select("product_id, status").in("product_id", productIds),
     db
       .from("product_translations")
@@ -169,8 +226,12 @@ async function resolveProducts(db: any, productIds: string[]) {
     (translations.data ?? []).map((t: any) => [t.product_id, t]),
   );
 
-  for (const product of products.data ?? []) {
-    if (!isPubliclyListable(product.status)) continue;
+  const listed = (products.data ?? []).filter((p: any) => isPubliclyListable(p.status));
+  const images = await Promise.all(
+    listed.map((p: any) => signedProductImage(db, p.image_path as string | null | undefined)),
+  );
+
+  listed.forEach((product: any, index: number) => {
     const bookable = isPurchasable(product.status, pricingStatus.get(product.id));
     resolved.set(product.id, {
       id: product.id,
@@ -178,8 +239,9 @@ async function resolveProducts(db: any, productIds: string[]) {
       summary: translation.get(product.id)?.summary ?? null,
       href: `/build-your-trip/${product.id}`,
       bookable,
+      image_url: images[index] ?? null,
     });
-  }
+  });
   return resolved;
 }
 
@@ -370,20 +432,32 @@ export async function websiteNav(language?: string): Promise<PublicNavItem[]> {
   const fallback = await defaultLanguage(db);
   const wanted = language && language.trim() !== "" ? language : fallback;
 
-  const [items, pages] = await Promise.all([
-    db
-      .from("website_nav_items")
-      .select(
-        "id, destination_kind, destination_page_id, destination_product_id, destination_external_url, is_active, sort_order",
-      ),
+  const navColumns =
+    "id, destination_kind, destination_page_id, destination_product_id, destination_external_url, is_active, sort_order";
+  const [navRows, pages] = await Promise.all([
+    db.from("website_nav_items").select(navColumns),
     db.from("website_pages").select("id, slug, is_active"),
   ]);
 
   const slug = new Map<string, string | null>(
     (pages.data ?? []).map((p: any) => [p.id, p.is_active ? p.slug : null]),
   );
-  const active = visibleSorted(items.data ?? []);
+  const active = visibleSorted(navRows.data ?? []);
   const ids = active.map((i: any) => i.id);
+
+  const imageById = new Map<string, string | null>();
+  if (ids.length > 0) {
+    try {
+      const images = await db.from("website_nav_items").select("id, image_path").in("id", ids);
+      if (!images.error) {
+        for (const row of images.data ?? []) {
+          imageById.set(row.id as string, (row.image_path as string | null) ?? null);
+        }
+      }
+    } catch {
+      // image_path may not exist until the migration is applied
+    }
+  }
 
   const translations = ids.length
     ? await db
@@ -392,21 +466,29 @@ export async function websiteNav(language?: string): Promise<PublicNavItem[]> {
         .in("nav_item_id", ids)
     : { data: [] };
 
-  return active
-    .map((item: any) => {
-      const destination = resolveDestination({
-        kind: item.destination_kind,
-        pageSlug: item.destination_page_id ? (slug.get(item.destination_page_id) ?? null) : null,
-        productId: item.destination_product_id,
-        externalUrl: item.destination_external_url,
-      });
-      const text = pickTranslation<any>(
-        ((translations.data ?? []) as any[]).filter((t: any) => t.nav_item_id === item.id),
-        wanted,
-        fallback,
-      );
-      if (!destination || !text?.label) return null;
-      return { id: item.id, label: text.label, ...destination };
-    })
-    .filter((i: unknown): i is PublicNavItem => Boolean(i));
+  const items = (
+    await Promise.all(
+      active.map(async (item: any) => {
+        const destination = resolveDestination({
+          kind: item.destination_kind,
+          pageSlug: item.destination_page_id ? (slug.get(item.destination_page_id) ?? null) : null,
+          productId: item.destination_product_id,
+          externalUrl: item.destination_external_url,
+        });
+        const text = pickTranslation<any>(
+          ((translations.data ?? []) as any[]).filter((t: any) => t.nav_item_id === item.id),
+          wanted,
+          fallback,
+        );
+        if (!destination || !text?.label) return null;
+        return {
+          id: item.id,
+          label: text.label,
+          ...destination,
+          image_url: await signedMedia(db, imageById.get(item.id) ?? null),
+        };
+      }),
+    )
+  ).filter((i: unknown): i is PublicNavItem => Boolean(i));
+  return applyFirstWavesMenuLabel(items);
 }

@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Trash2, Upload } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { linkedComponentIds } from "@/lib/option-components";
@@ -10,12 +10,15 @@ import { linkOptionComponent, unlinkOptionComponent } from "@/lib/pricing.functi
 import { recordAdminAction } from "@/lib/admin-audit";
 import {
   FIELD_TYPES,
+  PRODUCT_MEDIA_BUCKET,
   SELECT_FIELD_TYPES,
+  productStepImagePath,
   type Field,
   type FieldOption,
   type ProductBundle,
   type Step,
 } from "@/lib/catalog";
+import { setStepImage } from "@/lib/catalog.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -163,6 +166,119 @@ export function ConfiguratorTab({ bundle, canEdit, reload }: Props) {
   );
 }
 
+function StepImageEditor({
+  productId,
+  step,
+  canEdit,
+  reload,
+}: {
+  productId: string;
+  step: Step;
+  canEdit: boolean;
+  reload: () => void;
+}) {
+  const save = useServerFn(setStepImage);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const imagePath = step.image_path ?? null;
+
+  const preview = useQuery({
+    queryKey: ["step-image", step.id, imagePath],
+    enabled: Boolean(imagePath),
+    queryFn: async () => {
+      const { data } = await supabase.storage
+        .from(PRODUCT_MEDIA_BUCKET)
+        .createSignedUrl(imagePath!, 3600);
+      return data?.signedUrl ?? null;
+    },
+  });
+
+  async function upload(files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const path = productStepImagePath(productId, step.id, file.name);
+      const { error } = await supabase.storage.from(PRODUCT_MEDIA_BUCKET).upload(path, file);
+      if (error) throw new Error(error.message);
+      await save({ data: { productId, stepId: step.id, image_path: path } });
+      toast.success("Step photo saved.");
+      reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "The image could not be uploaded.");
+    } finally {
+      setUploading(false);
+      if (fileInput.current) fileInput.current.value = "";
+    }
+  }
+
+  async function remove() {
+    setUploading(true);
+    try {
+      await save({ data: { productId, stepId: step.id, image_path: null } });
+      toast.success("Step photo removed.");
+      reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "The image could not be removed.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs">Photo for this step</Label>
+      <p className="text-xs text-muted-foreground">
+        Replaces the package photo on this step only. Leave empty to keep the package photo.
+      </p>
+      {imagePath ? (
+        preview.data ? (
+          <img
+            src={preview.data}
+            alt=""
+            className="h-28 w-full max-w-sm rounded-md border object-cover"
+          />
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            {preview.isPending ? "Loading preview…" : "Preview unavailable."}
+          </p>
+        )
+      ) : (
+        <p className="text-xs text-muted-foreground">Using the package photo.</p>
+      )}
+      {canEdit && (
+        <div className="flex flex-wrap gap-2">
+          <input
+            ref={fileInput}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => void upload(e.target.files)}
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={uploading}
+            onClick={() => fileInput.current?.click()}
+          >
+            <Upload className="mr-1.5 h-3.5 w-3.5" />
+            {imagePath ? "Replace photo" : "Upload photo"}
+          </Button>
+          {imagePath && (
+            <Button size="sm" variant="ghost" disabled={uploading} onClick={() => void remove()}>
+              Remove
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function StepEditor({
   bundle,
   step,
@@ -197,8 +313,12 @@ function StepEditor({
   }
 
   async function removeStep() {
+    const previousPath = step.image_path;
     const { error } = await supabase.from("steps").delete().eq("id", step.id);
     if (error) { toast.error(error.message); return; }
+    if (previousPath) {
+      await supabase.storage.from(PRODUCT_MEDIA_BUCKET).remove([previousPath]);
+    }
     await recordAdminAction("configurator_step_removed", "steps", step.internal_name);
     toast.success("Step removed.");
     reload();
@@ -264,6 +384,12 @@ function StepEditor({
           Active
         </label>
       </div>
+      <StepImageEditor
+        productId={bundle.product.id}
+        step={step}
+        canEdit={canEdit}
+        reload={reload}
+      />
       {canEdit && (
         <div className="flex gap-2">
           <Button size="sm" onClick={save}>

@@ -13,17 +13,11 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { PUBLIC_CART_KEY, PublicPage } from "@/components/public/SiteHeader";
+import { ConfiguratorQuantityStepper } from "@/components/public/ConfiguratorQuantityStepper";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { formatIdr } from "@/lib/public-catalog";
 import { priceDirectBooking } from "@/lib/direct-booking";
 import { bookCatalogueItem, getBookableItem } from "@/lib/direct-booking.functions";
@@ -31,12 +25,12 @@ import { bookCatalogueItem, getBookableItem } from "@/lib/direct-booking.functio
 export const Route = createFileRoute("/book/$catalogueId/$itemId")({
   head: () => ({
     meta: [
-      { title: "Book individually — Cimaja Boardriders" },
+      { title: "Book individually — West Java Riders" },
       {
         name: "description",
         content: "Book one item directly: accommodation, transport or motorbike in Cimaja.",
       },
-      { property: "og:title", content: "Book individually — Cimaja Boardriders" },
+      { property: "og:title", content: "Book individually — West Java Riders" },
       {
         property: "og:description",
         content: "Book one item directly: accommodation, transport or motorbike in Cimaja.",
@@ -169,36 +163,28 @@ function BookItemPage() {
                 <>
                   {item.variants.people.length > 0 && (
                     <div className="space-y-1.5">
-                      <Label>{item.variants.people_label}</Label>
-                      <Select value={people ?? ""} onValueChange={setPeople}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose…" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {item.variants.people.map((p) => (
-                            <SelectItem key={p.value} value={String(p.value)}>
-                              {p.value}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label id="book-people-label">{item.variants.people_label}</Label>
+                      <ConfiguratorQuantityStepper
+                        choices={item.variants.people.map((p) => p.value)}
+                        value={people ?? ""}
+                        labelledBy="book-people-label"
+                        decreaseLabel={`Decrease ${item.variants.people_label}`}
+                        increaseLabel={`Increase ${item.variants.people_label}`}
+                        onChange={setPeople}
+                      />
                     </div>
                   )}
                   {item.variants.hours.length > 0 && (
                     <div className="space-y-1.5">
-                      <Label>{item.variants.hours_label}</Label>
-                      <Select value={hours ?? ""} onValueChange={setHours}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose…" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {item.variants.hours.map((h) => (
-                            <SelectItem key={h.value} value={String(h.value)}>
-                              {h.value}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label id="book-hours-label">{item.variants.hours_label}</Label>
+                      <ConfiguratorQuantityStepper
+                        choices={item.variants.hours.map((h) => h.value)}
+                        value={hours ?? ""}
+                        labelledBy="book-hours-label"
+                        decreaseLabel={`Decrease ${item.variants.hours_label}`}
+                        increaseLabel={`Increase ${item.variants.hours_label}`}
+                        onChange={setHours}
+                      />
                     </div>
                   )}
                 </>

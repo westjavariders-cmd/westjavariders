@@ -9,6 +9,7 @@ import {
   parseValidityMonths,
   redemptionCheck,
   validUntil,
+  voucherQuestionLabel,
   validateGift,
 } from "@/lib/voucher";
 
@@ -127,6 +128,47 @@ describe("entitlement", () => {
     expect(gift.items[0]!.total_idr).toBeNull();
   });
 
+  it("prints short voucher names for the long configurator questions", () => {
+    const detailed = {
+      packages: [
+        {
+          package_id: "pk1",
+          product_title: "Beginners week",
+          option_labels: [
+            { label: "Do you want to rent a motorbike? — How many motorbikes?", value: "2" },
+            { label: "Do you want to rent a motorbike? — How many days?", value: "5" },
+            { label: "Do you want video+photo or video+videoanalysis?", value: "Video + photo" },
+            { label: "How many days you want to stay in Cimaja Area?", value: "7" },
+            { label: "Do you want to rent a Softboard?", value: "Yes" },
+            { label: "Do you want to rent a Fiber Board?", value: "Yes" },
+            { label: "Do you want to rent a motorbike?", value: "Yes" },
+            { label: "Do you need us to pick you up?", value: "Airport" },
+            { label: "Do you need us to drop you off somewhere?", value: "Station" },
+            { label: "Do you want to do other activities?", value: "Surf lesson" },
+            { label: "Choose your level", value: "Beginner" },
+          ],
+          total_idr: 1,
+        },
+      ],
+    };
+    const options = buildEntitlement({ ...base, snapshot: detailed, voucherType: "STANDARD" }).items[0]!
+      .options;
+    expect(options).toEqual([
+      { label: "How many motorbikes?", value: "2" },
+      { label: "How many days motorbike", value: "5" },
+      { label: "Media Options", value: "Video + photo" },
+      { label: "Days Cimaja", value: "7" },
+      { label: "Board Rent", value: "Yes" },
+      { label: "Board Rent", value: "Yes" },
+      { label: "Motorbike", value: "Yes" },
+      { label: "Pick Up", value: "Airport" },
+      { label: "Drop Off", value: "Station" },
+      { label: "Other activities", value: "Surf lesson" },
+      { label: "Choose your level", value: "Beginner" },
+    ]);
+    expect(voucherQuestionLabel("  Do you want to rent a motorbike? ")).toBe("Motorbike");
+  });
+
   it("rebuilds readable choices for older snapshots without saved labels", () => {
     const id = "288bc324-a6fb-4723-90c4-2806478853f5";
     const legacy = {
@@ -161,6 +203,53 @@ describe("entitlement", () => {
       { label: "Surflessonscatalogueprice", value: "Price per people" },
       { label: "Number of surfers", value: "1" },
       { label: "Number of sessions", value: "2" },
+    ]);
+  });
+
+  it("rebuilds one voucher line per multi-select activity", () => {
+    const lesson = "288bc324-a6fb-4723-90c4-2806478853f5";
+    const drone = "c1f780d5-bcb1-44df-84db-ac2561f14f53";
+    const legacy = {
+      packages: [
+        {
+          package_id: "pk1",
+          product_title: "Beginners week",
+          answers: {
+            activities: [lesson, drone],
+            [`activities__${lesson}_people`]: "2",
+            [`activities__${lesson}_hours`]: "3",
+            [`activities__${drone}_people`]: "1",
+            [`activities__${drone}_hours`]: "1",
+          },
+          catalogue_selections: [
+            {
+              variable_name: "activities",
+              item_id: lesson,
+              name: "Surf lesson",
+              people_label: "Surfers",
+              hours_label: "Days",
+            },
+            {
+              variable_name: "activities",
+              item_id: drone,
+              name: "Drone shot",
+              people_label: "People",
+              hours_label: "Days",
+            },
+          ],
+          total_idr: 900_000,
+        },
+      ],
+      customer: { full_name: "Ana Rivera" },
+    };
+    const built = buildEntitlement({ ...base, snapshot: legacy, voucherType: "STANDARD" });
+    expect(built.items[0]!.options).toEqual([
+      { label: "Activities", value: "Surf lesson" },
+      { label: "Surfers", value: "2" },
+      { label: "Days", value: "3" },
+      { label: "Activities", value: "Drone shot" },
+      { label: "People", value: "1" },
+      { label: "Days", value: "1" },
     ]);
   });
 
