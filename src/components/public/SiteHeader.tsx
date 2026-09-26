@@ -396,6 +396,9 @@ export function PublicPage({
         >
           {children}
         </main>
+        <footer className="px-4 pb-10 md:px-8 lg:px-10 xl:px-12">
+          <p className="text-xs text-muted-foreground">Services offered by Cimaja Boardriders</p>
+        </footer>
       </div>
     </div>
   );

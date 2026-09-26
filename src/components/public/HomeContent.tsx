@@ -128,7 +128,6 @@ export function HomeContent({ page }: { page: PublicWebsitePage | null }) {
             Staff sign in
           </Link>
         </p>
-        <p className="text-xs text-muted-foreground">Services offered by Cimaja Boardriders</p>
       </div>
     </div>
   );

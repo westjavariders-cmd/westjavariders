@@ -126,6 +126,7 @@ export function LandingScreen({ landing }: { landing: PublicLanding }) {
             </a>
           )}
         </div>
+        <p className="mt-10 text-[11px] text-neutral-200/65">Services offered by Cimaja Boardriders</p>
       </main>
     </div>
   );
