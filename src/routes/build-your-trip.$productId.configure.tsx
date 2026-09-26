@@ -154,7 +154,6 @@ function ConfigurePage() {
               savedPromo={session.data.draft.promo_code ?? null}
               catalogue={product.data?.catalogue ?? {}}
               productTitle={product.data!.product.title}
-              productSummary={product.data!.product.summary}
               imageUrl={product.data!.product.image_url}
               stepImageUrls={product.data!.stepImageUrls ?? {}}
             />

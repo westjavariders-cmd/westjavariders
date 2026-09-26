@@ -11,6 +11,7 @@ import {
   DESTINATION_KINDS,
   DESTINATION_LABELS,
   HEADER_BACKGROUND_SETTING_KEY,
+  LANDING_CTA_IMAGE_SETTING_KEY,
   SITE_BACKGROUND_SETTING_KEY,
   WEBSITE_MEDIA_BUCKET,
   type DestinationKind,
@@ -94,12 +95,13 @@ function WebsiteLandingScreen() {
       const { data, error } = await supabase
         .from("settings")
         .select("key, value")
-        .in("key", [SITE_BACKGROUND_SETTING_KEY, HEADER_BACKGROUND_SETTING_KEY]);
+        .in("key", [SITE_BACKGROUND_SETTING_KEY, HEADER_BACKGROUND_SETTING_KEY, LANDING_CTA_IMAGE_SETTING_KEY]);
       if (error) throw new Error(error.message);
       const byKey = new Map((data ?? []).map((row) => [row.key as string, ((row.value as string) ?? "").trim()]));
       return {
         site: byKey.get(SITE_BACKGROUND_SETTING_KEY) || null,
         header: byKey.get(HEADER_BACKGROUND_SETTING_KEY) || null,
+        cta: byKey.get(LANDING_CTA_IMAGE_SETTING_KEY) || null,
       };
     },
   });
@@ -118,6 +120,7 @@ function WebsiteLandingScreen() {
     title: "",
     subtitle: "",
     cta_label: "",
+    cta_image_path: null as string | null,
   });
 
   useEffect(() => {
@@ -137,6 +140,7 @@ function WebsiteLandingScreen() {
       title: text?.title ?? "",
       subtitle: text?.subtitle ?? "",
       cta_label: text?.cta_label ?? "",
+      cta_image_path: chromeImages.data?.cta ?? null,
     });
   }, [landing.data, translation.data, chromeImages.data]);
 
@@ -145,11 +149,13 @@ function WebsiteLandingScreen() {
     image: string | null;
     site: string | null;
     header: string | null;
+    cta: string | null;
   }>({
     video: null,
     image: null,
     site: null,
     header: null,
+    cta: null,
   });
 
   useEffect(() => {
@@ -160,26 +166,28 @@ function WebsiteLandingScreen() {
       return data?.signedUrl ?? null;
     }
     void (async () => {
-      const [video, image, site, header] = await Promise.all([
+      const [video, image, site, header, cta] = await Promise.all([
         sign(form.video_path),
         sign(form.image_path),
         sign(form.site_background_path),
         sign(form.header_background_path),
+        sign(form.cta_image_path),
       ]);
-      if (!cancelled) setPreviews({ video, image, site, header });
+      if (!cancelled) setPreviews({ video, image, site, header, cta });
     })();
     return () => {
       cancelled = true;
     };
-  }, [form.video_path, form.image_path, form.site_background_path, form.header_background_path]);
+  }, [form.video_path, form.image_path, form.site_background_path, form.header_background_path, form.cta_image_path]);
 
   const videoInput = useRef<HTMLInputElement>(null);
   const imageInput = useRef<HTMLInputElement>(null);
   const siteBackgroundInput = useRef<HTMLInputElement>(null);
   const headerBackgroundInput = useRef<HTMLInputElement>(null);
+  const ctaImageInput = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
-  async function upload(files: FileList | null, kind: "video" | "image" | "site" | "header") {
+  async function upload(files: FileList | null, kind: "video" | "image" | "site" | "header" | "cta") {
     const file = files?.[0];
     if (!file) return;
     setUploading(true);
@@ -190,7 +198,9 @@ function WebsiteLandingScreen() {
           ? `site-background/${Date.now()}-${safeName}`
           : kind === "header"
             ? `header-background/${Date.now()}-${safeName}`
-            : `landing/${kind}-${Date.now()}-${safeName}`;
+            : kind === "cta"
+              ? `landing/cta-${Date.now()}-${safeName}`
+              : `landing/${kind}-${Date.now()}-${safeName}`;
       const { error } = await supabase.storage.from(WEBSITE_MEDIA_BUCKET).upload(path, file);
       if (error) throw new Error(error.message);
       setForm((f) =>
@@ -200,7 +210,9 @@ function WebsiteLandingScreen() {
             ? { ...f, site_background_path: path }
             : kind === "header"
               ? { ...f, header_background_path: path }
-              : { ...f, image_path: path },
+              : kind === "cta"
+                ? { ...f, cta_image_path: path }
+                : { ...f, image_path: path },
       );
       toast.success("Uploaded. Save to keep it.");
     } catch (e) {
@@ -228,6 +240,7 @@ function WebsiteLandingScreen() {
           title: form.title,
           subtitle: form.subtitle,
           cta_label: form.cta_label,
+          cta_image_path: form.cta_image_path,
         },
       });
       await persistChrome({ data: { slot: "site", image_path: form.site_background_path } });
@@ -498,6 +511,42 @@ function WebsiteLandingScreen() {
               placeholder="ENTER WEST JAVA RIDERS"
               onChange={(e) => setForm((f) => ({ ...f, cta_label: e.target.value }))}
             />
+          </div>
+          <div className="space-y-2">
+            <Label>Button photo</Label>
+            <p className="text-xs text-muted-foreground">
+              Optional. Fills the button behind the text. The button stays the same size.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                ref={ctaImageInput}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => void upload(e.target.files, "cta")}
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!canEdit || uploading}
+                onClick={() => ctaImageInput.current?.click()}
+              >
+                {form.cta_image_path ? "Replace photo" : "Upload photo"}
+              </Button>
+              {form.cta_image_path && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={!canEdit}
+                  onClick={() => setForm((f) => ({ ...f, cta_image_path: null }))}
+                >
+                  Remove
+                </Button>
+              )}
+            </div>
+            {previews.cta && (
+              <img src={previews.cta} alt="" className="h-12 max-w-xs rounded-md object-cover" />
+            )}
           </div>
           <div className="space-y-1">
             <Label htmlFor="landing-cta-kind">Goes to</Label>

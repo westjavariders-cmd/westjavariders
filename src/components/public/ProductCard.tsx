@@ -5,12 +5,11 @@ import { cn } from "@/lib/utils";
 type ProductCardProps = {
   productId: string;
   title: string;
-  summary: string | null;
   imageUrl: string | null;
   bookable: boolean;
 };
 
-export function ProductCard({ productId, title, summary, imageUrl, bookable }: ProductCardProps) {
+export function ProductCard({ productId, title, imageUrl, bookable }: ProductCardProps) {
   const inner = (
     <article
       className={cn(
@@ -42,15 +41,10 @@ export function ProductCard({ productId, title, summary, imageUrl, bookable }: P
         )}
       />
 
-      <div className="relative z-10 mt-auto flex w-full flex-col justify-end gap-2 p-5 sm:p-6">
+      <div className="relative z-10 mt-auto flex w-full flex-col justify-end p-5 sm:p-6">
         <h3 className="text-balance text-2xl font-semibold tracking-tight text-neutral-50 sm:text-3xl">
           {title}
         </h3>
-        {summary && (
-          <p className="max-w-md line-clamp-2 text-sm leading-relaxed text-neutral-200/90 sm:text-[0.95rem]">
-            {summary}
-          </p>
-        )}
         {bookable ? (
           <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.22em] text-neutral-50">
             View trip

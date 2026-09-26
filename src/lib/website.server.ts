@@ -11,6 +11,7 @@ import { isPurchasable } from "@/lib/pricing";
 import {
   WEBSITE_MEDIA_BUCKET,
   HEADER_BACKGROUND_SETTING_KEY,
+  LANDING_CTA_IMAGE_SETTING_KEY,
   SITE_BACKGROUND_SETTING_KEY,
   isPubliclyListable,
   pickTranslation,
@@ -115,7 +116,7 @@ export type PublicLanding = {
   video_url: string | null;
   image_url: string | null;
   image_alt: string | null;
-  cta: { label: string; href: string; external: boolean } | null;
+  cta: { label: string; href: string; external: boolean; image_url: string | null } | null;
   language: string;
 };
 
@@ -136,7 +137,7 @@ export async function websiteLanding(language?: string): Promise<PublicLanding |
     .maybeSingle();
   if (!landing || landing.is_active !== true) return null;
 
-  const [translations, ctaPage, video, image] = await Promise.all([
+  const [translations, ctaPage, video, image, ctaImageSetting] = await Promise.all([
     db
       .from("website_landing_translations")
       .select("language_code, title, subtitle, cta_label")
@@ -146,6 +147,7 @@ export async function websiteLanding(language?: string): Promise<PublicLanding |
       : Promise.resolve({ data: null }),
     signedMedia(db, landing.video_path),
     signedMedia(db, landing.image_path),
+    db.from("settings").select("value").eq("key", LANDING_CTA_IMAGE_SETTING_KEY).maybeSingle(),
   ]);
 
   const text = pickTranslation<any>((translations.data ?? []) as any[], wanted, fallback);
@@ -155,6 +157,9 @@ export async function websiteLanding(language?: string): Promise<PublicLanding |
     productId: landing.cta_product_id,
     externalUrl: landing.cta_external_url,
   });
+  const ctaImagePath =
+    typeof ctaImageSetting.data?.value === "string" ? ctaImageSetting.data.value.trim() : "";
+  const cta_image_url = await signedMedia(db, ctaImagePath || null);
 
   return {
     title: text?.title ?? null,
@@ -162,7 +167,7 @@ export async function websiteLanding(language?: string): Promise<PublicLanding |
     video_url: video,
     image_url: image,
     image_alt: landing.image_alt ?? null,
-    cta: destination && text?.cta_label ? { label: text.cta_label, ...destination } : null,
+    cta: destination && text?.cta_label ? { label: text.cta_label, ...destination, image_url: cta_image_url } : null,
     language: wanted,
   };
 }

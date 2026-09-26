@@ -13,10 +13,12 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   BLOCK_KINDS,
   DESTINATION_KINDS,
+  LANDING_CTA_IMAGE_SETTING_KEY,
   MEDIA_KINDS,
   WEBSITE_MEDIA_BUCKET,
   chromeImageSettingKey,
   isChromeImagePath,
+  isLandingCtaImagePath,
   isSafeSlug,
   type WebsiteChromeSlot,
 } from "@/lib/website";
@@ -600,6 +602,7 @@ export const saveLanding = createServerFn({ method: "POST" })
         title: text(200),
         subtitle: text(500),
         cta_label: text(80),
+        cta_image_path: z.string().max(500).nullable().optional(),
       })
       .parse(data),
   )
@@ -649,11 +652,44 @@ export const saveLanding = createServerFn({ method: "POST" })
       data.language,
       { title: data.title ?? null, subtitle: data.subtitle ?? null, cta_label: data.cta_label ?? null },
     );
+    if (data.cta_image_path !== undefined) {
+      await saveLandingCtaImage(supabase, data.cta_image_path);
+    }
     await audit(supabase, userId, "website.landing.updated", "website_landing", landingId, null, {
       is_active: data.is_active,
     });
     return { id: landingId };
   });
+
+async function saveLandingCtaImage(supabase: any, imagePath: string | null) {
+  const next = imagePath?.trim() || null;
+  if (next && !isLandingCtaImagePath(next)) fail("This button photo could not be saved.");
+  const key = LANDING_CTA_IMAGE_SETTING_KEY;
+  const { data: existing } = await supabase.from("settings").select("value").eq("key", key).maybeSingle();
+  const previous = typeof existing?.value === "string" && existing.value.trim() ? existing.value.trim() : null;
+
+  if (next) {
+    if (existing) {
+      const { error } = await supabase.from("settings").update({ value: next }).eq("key", key);
+      if (error) fail("The button photo could not be saved.");
+    } else {
+      const { error } = await supabase.from("settings").insert({
+        key,
+        value: next,
+        value_type: "string",
+        description: "Photo filling the entry-screen button.",
+      });
+      if (error) fail("The button photo could not be saved.");
+    }
+  } else if (existing) {
+    const { error } = await supabase.from("settings").delete().eq("key", key);
+    if (error) fail("The button photo could not be removed.");
+  }
+
+  if (previous && previous !== next) {
+    await supabase.storage.from(WEBSITE_MEDIA_BUCKET).remove([previous]);
+  }
+}
 
 export const getWebsiteChromeImages = createServerFn({ method: "POST" })
   .inputValidator((data) => z.object({}).parse(data ?? {}))

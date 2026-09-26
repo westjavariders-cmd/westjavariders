@@ -64,7 +64,6 @@ function ProductList({ products }: { products: PublicBlock["products"] }) {
           key={product.id}
           productId={product.id}
           title={product.title}
-          summary={product.summary}
           imageUrl={product.image_url}
           bookable={product.bookable}
         />
@@ -112,11 +111,6 @@ function CatalogueList({ items }: { items: PublicBlock["catalogue_items"] }) {
             <h3 className="text-balance text-2xl font-semibold tracking-tight text-neutral-50">
               {item.name}
             </h3>
-            {item.description && (
-              <p className="max-w-md line-clamp-2 text-sm leading-relaxed text-neutral-200/90">
-                {item.description}
-              </p>
-            )}
             {item.from_price_idr != null && (
               <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-neutral-50">
                 From{" "}
@@ -346,12 +340,10 @@ function sectionCover(section: PublicSection): { url: string; alt: string } | nu
 function PhotoEntryCard({
   href,
   title,
-  subtitle,
   cover,
 }: {
   href: string;
   title: string | null;
-  subtitle: string | null;
   cover: { url: string; alt: string } | null;
 }) {
   return (
@@ -370,11 +362,10 @@ function PhotoEntryCard({
           <div className="absolute inset-0 bg-secondary" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-black/15" />
-        <div className="relative z-10 mt-auto flex w-full flex-col justify-end gap-2 p-5 sm:p-6">
+        <div className="relative z-10 mt-auto flex w-full flex-col justify-end p-5 sm:p-6">
           {title && (
             <h2 className="text-balance text-2xl font-semibold tracking-tight text-neutral-50 sm:text-3xl">{title}</h2>
           )}
-          {subtitle && <p className="max-w-md text-sm leading-relaxed text-neutral-200/90">{subtitle}</p>}
           <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.22em] text-neutral-50">
             View
             <span aria-hidden="true" className="ml-2">
@@ -405,7 +396,6 @@ function CatalogueTileGrid({
           key={block.id}
           href={`/pages/${pageSlug}/${groupKey}/${keys.get(block.id) ?? block.id}`}
           title={blockLabel(block) || null}
-          subtitle={block.body}
           cover={blockCover(block, blockLabel(block))}
         />
       ))}
@@ -533,7 +523,6 @@ export function WebsiteRenderer({
                 key={section.id}
                 href={`/pages/${page.slug}/${groupKeys.get(section.id) ?? section.id}`}
                 title={section.title}
-                subtitle={section.subtitle}
                 cover={sectionCover(section)}
               />
             ))}

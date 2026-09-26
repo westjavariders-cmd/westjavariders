@@ -66,16 +66,11 @@ export function DoorCard({ block, featured = false, layout = "mosaic" }: DoorCar
         )}
       />
 
-      <div className="relative z-10 mt-auto flex w-full flex-col justify-end gap-2 p-5 sm:p-6">
+      <div className="relative z-10 mt-auto flex w-full flex-col justify-end p-5 sm:p-6">
         {block.title && (
           <h2 className="text-balance text-2xl font-semibold tracking-tight text-neutral-50 sm:text-3xl">
             {block.title}
           </h2>
-        )}
-        {block.body && (
-          <p className="max-w-md text-sm leading-relaxed text-neutral-200/90 sm:text-[0.95rem]">
-            {block.body}
-          </p>
         )}
         {block.cta?.label ? (
           <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.22em] text-neutral-50">

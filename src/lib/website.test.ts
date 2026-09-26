@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   assignGroupKeys,
   isChromeImagePath,
+  isLandingCtaImagePath,
   isSafeSlug,
   isSiteBackgroundPath,
   moveInOrder,
@@ -128,6 +129,12 @@ describe("chrome background storage paths", () => {
     expect(isChromeImagePath("header", "site-background/123-cimaja.jpg")).toBe(false);
     expect(isSiteBackgroundPath("landing/image.jpg")).toBe(false);
     expect(isSiteBackgroundPath("../secret")).toBe(false);
+  });
+
+  it("accepts the entry-button photo only under landing/cta-", () => {
+    expect(isLandingCtaImagePath("landing/cta-123-enter.jpg")).toBe(true);
+    expect(isLandingCtaImagePath("landing/image-123.jpg")).toBe(false);
+    expect(isLandingCtaImagePath("site-background/cta.jpg")).toBe(false);
   });
 });
 

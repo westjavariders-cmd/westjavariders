@@ -93,7 +93,6 @@ export function ConfiguratorForm({
   savedPromo,
   catalogue = {},
   productTitle,
-  productSummary,
   imageUrl,
   stepImageUrls = {},
 }: {
@@ -104,7 +103,6 @@ export function ConfiguratorForm({
   /** Active catalogue items per catalogue, resolved server-side. */
   catalogue?: CatalogueItemsByKey;
   productTitle: string;
-  productSummary: string | null;
   imageUrl: string | null;
   /** Signed URLs for optional per-step photos. Missing keys keep the package image. */
   stepImageUrls?: Record<string, string>;
@@ -276,7 +274,6 @@ export function ConfiguratorForm({
     <div className="space-y-10">
       <ConfiguratorPackageTile
         title={productTitle}
-        summary={productSummary}
         imageUrl={stepImageUrls[step.id] ?? imageUrl}
       />
 
@@ -646,11 +643,9 @@ export function ConfiguratorForm({
  */
 function ConfiguratorPackageTile({
   title,
-  summary,
   imageUrl,
 }: {
   title: string;
-  summary: string | null;
   imageUrl: string | null;
 }) {
   return (
@@ -672,15 +667,10 @@ function ConfiguratorPackageTile({
         <div className="absolute inset-0 bg-secondary" aria-hidden="true" />
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-black/15" />
-      <div className="relative z-10 mt-auto flex w-full flex-col justify-end gap-2 p-5 sm:p-6">
+      <div className="relative z-10 mt-auto flex w-full flex-col justify-end p-5 sm:p-6">
         <h1 className="text-balance text-2xl font-semibold tracking-tight text-neutral-50 sm:text-3xl lg:text-4xl">
           {title}
         </h1>
-        {summary ? (
-          <p className="max-w-md line-clamp-2 text-sm leading-relaxed text-neutral-200/90 sm:text-[0.95rem]">
-            {summary}
-          </p>
-        ) : null}
       </div>
     </article>
   );

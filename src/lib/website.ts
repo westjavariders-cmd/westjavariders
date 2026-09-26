@@ -12,6 +12,7 @@ export const WEBSITE_MEDIA_BUCKET = "website-media";
 /** Settings keys for chrome photos (public pages + header bar). */
 export const SITE_BACKGROUND_SETTING_KEY = "website_site_background_path";
 export const HEADER_BACKGROUND_SETTING_KEY = "website_header_background_path";
+export const LANDING_CTA_IMAGE_SETTING_KEY = "website_landing_cta_image_path";
 export const WEBSITE_CHROME_SETTING_KEYS = [SITE_BACKGROUND_SETTING_KEY, HEADER_BACKGROUND_SETTING_KEY] as const;
 export type WebsiteChromeSlot = "site" | "header";
 
@@ -26,6 +27,11 @@ export function isChromeImagePath(slot: WebsiteChromeSlot, path: string): boolea
 
 export function isSiteBackgroundPath(path: string): boolean {
   return isChromeImagePath("site", path);
+}
+
+/** Photo that fills the entry-screen button, stored under website-media. */
+export function isLandingCtaImagePath(path: string): boolean {
+  return /^landing\/cta-[A-Za-z0-9._-]+$/.test(path);
 }
 
 export const BLOCK_KINDS = [
