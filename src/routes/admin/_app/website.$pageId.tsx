@@ -7,6 +7,7 @@ import { ArrowDown, ArrowUp, Plus, Trash2, Upload } from "lucide-react";
 
 import { PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
+import { prepareImageForUpload } from "@/lib/encode-upload-image";
 import {
   deleteBlock,
   deleteSection,
@@ -303,9 +304,9 @@ function WebsitePageEditor() {
     if (!file || !sectionDraft) return;
     setSectionUploading(true);
     try {
-      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-      const path = `section-buttons/${crypto.randomUUID()}-${safe}`;
-      const { error } = await supabase.storage.from(WEBSITE_MEDIA_BUCKET).upload(path, file);
+      const image = await prepareImageForUpload(file);
+      const path = `section-buttons/${crypto.randomUUID()}-${image.name}`;
+      const { error } = await supabase.storage.from(WEBSITE_MEDIA_BUCKET).upload(path, image);
       if (error) throw new Error(error.message);
       setSectionDraft({ ...sectionDraft, image_path: path });
       toast.success("Photo uploaded. Save the section to keep it.");
@@ -432,9 +433,10 @@ function WebsitePageEditor() {
     }
     setUploading(true);
     try {
-      const safe = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "-");
+      const toStore = kind === "video" ? file : await prepareImageForUpload(file);
+      const safe = toStore.name.replace(/[^a-zA-Z0-9.\-_]/g, "-");
       const path = `blocks/${crypto.randomUUID()}-${safe}`;
-      const { error } = await supabase.storage.from(WEBSITE_MEDIA_BUCKET).upload(path, file);
+      const { error } = await supabase.storage.from(WEBSITE_MEDIA_BUCKET).upload(path, toStore);
       if (error) throw new Error(error.message);
       setBlockDraft({ ...blockDraft, media_kind: kind, media_path: path });
       const { data } = await supabase.storage.from(WEBSITE_MEDIA_BUCKET).createSignedUrl(path, 3600);

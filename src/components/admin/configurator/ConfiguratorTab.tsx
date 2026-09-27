@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { ChevronDown, ChevronRight, Plus, Trash2, Upload } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { prepareImageForUpload } from "@/lib/encode-upload-image";
 import { linkedComponentIds } from "@/lib/option-components";
 import { linkOptionComponent, unlinkOptionComponent } from "@/lib/pricing.functions";
 import { recordAdminAction } from "@/lib/admin-audit";
@@ -202,8 +203,9 @@ function StepImageEditor({
     }
     setUploading(true);
     try {
-      const path = productStepImagePath(productId, step.id, file.name);
-      const { error } = await supabase.storage.from(PRODUCT_MEDIA_BUCKET).upload(path, file);
+      const image = await prepareImageForUpload(file);
+      const path = productStepImagePath(productId, step.id, image.name);
+      const { error } = await supabase.storage.from(PRODUCT_MEDIA_BUCKET).upload(path, image);
       if (error) throw new Error(error.message);
       await save({ data: { productId, stepId: step.id, image_path: path } });
       toast.success("Step photo saved.");

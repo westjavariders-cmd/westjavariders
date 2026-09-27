@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, Star, Trash2, Upload } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { PHOTO_BUCKET, moveItem, type AccommodationPhoto } from "@/lib/accommodation";
+import { prepareImageForUpload } from "@/lib/encode-upload-image";
 import { addPhoto, deletePhoto, reorderPhotos, setPrimaryPhoto } from "@/lib/accommodation.functions";
 import { Button } from "@/components/ui/button";
 
@@ -50,9 +51,9 @@ export function PhotoManager({ owner, canEdit }: { owner: Owner; canEdit: boolea
     setBusy(true);
     try {
       for (const file of Array.from(files)) {
-        const safe = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "-");
-        const path = `${column}/${value}/${crypto.randomUUID()}-${safe}`;
-        const { error } = await supabase.storage.from(PHOTO_BUCKET).upload(path, file);
+        const image = await prepareImageForUpload(file);
+        const path = `${column}/${value}/${crypto.randomUUID()}-${image.name}`;
+        const { error } = await supabase.storage.from(PHOTO_BUCKET).upload(path, image);
         if (error) throw new Error(error.message);
         await add({
           data:

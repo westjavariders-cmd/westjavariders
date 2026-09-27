@@ -8,6 +8,7 @@ import { Upload } from "lucide-react";
 import { PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { setProductConfigureCtaImage, setProductImage, setProductLandingImage, setProductStatus } from "@/lib/catalog.functions";
+import { prepareImageForUpload } from "@/lib/encode-upload-image";
 import { recordAdminAction } from "@/lib/admin-audit";
 import {
   MASTER_LANGUAGE,
@@ -184,13 +185,14 @@ function PackageImageEditor({
     }
     setUploading(true);
     try {
+      const image = await prepareImageForUpload(file);
       const path =
         slot === "landing"
-          ? productLandingImagePath(productId, file.name)
+          ? productLandingImagePath(productId, image.name)
           : slot === "cta"
-            ? productConfigureCtaImagePath(productId, file.name)
-            : productImagePath(productId, file.name);
-      const { error } = await supabase.storage.from(PRODUCT_MEDIA_BUCKET).upload(path, file);
+            ? productConfigureCtaImagePath(productId, image.name)
+            : productImagePath(productId, image.name);
+      const { error } = await supabase.storage.from(PRODUCT_MEDIA_BUCKET).upload(path, image);
       if (error) throw new Error(error.message);
       if (slot === "landing") await saveLanding({ data: { productId, landing_image_path: path } });
       else if (slot === "cta") await saveCta({ data: { productId, configure_cta_image_path: path } });

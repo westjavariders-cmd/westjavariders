@@ -7,6 +7,7 @@ import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 
 import { PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
+import { prepareImageForUpload } from "@/lib/encode-upload-image";
 import { deleteNavItem, reorderNavItems, saveNavItem } from "@/lib/website.functions";
 import {
   DESTINATION_KINDS,
@@ -213,9 +214,9 @@ function WebsiteNavigationScreen() {
     if (!file || !draft?.id) return;
     setUploading(true);
     try {
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-      const path = `nav/${draft.id}/${Date.now()}-${safeName}`;
-      const { error } = await supabase.storage.from(WEBSITE_MEDIA_BUCKET).upload(path, file);
+      const image = await prepareImageForUpload(file);
+      const path = `nav/${draft.id}/${Date.now()}-${image.name}`;
+      const { error } = await supabase.storage.from(WEBSITE_MEDIA_BUCKET).upload(path, image);
       if (error) throw new Error(error.message);
       setDraft({ ...draft, image_path: path });
       toast.success("Uploaded. Save to keep it.");

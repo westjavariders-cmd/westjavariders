@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
+import { prepareImageForUpload } from "@/lib/encode-upload-image";
 import { saveChromeImage, saveLanding } from "@/lib/website.functions";
 import {
   DESTINATION_KINDS,
@@ -205,7 +206,8 @@ function WebsiteLandingScreen() {
     if (!file) return;
     setUploading(true);
     try {
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+      const toStore = kind === "video" ? file : await prepareImageForUpload(file);
+      const safeName = toStore.name.replace(/[^a-zA-Z0-9._-]/g, "-");
       const path =
         kind === "site"
           ? `site-background/${Date.now()}-${safeName}`
@@ -216,7 +218,7 @@ function WebsiteLandingScreen() {
               : kind === "cta"
                 ? `landing/cta-${Date.now()}-${safeName}`
                 : `landing/${kind}-${Date.now()}-${safeName}`;
-      const { error } = await supabase.storage.from(WEBSITE_MEDIA_BUCKET).upload(path, file);
+      const { error } = await supabase.storage.from(WEBSITE_MEDIA_BUCKET).upload(path, toStore);
       if (error) throw new Error(error.message);
       setForm((f) =>
         kind === "video"
