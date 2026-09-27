@@ -12,7 +12,7 @@ import { DoorCard } from "@/components/public/DoorCard";
 import { ProductCard } from "@/components/public/ProductCard";
 import { cn } from "@/lib/utils";
 import { applyHomeTripDoors, applyNavDestinationsToHomeDoors, applyNavImagesToHomeDoors, type HomeNavImage } from "@/lib/home-trip-doors";
-import { HOME_SLUG, assignGroupKeys } from "@/lib/website";
+import { HOME_SLUG, assignGroupKeys, pickCatalogueTilePhoto } from "@/lib/website";
 import type { PublicBlock, PublicSection, PublicWebsitePage } from "@/lib/website.server";
 
 function Cta({ cta }: { cta: NonNullable<PublicBlock["cta"]> }) {
@@ -324,9 +324,10 @@ function blockLabel(block: PublicBlock): string {
 
 function blockCover(block: PublicBlock, fallbackAlt: string): { url: string; alt: string } | null {
   const item = block.catalogue_items.find((entry) => entry.photo_url);
-  if (item?.photo_url) return { url: item.photo_url, alt: blockLabel(block) || item.name };
-  if (block.media?.kind === "image") return { url: block.media.url, alt: fallbackAlt };
-  return null;
+  const dedicated = block.media?.kind === "image" ? block.media.url : null;
+  const url = pickCatalogueTilePhoto(dedicated, item?.photo_url);
+  if (!url) return null;
+  return { url, alt: fallbackAlt || blockLabel(block) || item?.name || "" };
 }
 
 function sectionCover(section: PublicSection): { url: string; alt: string } | null {

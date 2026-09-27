@@ -424,7 +424,12 @@ function WebsitePageEditor() {
     if (!files || files.length === 0 || !blockDraft) return;
     const file = files[0];
     if (!file) return;
-    const kind = file.type.startsWith("video/") ? "video" : "image";
+    const kind =
+      blockDraft.block_kind === "catalogue" || !file.type.startsWith("video/") ? "image" : "video";
+    if (blockDraft.block_kind === "catalogue" && !file.type.startsWith("image/")) {
+      toast.error("Use a photo for this button.");
+      return;
+    }
     setUploading(true);
     try {
       const safe = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "-");
@@ -434,7 +439,11 @@ function WebsitePageEditor() {
       setBlockDraft({ ...blockDraft, media_kind: kind, media_path: path });
       const { data } = await supabase.storage.from(WEBSITE_MEDIA_BUCKET).createSignedUrl(path, 3600);
       setMediaPreview(data?.signedUrl ?? null);
-      toast.success("Media uploaded. Save the block to keep it.");
+      toast.success(
+        blockDraft.block_kind === "catalogue"
+          ? "Photo uploaded. Save the block to keep it."
+          : "Media uploaded. Save the block to keep it.",
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "This file could not be uploaded.");
     } finally {
@@ -789,18 +798,35 @@ function WebsitePageEditor() {
             </div>
 
             <div className="space-y-2">
-              <Label>Image or video</Label>
+              {blockDraft.block_kind === "catalogue" ? (
+                <>
+                  <Label>Catalogue button photo</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Optional. Fills this catalogue tile in Book individually. Leave empty to use a photo from an item inside.
+                  </p>
+                </>
+              ) : (
+                <Label>Image or video</Label>
+              )}
               <input
                 ref={fileInput}
                 type="file"
-                accept="image/*,video/*"
+                accept={blockDraft.block_kind === "catalogue" ? "image/*" : "image/*,video/*"}
                 className="hidden"
                 onChange={(e) => void uploadMedia(e.target.files)}
               />
               <div className="flex items-center gap-2">
                 <Button size="sm" variant="outline" disabled={uploading} onClick={() => fileInput.current?.click()}>
                   <Upload className="mr-1.5 h-3.5 w-3.5" />
-                  {uploading ? "Uploading…" : blockDraft.media_path ? "Replace media" : "Upload media"}
+                  {uploading
+                    ? "Uploading…"
+                    : blockDraft.block_kind === "catalogue"
+                      ? blockDraft.media_path
+                        ? "Replace photo"
+                        : "Upload photo"
+                      : blockDraft.media_path
+                        ? "Replace media"
+                        : "Upload media"}
                 </Button>
                 {blockDraft.media_path && (
                   <Button
@@ -811,14 +837,14 @@ function WebsitePageEditor() {
                       setMediaPreview(null);
                     }}
                   >
-                    Remove media
+                    {blockDraft.block_kind === "catalogue" ? "Remove photo" : "Remove media"}
                   </Button>
                 )}
               </div>
               {mediaPreview && blockDraft.media_kind === "image" && (
                 <img src={mediaPreview} alt="" className="h-32 w-auto rounded-md border" />
               )}
-              {mediaPreview && blockDraft.media_kind === "video" && (
+              {mediaPreview && blockDraft.media_kind === "video" && blockDraft.block_kind !== "catalogue" && (
                 <video src={mediaPreview} controls className="h-32 w-auto rounded-md border" />
               )}
             </div>

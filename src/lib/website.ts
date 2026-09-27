@@ -46,6 +46,16 @@ export function isSectionButtonImagePath(path: string): boolean {
   return /^section-buttons\/[A-Za-z0-9._-]+$/.test(path);
 }
 
+/** Catalogue group tiles prefer the block photo, then a photo from an item inside. */
+export function pickCatalogueTilePhoto(
+  buttonImageUrl: string | null | undefined,
+  itemPhotoUrl: string | null | undefined,
+): string | null {
+  if (buttonImageUrl) return buttonImageUrl;
+  if (itemPhotoUrl) return itemPhotoUrl;
+  return null;
+}
+
 export const BLOCK_KINDS = [
   "hero",
   "image_text",

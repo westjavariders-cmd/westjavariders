@@ -5,6 +5,7 @@ import {
   isChromeImagePath,
   isLandingCtaImagePath,
   isSectionButtonImagePath,
+  pickCatalogueTilePhoto,
   isSafeSlug,
   isSiteBackgroundPath,
   moveInOrder,
@@ -144,6 +145,19 @@ describe("chrome background storage paths", () => {
     expect(isSectionButtonImagePath("section-buttons/abc-surf.jpg")).toBe(true);
     expect(isSectionButtonImagePath("blocks/abc-surf.jpg")).toBe(false);
     expect(isSectionButtonImagePath("../secret")).toBe(false);
+  });
+});
+
+describe("catalogue tile photos", () => {
+  it("prefers the catalogue button photo over an item photo", () => {
+    expect(pickCatalogueTilePhoto("https://cdn/button.jpg", "https://cdn/item.jpg")).toBe(
+      "https://cdn/button.jpg",
+    );
+  });
+
+  it("falls back to an item photo when the button has none", () => {
+    expect(pickCatalogueTilePhoto(null, "https://cdn/item.jpg")).toBe("https://cdn/item.jpg");
+    expect(pickCatalogueTilePhoto(undefined, null)).toBe(null);
   });
 });
 
