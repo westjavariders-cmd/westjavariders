@@ -54,7 +54,7 @@ function PurchasePage() {
         <div className="mt-4 space-y-4">
           <p className="text-sm text-muted-foreground">This booking could not be found.</p>
           <Link to="/home" className="text-sm underline underline-offset-2">
-            See the menu
+            See trips
           </Link>
         </div>
       )}

@@ -4,6 +4,7 @@ import {
   assignGroupKeys,
   isChromeImagePath,
   isLandingCtaImagePath,
+  isSectionButtonImagePath,
   isSafeSlug,
   isSiteBackgroundPath,
   moveInOrder,
@@ -137,6 +138,12 @@ describe("chrome background storage paths", () => {
     expect(isLandingCtaImagePath("landing/cta-123-enter.jpg")).toBe(true);
     expect(isLandingCtaImagePath("landing/image-123.jpg")).toBe(false);
     expect(isLandingCtaImagePath("site-background/cta.jpg")).toBe(false);
+  });
+
+  it("accepts a Book individually section tile photo only under section-buttons/", () => {
+    expect(isSectionButtonImagePath("section-buttons/abc-surf.jpg")).toBe(true);
+    expect(isSectionButtonImagePath("blocks/abc-surf.jpg")).toBe(false);
+    expect(isSectionButtonImagePath("../secret")).toBe(false);
   });
 });
 

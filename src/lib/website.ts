@@ -41,6 +41,11 @@ export function isLandingCtaImagePath(path: string): boolean {
   return /^landing\/cta-[A-Za-z0-9._-]+$/.test(path);
 }
 
+/** Photo on a Book individually section tile, stored under website-media. */
+export function isSectionButtonImagePath(path: string): boolean {
+  return /^section-buttons\/[A-Za-z0-9._-]+$/.test(path);
+}
+
 export const BLOCK_KINDS = [
   "hero",
   "image_text",

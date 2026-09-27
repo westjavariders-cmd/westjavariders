@@ -19,6 +19,7 @@ import {
   chromeImageSettingKey,
   isChromeImagePath,
   isLandingCtaImagePath,
+  isSectionButtonImagePath,
   isSafeSlug,
   type WebsiteChromeSlot,
 } from "@/lib/website";
@@ -215,33 +216,63 @@ export const saveSection = createServerFn({ method: "POST" })
         language,
         title: text(200),
         subtitle: text(1000),
+        image_path: z.string().max(500).nullable().optional(),
       })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = ctx(context);
     await assertAdmin(supabase);
+    if (data.image_path && !isSectionButtonImagePath(data.image_path)) {
+      fail("This section photo could not be saved.");
+    }
+
+    const base = { internal_name: data.internal_name, is_active: data.is_active };
 
     let sectionId = data.id ?? null;
+    let previousImage: string | null = null;
     if (sectionId) {
-      const { error } = await supabase
-        .from("website_sections")
-        .update({ internal_name: data.internal_name, is_active: data.is_active })
-        .eq("id", sectionId);
+      if (data.image_path !== undefined) {
+        const { data: existing } = await supabase
+          .from("website_sections")
+          .select("image_path")
+          .eq("id", sectionId)
+          .maybeSingle();
+        previousImage = (existing?.image_path as string | null | undefined) ?? null;
+      }
+      const { error } = await supabase.from("website_sections").update(base).eq("id", sectionId);
       if (error) fail("This section could not be saved.");
     } else {
       const { data: row, error } = await supabase
         .from("website_sections")
         .insert({
           page_id: data.page_id,
-          internal_name: data.internal_name,
-          is_active: data.is_active,
+          ...base,
           sort_order: await nextOrder(supabase, "website_sections", "page_id", data.page_id),
         })
         .select("id")
         .single();
       if (error || !row) fail("This section could not be created.");
       sectionId = row.id as string;
+    }
+
+    if (data.image_path !== undefined) {
+      const { error } = await supabase
+        .from("website_sections")
+        .update({ image_path: data.image_path })
+        .eq("id", sectionId);
+      if (error && data.image_path) {
+        fail("The section photo could not be saved until the database update is applied.");
+      }
+      if (!error && previousImage && previousImage !== data.image_path) {
+        const stillUsed = await supabase
+          .from("website_sections")
+          .select("id", { count: "exact", head: true })
+          .eq("image_path", previousImage);
+        if ((stillUsed.count ?? 0) === 0) {
+          await supabase.storage.from(WEBSITE_MEDIA_BUCKET).remove([previousImage]);
+        }
+      }
     }
 
     await upsertTranslation(
@@ -269,8 +300,16 @@ export const deleteSection = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = ctx(context);
     await assertAdmin(supabase);
+    const { data: section } = await supabase
+      .from("website_sections")
+      .select("image_path")
+      .eq("id", data.id)
+      .maybeSingle();
     const { error } = await supabase.from("website_sections").delete().eq("id", data.id);
     if (error) fail("This section could not be removed.");
+    if (section?.image_path) {
+      await supabase.storage.from(WEBSITE_MEDIA_BUCKET).remove([section.image_path as string]);
+    }
     await audit(supabase, userId, "website.section.deleted", "website_sections", data.id, null);
     return { ok: true };
   });

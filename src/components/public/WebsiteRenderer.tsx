@@ -330,6 +330,7 @@ function blockCover(block: PublicBlock, fallbackAlt: string): { url: string; alt
 }
 
 function sectionCover(section: PublicSection): { url: string; alt: string } | null {
+  if (section.image_url) return { url: section.image_url, alt: section.title ?? "" };
   for (const block of catalogueBlocks(section)) {
     const cover = blockCover(block, section.title ?? "");
     if (cover) return cover;

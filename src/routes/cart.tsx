@@ -178,7 +178,7 @@ function CartPage() {
       {!cart.isPending && !cart.isError && packages.length === 0 && !draft && (
         <div className="mt-4 space-y-4">
           <p className="text-sm text-muted-foreground">Your cart is empty.</p>
-          <Button onClick={() => navigate({ to: "/home" })}>See the menu</Button>
+          <Button onClick={() => navigate({ to: "/home" })}>See trips</Button>
         </div>
       )}
 

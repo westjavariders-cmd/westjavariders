@@ -123,11 +123,6 @@ export function HomeContent({ page }: { page: PublicWebsitePage | null }) {
 
       <div className="mx-auto mt-16 max-w-6xl space-y-2 sm:mt-20">
         <PromoCodeEntry />
-        <p className="text-xs text-muted-foreground">
-          <Link to="/admin" className="underline underline-offset-2">
-            Staff sign in
-          </Link>
-        </p>
       </div>
     </div>
   );

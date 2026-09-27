@@ -92,6 +92,7 @@ export type PublicSection = {
   id: string;
   title: string | null;
   subtitle: string | null;
+  image_url: string | null;
   blocks: PublicBlock[];
 };
 
@@ -276,6 +277,20 @@ export async function websitePage(
   const activeSections = visibleSorted(sections.data ?? []);
   const sectionIds = activeSections.map((s: any) => s.id);
 
+  const sectionImageById = new Map<string, string | null>();
+  if (sectionIds.length > 0) {
+    try {
+      const images = await db.from("website_sections").select("id, image_path").in("id", sectionIds);
+      if (!images.error) {
+        for (const row of images.data ?? []) {
+          sectionImageById.set(row.id as string, (row.image_path as string | null) ?? null);
+        }
+      }
+    } catch {
+      // image_path may not exist until the migration is applied
+    }
+  }
+
   const [sectionTx, blocks] = await Promise.all([
     sectionIds.length
       ? db
@@ -416,6 +431,7 @@ export async function websitePage(
         id: section.id,
         title: text?.title ?? null,
         subtitle: text?.subtitle ?? null,
+        image_url: await signedMedia(db, sectionImageById.get(section.id) ?? null),
         blocks: blocksOut,
       };
     }),
