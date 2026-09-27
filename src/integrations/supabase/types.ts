@@ -1867,6 +1867,7 @@ export type Database = {
       }
       products: {
         Row: {
+          configure_cta_image_path: string | null
           created_at: string
           id: string
           image_path: string | null
@@ -1874,13 +1875,13 @@ export type Database = {
           internal_ref: string | null
           kind: Database["public"]["Enums"]["product_kind"]
           landing_image_path: string | null
-          configure_cta_image_path: string | null
           sort_order: number
           status: string
           updated_at: string
           voucher_name: string | null
         }
         Insert: {
+          configure_cta_image_path?: string | null
           created_at?: string
           id?: string
           image_path?: string | null
@@ -1888,13 +1889,13 @@ export type Database = {
           internal_ref?: string | null
           kind: Database["public"]["Enums"]["product_kind"]
           landing_image_path?: string | null
-          configure_cta_image_path?: string | null
           sort_order?: number
           status?: string
           updated_at?: string
           voucher_name?: string | null
         }
         Update: {
+          configure_cta_image_path?: string | null
           created_at?: string
           id?: string
           image_path?: string | null
@@ -1902,7 +1903,6 @@ export type Database = {
           internal_ref?: string | null
           kind?: Database["public"]["Enums"]["product_kind"]
           landing_image_path?: string | null
-          configure_cta_image_path?: string | null
           sort_order?: number
           status?: string
           updated_at?: string
