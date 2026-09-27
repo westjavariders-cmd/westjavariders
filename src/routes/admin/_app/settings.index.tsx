@@ -7,9 +7,16 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { WEBSITE_CHROME_SETTING_KEYS } from "@/lib/website";
+import {
+  BOOKING_CONDITIONS_MAX_CHARS,
+  BOOKING_CONDITIONS_SETTING_KEY,
+} from "@/lib/booking-conditions";
+import { saveBookingConditions } from "@/lib/booking-conditions.functions";
 import { updateSetting } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -29,7 +36,10 @@ function SettingsPage() {
   const { adminSession } = Route.useRouteContext();
   const queryClient = useQueryClient();
   const save = useServerFn(updateSetting);
+  const saveConditions = useServerFn(saveBookingConditions);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [conditionsDraft, setConditionsDraft] = useState<string | null>(null);
+  const [savingConditions, setSavingConditions] = useState(false);
 
   const settings = useQuery({
     queryKey: ["settings"],
@@ -72,8 +82,11 @@ function SettingsPage() {
       toast.error(error instanceof Error ? error.message : "This setting could not be saved."),
   });
 
+  const storedConditions =
+    settings.data?.find((row) => row.key === BOOKING_CONDITIONS_SETTING_KEY)?.value ?? "";
+
   return (
-    <>
+    <div className="space-y-6">
       <PageHeader
         title="Settings"
         description="Global platform configuration. The database is the source of truth."
@@ -100,7 +113,11 @@ function SettingsPage() {
             </TableHeader>
             <TableBody>
               {settings.data
-                ?.filter((row) => !(WEBSITE_CHROME_SETTING_KEYS as readonly string[]).includes(row.key))
+                ?.filter(
+                  (row) =>
+                    !(WEBSITE_CHROME_SETTING_KEYS as readonly string[]).includes(row.key) &&
+                    row.key !== BOOKING_CONDITIONS_SETTING_KEY,
+                )
                 .map((row) => {
                 const draft = drafts[row.key] ?? row.value;
                 const dirty = draft !== row.value;
@@ -162,6 +179,56 @@ function SettingsPage() {
           </Table>
         </CardContent>
       </Card>
-    </>
+
+      <Card>
+        <CardContent className="space-y-3 p-4">
+          <div className="space-y-1">
+            <Label htmlFor="booking-conditions">Booking conditions</Label>
+            <p className="text-xs text-muted-foreground">
+              Shown in a popup when a guest taps the underlined sentence in the cart. Plain text,
+              up to {BOOKING_CONDITIONS_MAX_CHARS.toLocaleString()} characters.
+            </p>
+          </div>
+          <Textarea
+            id="booking-conditions"
+            rows={16}
+            maxLength={BOOKING_CONDITIONS_MAX_CHARS}
+            disabled={!adminSession.isAdmin}
+            value={conditionsDraft ?? storedConditions}
+            onChange={(e) => setConditionsDraft(e.target.value)}
+          />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">
+              {(conditionsDraft ?? storedConditions).length} / {BOOKING_CONDITIONS_MAX_CHARS}
+            </p>
+            {adminSession.isAdmin && (
+              <Button
+                size="sm"
+                disabled={
+                  savingConditions || (conditionsDraft ?? storedConditions) === storedConditions
+                }
+                onClick={() => {
+                  setSavingConditions(true);
+                  void saveConditions({ data: { body: conditionsDraft ?? storedConditions } })
+                    .then(() => {
+                      toast.success("Booking conditions saved.");
+                      setConditionsDraft(null);
+                      void queryClient.invalidateQueries({ queryKey: ["settings"] });
+                    })
+                    .catch((e) =>
+                      toast.error(
+                        e instanceof Error ? e.message : "The booking conditions could not be saved.",
+                      ),
+                    )
+                    .finally(() => setSavingConditions(false));
+                }}
+              >
+                {savingConditions ? "Saving…" : "Save conditions"}
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

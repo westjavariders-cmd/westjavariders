@@ -14,10 +14,21 @@ import { formatIdr } from "@/lib/public-catalog";
 import { discardDraftPackage, removeCartPackage } from "@/lib/cart.functions";
 import { saveTrip } from "@/lib/saved-trip.functions";
 import { confirmCheckout, getCheckoutSummary } from "@/lib/purchase.functions";
+import { getBookingConditions } from "@/lib/booking-conditions.functions";
+import { CART_CONDITIONS_ACCEPTANCE_LABEL } from "@/lib/booking-conditions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { sendContactRequest } from "@/lib/contact.functions";
 
 const CART_PAYMENT_SUMMARY_KEY = ["cart-payment-summary"] as const;
@@ -92,12 +103,19 @@ function CartPage() {
   const discard = useServerFn(discardDraftPackage);
   const summaryFn = useServerFn(getCheckoutSummary);
   const pay = useServerFn(confirmCheckout);
+  const loadConditions = useServerFn(getBookingConditions);
   const [busy, setBusy] = useState<string | null>(null);
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [contact, setContact] = useState({ full_name: "", email: "", phone: "", country: "" });
   const [isGift, setIsGift] = useState(false);
   const [gift, setGift] = useState({ recipient: "", message: "" });
   const [riskAccepted, setRiskAccepted] = useState(false);
+  const [conditionsOpen, setConditionsOpen] = useState(false);
+
+  const conditions = useQuery({
+    queryKey: ["booking-conditions"],
+    queryFn: () => loadConditions({ data: undefined as never }),
+  });
 
   // Server-authoritative amounts: what would be charged right now.
   const summary = useQuery({
@@ -439,18 +457,46 @@ function CartPage() {
                 </div>
               )}
 
-              <label className="flex items-start gap-3 border-t border-border pt-4 text-sm">
+              <div className="flex items-start gap-3 border-t border-border pt-4 text-sm">
                 <input
+                  id="cart-risk-accepted"
                   type="checkbox"
-                  className="mt-1 h-4 w-4 accent-primary"
+                  className="mt-1 h-4 w-4 shrink-0 accent-primary"
                   checked={riskAccepted}
                   onChange={(e) => setRiskAccepted(e.target.checked)}
+                  aria-label={CART_CONDITIONS_ACCEPTANCE_LABEL}
                 />
-                <span>
-                  I understand that surfing and travel activities carry risks, and I accept the
-                  booking conditions.
-                </span>
-              </label>
+                <button
+                  type="button"
+                  className="text-left underline underline-offset-2"
+                  onClick={() => setConditionsOpen(true)}
+                >
+                  {CART_CONDITIONS_ACCEPTANCE_LABEL}
+                </button>
+              </div>
+
+              <Dialog open={conditionsOpen} onOpenChange={setConditionsOpen}>
+                <DialogContent className="flex max-h-[min(85vh,40rem)] max-w-2xl flex-col gap-4 overflow-hidden">
+                  <DialogHeader>
+                    <DialogTitle>Booking conditions</DialogTitle>
+                    <DialogDescription>
+                      Read these conditions, then close this window to accept and pay.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                      {conditions.data?.body?.trim()
+                        ? conditions.data.body
+                        : "The booking conditions have not been published yet. You can close this window and contact us if you need them before paying."}
+                    </p>
+                  </div>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button type="button">Back to cart</Button>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
               <Button
                 className="w-full"
