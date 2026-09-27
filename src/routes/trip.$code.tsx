@@ -81,8 +81,8 @@ function SharedTripPage() {
         <p className="mt-3 text-sm text-muted-foreground">
           The link may be wrong or it may have expired. You can start a new trip whenever you like.
         </p>
-        <Button className="mt-5" onClick={() => navigate({ to: "/build-your-trip" })}>
-          BUILD YOUR TRIP
+        <Button className="mt-5" onClick={() => navigate({ to: "/home" })}>
+          SEE THE MENU
         </Button>
       </PublicPage>
     );
@@ -147,8 +147,8 @@ function SharedTripPage() {
             </Button>
           </div>
         ) : (
-          <Button className="w-full" onClick={() => navigate({ to: "/build-your-trip" })}>
-            BUILD YOUR TRIP
+          <Button className="w-full" onClick={() => navigate({ to: "/home" })}>
+            SEE THE MENU
           </Button>
         )}
       </div>

@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { WEBSITE_VISITOR_NAME } from "@/lib/contact";
+
 /**
  * Contact us from the cart. Anonymous like the rest of the public flow: the
  * enquiry is stored and emailed to the business with the vouchers of the
@@ -22,5 +24,25 @@ export const sendContactRequest = createServerFn({ method: "POST" })
       phone: data.phone ?? null,
       email: data.email,
       message: data.message,
+      source: "cart",
+    });
+  });
+
+const websiteSchema = z.object({
+  email: z.string().trim().email().max(320),
+  message: z.string().trim().min(1).max(4000),
+});
+
+/** Sitewide contact page: visitor email + message, no cart attached. */
+export const sendWebsiteContact = createServerFn({ method: "POST" })
+  .inputValidator((data) => websiteSchema.parse(data))
+  .handler(async ({ data }) => {
+    const { submitContactRequest } = await import("@/lib/contact.server");
+    return submitContactRequest({
+      full_name: WEBSITE_VISITOR_NAME,
+      phone: null,
+      email: data.email,
+      message: data.message,
+      source: "website",
     });
   });

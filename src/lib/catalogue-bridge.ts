@@ -75,6 +75,17 @@ export function catalogueHoursVariable(variableName: string): string {
   return `${variableName}_hours`;
 }
 
+/**
+ * Multi-select stores people/hours per selected item so each activity can
+ * have its own extras. Single-select keeps the field-level keys above.
+ */
+export function catalogueItemPeopleVariable(variableName: string, itemId: string): string {
+  return `${variableName}__${itemId}_people`;
+}
+export function catalogueItemHoursVariable(variableName: string, itemId: string): string {
+  return `${variableName}__${itemId}_hours`;
+}
+
 function toNumberOrNull(raw: unknown): number | null {
   if (raw == null || raw === "") return null;
   const n = Number(raw);
@@ -241,6 +252,40 @@ function selectedIds(raw: unknown): string[] {
   return [String(raw)];
 }
 
+function isMultiSelectField(field: FieldSourceConfig): boolean {
+  return field.field_type === "multi_select";
+}
+
+/** People/hours for one selected item: per-item key, then field-level fallback. */
+export function catalogueItemChoiceValue(
+  answers: Record<string, unknown>,
+  variableName: string,
+  itemId: string,
+  kind: "people" | "hours",
+  perItem: boolean,
+): number | null {
+  const fieldKey =
+    kind === "people" ? cataloguePeopleVariable(variableName) : catalogueHoursVariable(variableName);
+  if (!perItem) return toNumberOrNull(answers[fieldKey]);
+  const itemKey =
+    kind === "people"
+      ? catalogueItemPeopleVariable(variableName, itemId)
+      : catalogueItemHoursVariable(variableName, itemId);
+  const own = toNumberOrNull(answers[itemKey]);
+  if (own != null) return own;
+  return toNumberOrNull(answers[fieldKey]);
+}
+
+function clearIfNotOffered(
+  next: Record<string, unknown>,
+  key: string,
+  offered: { value: number }[],
+): void {
+  const value = toNumberOrNull(next[key]);
+  if (value == null) return;
+  if (!offered.some((c) => c.value === value)) next[key] = "";
+}
+
 /**
  * Matches the customer's answers against the resolved active items.
  * Invalid or no-longer-active selections are reported, never replaced.
@@ -258,24 +303,26 @@ export function resolveCatalogueSelections(
     const ref = fieldCatalogueRef(field);
     if (!ref) continue;
     const available = itemsByKey[catalogueKey(ref)] ?? [];
-    const people = toNumberOrNull(answers[cataloguePeopleVariable(field.variable_name)]);
-    const hours = toNumberOrNull(answers[catalogueHoursVariable(field.variable_name)]);
+    const perItem = isMultiSelectField(field);
     for (const id of selectedIds(answers[field.variable_name])) {
       const item = available.find((i) => i.id === id);
       if (!item) {
         invalid.push(`Your choice for ${labelOf(field)} is no longer available. Please choose again.`);
         continue;
       }
+      const people = catalogueItemChoiceValue(answers, field.variable_name, id, "people", perItem);
+      const hours = catalogueItemChoiceValue(answers, field.variable_name, id, "hours", perItem);
       const price = catalogueItemPriceIdr(item, people, hours);
       if (item.variants && price == null) {
         const missing = [
           item.variants.people.length > 0 && people == null ? item.variants.people_label : null,
           item.variants.hours.length > 0 && hours == null ? item.variants.hours_label : null,
         ].filter(Boolean);
+        const where = perItem ? item.name : labelOf(field);
         invalid.push(
           missing.length > 0
-            ? `Please choose ${missing.join(" and ")} for ${labelOf(field)}.`
-            : `Your choice for ${labelOf(field)} is not available. Please choose again.`,
+            ? `Please choose ${missing.join(" and ")} for ${where}.`
+            : `Your choice for ${where} is not available. Please choose again.`,
         );
       }
       selections.push({
@@ -316,16 +363,34 @@ export function stripInvalidCatalogueAnswers(
     if (Array.isArray(raw)) next[field.variable_name] = raw.map(String).filter((v) => ids.has(v));
     else if (raw != null && raw !== "" && !ids.has(String(raw))) next[field.variable_name] = "";
 
-    // Extra choices only survive while they exist for the selected item.
-    const chosen = items.find((i) => i.id === String(next[field.variable_name] ?? ""));
-    const variants = chosen?.variants ?? null;
-    for (const [name, list] of [
-      [cataloguePeopleVariable(field.variable_name), variants?.people ?? []],
-      [catalogueHoursVariable(field.variable_name), variants?.hours ?? []],
-    ] as const) {
-      const value = toNumberOrNull(next[name]);
-      if (value == null) continue;
-      if (!list.some((c) => c.value === value)) next[name] = "";
+    const selected = new Set(selectedIds(next[field.variable_name]));
+    const perItem = isMultiSelectField(field);
+
+    for (const item of items) {
+      const peopleKey = catalogueItemPeopleVariable(field.variable_name, item.id);
+      const hoursKey = catalogueItemHoursVariable(field.variable_name, item.id);
+      if (!perItem || !selected.has(item.id)) {
+        if (peopleKey in next) delete next[peopleKey];
+        if (hoursKey in next) delete next[hoursKey];
+        continue;
+      }
+      clearIfNotOffered(next, peopleKey, item.variants?.people ?? []);
+      clearIfNotOffered(next, hoursKey, item.variants?.hours ?? []);
+    }
+
+    const peopleField = cataloguePeopleVariable(field.variable_name);
+    const hoursField = catalogueHoursVariable(field.variable_name);
+    if (!perItem) {
+      const chosen = items.find((i) => selected.has(i.id));
+      clearIfNotOffered(next, peopleField, chosen?.variants?.people ?? []);
+      clearIfNotOffered(next, hoursField, chosen?.variants?.hours ?? []);
+    } else if (selected.size === 0) {
+      if (peopleField in next) next[peopleField] = "";
+      if (hoursField in next) next[hoursField] = "";
+    } else if (selected.size === 1) {
+      const only = items.find((i) => selected.has(i.id));
+      clearIfNotOffered(next, peopleField, only?.variants?.people ?? []);
+      clearIfNotOffered(next, hoursField, only?.variants?.hours ?? []);
     }
   }
   return next;
@@ -338,14 +403,20 @@ export function stripInvalidCatalogueAnswers(
  */
 export function cataloguePriceVariables(selections: CatalogueSelection[]): Record<string, number> {
   const out: Record<string, number> = {};
+  const countByVariable = new Map<string, number>();
+  for (const s of selections) {
+    countByVariable.set(s.variable_name, (countByVariable.get(s.variable_name) ?? 0) + 1);
+  }
   for (const s of selections) {
     if (s.customer_price_idr != null) {
       const key = cataloguePriceVariable(s.variable_name);
       out[key] = (out[key] ?? 0) + s.customer_price_idr;
     }
+    // One people/hours number per question is only meaningful when a single
+    // item is selected. Multi-select totals live entirely in `_price`.
+    if ((countByVariable.get(s.variable_name) ?? 0) > 1) continue;
     if (s.people != null) out[cataloguePeopleVariable(s.variable_name)] = s.people;
     if (s.travel_hours != null) out[catalogueHoursVariable(s.variable_name)] = s.travel_hours;
   }
   return out;
-
 }

@@ -1,0 +1,4 @@
+ALTER TABLE public.transport_people_prices DROP CONSTRAINT transport_people_prices_people_range, ADD CONSTRAINT transport_people_prices_people_range CHECK (people >= 1 AND people <= 7);
+ALTER TABLE public.transport_time_prices DROP CONSTRAINT transport_time_prices_hours_range, ADD CONSTRAINT transport_time_prices_hours_range CHECK (travel_hours >= 1 AND travel_hours <= 14);
+ALTER TABLE public.transports DROP CONSTRAINT transports_min_hours_range, ADD CONSTRAINT transports_min_hours_range CHECK (min_travel_hours IS NULL OR (min_travel_hours >= 1 AND min_travel_hours <= 14));
+ALTER TABLE public.transports DROP CONSTRAINT transports_max_hours_range, ADD CONSTRAINT transports_max_hours_range CHECK (max_travel_hours IS NULL OR (max_travel_hours >= 1 AND max_travel_hours <= 14));

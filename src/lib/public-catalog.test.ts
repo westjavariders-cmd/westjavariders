@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatIdr, payableTotal, summarizeAnswers } from "@/lib/public-catalog";
+import { formatIdr, getPublicProductTitle, payableTotal, summarizeAnswers } from "@/lib/public-catalog";
 import { initialValues } from "@/components/public/ConfiguratorForm";
 import type { ProductBundle } from "@/lib/catalog";
 
@@ -40,6 +40,17 @@ const option = (over: Partial<any> = {}): any => ({
 describe("public money display", () => {
   it("formats whole rupiah", () => {
     expect(formatIdr(1500000)).toBe("Rp 1,500,000");
+  });
+});
+
+describe("getPublicProductTitle", () => {
+  it("uses the editorial translation, not voucher_name", () => {
+    expect(getPublicProductTitle("Cimaja Surf Trip", "cimaja-surf")).toBe("Cimaja Surf Trip");
+  });
+
+  it("falls back to internal_name when the translation title is empty", () => {
+    expect(getPublicProductTitle("", "cimaja-surf")).toBe("cimaja-surf");
+    expect(getPublicProductTitle("   ", "cimaja-surf")).toBe("cimaja-surf");
   });
 });
 
@@ -140,6 +151,50 @@ describe("configuration summary", () => {
       { label: "Number of surfers", value: "1" },
       { label: "Number of sessions", value: "3" },
     ]);
+  });
+
+  it("lists each multi-select activity with its own people and days", () => {
+    const lesson = "288bc324-a6fb-4723-90c4-2806478853f5";
+    const drone = "c1f780d5-bcb1-44df-84db-ac2561f14f53";
+    const fields = [
+      field({ id: "f9", variable_name: "activities", field_type: "multi_select", customer_label: "Other activities" }),
+    ];
+    expect(
+      summarizeAnswers(
+        fields,
+        [],
+        {
+          activities: [lesson, drone],
+          [`activities__${lesson}_people`]: 2,
+          [`activities__${lesson}_hours`]: 3,
+          [`activities__${drone}_people`]: 1,
+          [`activities__${drone}_hours`]: 1,
+        } as never,
+        { [lesson]: "Surf lesson", [drone]: "Drone shot" },
+        {
+          [`activities__${lesson}`]: { _people: "Surfers", _hours: "Days" },
+          [`activities__${drone}`]: { _people: "People", _hours: "Days" },
+        },
+      ),
+    ).toEqual([
+      { label: "Other activities", value: "Surf lesson" },
+      { label: "Surfers", value: "2" },
+      { label: "Days", value: "3" },
+      { label: "Other activities", value: "Drone shot" },
+      { label: "People", value: "1" },
+      { label: "Days", value: "1" },
+    ]);
+  });
+
+  it("uses the configurator Customer-facing title when provided", () => {
+    const fields = [
+      field({ id: "f2", variable_name: "level", field_type: "single_select", customer_label: "Level" }),
+    ];
+    expect(
+      summarizeAnswers(fields, [option()], { level: "beginner" }, {}, {}, {
+        questionTitles: { f2: "What is your surf level?" },
+      }),
+    ).toEqual([{ label: "What is your surf level?", value: "Beginner" }]);
   });
 
 });

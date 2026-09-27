@@ -111,13 +111,21 @@ export async function renderVoucherPdf(model: DocumentModel): Promise<Uint8Array
   y -= 68;
 
   heading("Your experience");
-  paragraph(model.experience.package_title, { size: 13, font: bold, gap: 2 });
+  paragraph(model.experience.package_title, { size: 13, font: bold, gap: 10 });
   for (const item of model.experience.items) {
-    paragraph(item.product_title, { size: 11, font: bold, gap: 0 });
+    if (item.product_title !== model.experience.package_title) {
+      paragraph(item.product_title, { size: 11, font: bold, gap: 6 });
+    }
+    if (item.options.length > 0) {
+      paragraph("Your answers", { size: 9, font: bold, color: TEAL, gap: 6 });
+      for (const option of item.options) {
+        paragraph(option.label, { size: 9, color: MUTED, gap: 0 });
+        paragraph(option.value, { size: 11, font: bold, gap: 8 });
+      }
+    }
     if (item.base_price) paragraph(`Base price: ${item.base_price}`, { size: 10, color: MUTED, gap: 0 });
     for (const b of item.breakdown) paragraph(`${b.label}: ${b.value}`, { size: 10, color: MUTED, gap: 0 });
     if (item.total) paragraph(`Package total: ${item.total}`, { size: 10.5, font: bold, gap: 0 });
-    for (const option of item.options) paragraph(`${option.label}: ${option.value}`, { size: 10, color: MUTED, gap: 0 });
     if (item.people != null) paragraph(`People: ${item.people}`, { size: 10, color: MUTED, gap: 0 });
     if (item.quantity != null) paragraph(`Quantity: ${item.quantity}`, { size: 10, color: MUTED, gap: 0 });
     y -= 4;

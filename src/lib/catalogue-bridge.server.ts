@@ -14,6 +14,7 @@
  */
 import { PHOTO_BUCKET } from "@/lib/accommodation";
 import { MOTORBIKE_PHOTO_BUCKET } from "@/lib/motorbike";
+import { publicTransportHourChoices, publicTransportPeopleChoices } from "@/lib/transport";
 import {
   catalogueKey,
   DEFAULT_HOURS_LABEL,
@@ -154,17 +155,18 @@ async function transports(db: any, catalogueIds: string[]): Promise<CatalogueIte
       people: DEFAULT_PEOPLE_LABEL,
       hours: DEFAULT_HOURS_LABEL,
     };
-    const people = (peoplePrices.data ?? [])
-      .filter((p: any) => p.transport_id === t.id)
-      .map((p: any) => ({ value: Number(p.people), price_idr: Number(p.customer_price_idr) }));
-    const hours = (timePrices.data ?? [])
-      .filter((p: any) => p.transport_id === t.id)
-      .filter(
-        (p: any) =>
-          (t.min_travel_hours == null || p.travel_hours >= t.min_travel_hours) &&
-          (t.max_travel_hours == null || p.travel_hours <= t.max_travel_hours),
-      )
-      .map((p: any) => ({ value: Number(p.travel_hours), price_idr: Number(p.customer_price_idr) }));
+    const people = publicTransportPeopleChoices(
+      (peoplePrices.data ?? [])
+        .filter((p: any) => p.transport_id === t.id)
+        .map((p: any) => ({ value: Number(p.people), price_idr: Number(p.customer_price_idr) })),
+    );
+    const hours = publicTransportHourChoices(
+      (timePrices.data ?? [])
+        .filter((p: any) => p.transport_id === t.id)
+        .map((p: any) => ({ value: Number(p.travel_hours), price_idr: Number(p.customer_price_idr) })),
+      t.min_travel_hours == null ? null : Number(t.min_travel_hours),
+      t.max_travel_hours == null ? null : Number(t.max_travel_hours),
+    );
 
     const hasChoices = people.length > 0 || hours.length > 0;
     return toCatalogueItem("transport", {
