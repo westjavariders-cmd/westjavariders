@@ -15,7 +15,7 @@ import { discardDraftPackage, removeCartPackage } from "@/lib/cart.functions";
 import { saveTrip } from "@/lib/saved-trip.functions";
 import { confirmCheckout, getCheckoutSummary } from "@/lib/purchase.functions";
 import { getBookingConditions } from "@/lib/booking-conditions.functions";
-import { CART_CONDITIONS_ACCEPTANCE_LABEL } from "@/lib/booking-conditions";
+import { CART_CONDITIONS_ACCEPTANCE_LABEL, CART_GIFT_LABEL } from "@/lib/booking-conditions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -111,6 +111,7 @@ function CartPage() {
   const [gift, setGift] = useState({ recipient: "", message: "" });
   const [riskAccepted, setRiskAccepted] = useState(false);
   const [conditionsOpen, setConditionsOpen] = useState(false);
+  const [giftHelpOpen, setGiftHelpOpen] = useState(false);
 
   const conditions = useQuery({
     queryKey: ["booking-conditions"],
@@ -417,21 +418,46 @@ function CartPage() {
                 </div>
               </div>
 
-              <label className="flex items-start gap-3 border-t border-border pt-4 text-sm">
+              <div className="flex items-start gap-3 border-t border-border pt-4 text-sm">
                 <input
+                  id="cart-is-gift"
                   type="checkbox"
-                  className="mt-1 h-4 w-4 accent-primary"
+                  className="mt-1 h-4 w-4 shrink-0 accent-primary"
                   checked={isGift}
                   onChange={(e) => setIsGift(e.target.checked)}
+                  aria-label={CART_GIFT_LABEL}
                 />
-                <span>
-                  <span className="font-medium">This is a gift</span>
-                  <span className="block text-xs text-muted-foreground">
-                    We send everything to you, so you can give it yourself. The price is never
-                    shown on a gift.
-                  </span>
-                </span>
-              </label>
+                <button
+                  type="button"
+                  className="text-left font-medium underline underline-offset-2"
+                  onClick={() => setGiftHelpOpen(true)}
+                >
+                  {CART_GIFT_LABEL}
+                </button>
+              </div>
+
+              <Dialog open={giftHelpOpen} onOpenChange={setGiftHelpOpen}>
+                <DialogContent className="flex max-h-[min(85vh,40rem)] max-w-2xl flex-col gap-4 overflow-hidden">
+                  <DialogHeader>
+                    <DialogTitle>This is a gift</DialogTitle>
+                    <DialogDescription>
+                      Optional. Close this window when you are ready — you do not have to open it to pay.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                      {conditions.data?.gift_body?.trim()
+                        ? conditions.data.gift_body
+                        : "We send everything to you, so you can give it yourself. The price is never shown on a gift."}
+                    </p>
+                  </div>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button type="button">Back to cart</Button>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
               {isGift && (
                 <div className="space-y-3">

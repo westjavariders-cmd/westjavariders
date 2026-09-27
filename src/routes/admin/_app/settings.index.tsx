@@ -10,8 +10,9 @@ import { WEBSITE_CHROME_SETTING_KEYS } from "@/lib/website";
 import {
   BOOKING_CONDITIONS_MAX_CHARS,
   BOOKING_CONDITIONS_SETTING_KEY,
+  GIFT_EXPLANATION_SETTING_KEY,
 } from "@/lib/booking-conditions";
-import { saveBookingConditions } from "@/lib/booking-conditions.functions";
+import { saveBookingConditions, saveGiftExplanation } from "@/lib/booking-conditions.functions";
 import { updateSetting } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,9 +38,12 @@ function SettingsPage() {
   const queryClient = useQueryClient();
   const save = useServerFn(updateSetting);
   const saveConditions = useServerFn(saveBookingConditions);
+  const saveGift = useServerFn(saveGiftExplanation);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [conditionsDraft, setConditionsDraft] = useState<string | null>(null);
   const [savingConditions, setSavingConditions] = useState(false);
+  const [giftDraft, setGiftDraft] = useState<string | null>(null);
+  const [savingGift, setSavingGift] = useState(false);
 
   const settings = useQuery({
     queryKey: ["settings"],
@@ -84,6 +88,8 @@ function SettingsPage() {
 
   const storedConditions =
     settings.data?.find((row) => row.key === BOOKING_CONDITIONS_SETTING_KEY)?.value ?? "";
+  const storedGift =
+    settings.data?.find((row) => row.key === GIFT_EXPLANATION_SETTING_KEY)?.value ?? "";
 
   return (
     <div className="space-y-6">
@@ -116,7 +122,8 @@ function SettingsPage() {
                 ?.filter(
                   (row) =>
                     !(WEBSITE_CHROME_SETTING_KEYS as readonly string[]).includes(row.key) &&
-                    row.key !== BOOKING_CONDITIONS_SETTING_KEY,
+                    row.key !== BOOKING_CONDITIONS_SETTING_KEY &&
+                    row.key !== GIFT_EXPLANATION_SETTING_KEY,
                 )
                 .map((row) => {
                 const draft = drafts[row.key] ?? row.value;
@@ -224,6 +231,55 @@ function SettingsPage() {
                 }}
               >
                 {savingConditions ? "Saving…" : "Save conditions"}
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="space-y-3 p-4">
+          <div className="space-y-1">
+            <Label htmlFor="gift-explanation">This is a gift</Label>
+            <p className="text-xs text-muted-foreground">
+              Optional popup in the cart when a guest taps the underlined gift label. They do not
+              have to open it to pay. Plain text, up to{" "}
+              {BOOKING_CONDITIONS_MAX_CHARS.toLocaleString()} characters.
+            </p>
+          </div>
+          <Textarea
+            id="gift-explanation"
+            rows={12}
+            maxLength={BOOKING_CONDITIONS_MAX_CHARS}
+            disabled={!adminSession.isAdmin}
+            value={giftDraft ?? storedGift}
+            onChange={(e) => setGiftDraft(e.target.value)}
+          />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">
+              {(giftDraft ?? storedGift).length} / {BOOKING_CONDITIONS_MAX_CHARS}
+            </p>
+            {adminSession.isAdmin && (
+              <Button
+                size="sm"
+                disabled={savingGift || (giftDraft ?? storedGift) === storedGift}
+                onClick={() => {
+                  setSavingGift(true);
+                  void saveGift({ data: { body: giftDraft ?? storedGift } })
+                    .then(() => {
+                      toast.success("Gift explanation saved.");
+                      setGiftDraft(null);
+                      void queryClient.invalidateQueries({ queryKey: ["settings"] });
+                    })
+                    .catch((e) =>
+                      toast.error(
+                        e instanceof Error ? e.message : "The gift explanation could not be saved.",
+                      ),
+                    )
+                    .finally(() => setSavingGift(false));
+                }}
+              >
+                {savingGift ? "Saving…" : "Save gift explanation"}
               </Button>
             )}
           </div>

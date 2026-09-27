@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   BOOKING_CONDITIONS_MAX_CHARS,
   CART_CONDITIONS_ACCEPTANCE_LABEL,
+  CART_GIFT_LABEL,
   bookingConditionsAreEmpty,
   sanitizeBookingConditions,
 } from "@/lib/booking-conditions";
@@ -24,5 +25,9 @@ describe("booking conditions", () => {
   it("treats blank copy as unpublished", () => {
     expect(bookingConditionsAreEmpty("  \n  ")).toBe(true);
     expect(bookingConditionsAreEmpty("Wear a leash.")).toBe(false);
+  });
+
+  it("keeps the gift checkbox label guests tap for the explanation", () => {
+    expect(CART_GIFT_LABEL).toBe("This is a gift");
   });
 });

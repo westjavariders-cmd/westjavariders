@@ -4,10 +4,13 @@
  */
 
 export const BOOKING_CONDITIONS_SETTING_KEY = "booking_conditions_body";
+export const GIFT_EXPLANATION_SETTING_KEY = "gift_explanation_body";
 export const BOOKING_CONDITIONS_MAX_CHARS = 20000;
 
 export const CART_CONDITIONS_ACCEPTANCE_LABEL =
   "I've read, understood and accepted the conditions, knowing that surfing always comes with its own risks.";
+
+export const CART_GIFT_LABEL = "This is a gift";
 
 export function sanitizeBookingConditions(raw: string | null | undefined): string {
   const text = (raw ?? "").replace(/\0/g, "");
