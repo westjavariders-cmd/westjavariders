@@ -19,7 +19,7 @@ export const Route = createFileRoute("/build-your-trip/$productId/")({
   },
   errorComponent: ({ error }) => (
     <PublicPage>
-      <p className="text-sm text-muted-foreground">{error.message}</p>
+      <p className="text-sm text-muted-foreground">{(error as Error).message}</p>
       <Link to="/home" className="mt-4 inline-block text-sm underline">
         ← Back
       </Link>

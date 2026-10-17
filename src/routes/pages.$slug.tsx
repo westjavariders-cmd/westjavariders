@@ -37,7 +37,7 @@ export const Route = createFileRoute("/pages/$slug")({
   errorComponent: ({ error }) => (
     <PublicPage>
       <p role="alert" className="py-8 text-sm text-muted-foreground">
-        {error.message}
+        {(error as Error).message}
       </p>
     </PublicPage>
   ),
