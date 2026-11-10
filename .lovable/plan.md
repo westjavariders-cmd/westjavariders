@@ -1,5 +1,9 @@
 # Lanzar West Java Riders y empezar a vender
 
+## Coste
+- `westjavariders.com`: 11,87 USD el primer año y lo mismo cada renovación anual. Es tuyo y lo pagas aparte del plan.
+- Plan Pro (ya activo): hace falta mantenerlo para usar dominio propio, enviar emails desde la web y ocultar la insignia de Lovable.
+
 ## Pasos que haces tú
 1. **Comprar el dominio** `westjavariders.com` desde el chat o en Ajustes del proyecto → Dominios. Si se compra con Lovable, queda conectado a la web automáticamente.
 2. **Activar los emails**: en el panel "Configurar dominio de correo" eliges ese dominio. Se verifica solo (puede tardar hasta unas horas).
