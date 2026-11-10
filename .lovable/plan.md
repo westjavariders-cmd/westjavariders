@@ -3,6 +3,7 @@
 ## Coste
 - `westjavariders.com`: 11,87 USD el primer año y lo mismo cada renovación anual. Es tuyo y lo pagas aparte del plan.
 - Plan Pro (ya activo): hace falta mantenerlo para usar dominio propio, enviar emails desde la web y ocultar la insignia de Lovable.
+- Comprar el dominio fuera de Lovable (Namecheap, GoDaddy…) es posible, pero no te libra del plan de pago: conectar el dominio, ocultar la insignia y enviar emails siguen necesitándolo. Además tendrías que añadir tú los registros DNS en ese proveedor. Comprarlo con Lovable lo deja conectado solo.
 
 ## Pasos que haces tú
 1. **Comprar el dominio** `westjavariders.com` desde el chat o en Ajustes del proyecto → Dominios. Si se compra con Lovable, queda conectado a la web automáticamente.
