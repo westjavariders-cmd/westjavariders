@@ -12,8 +12,12 @@ export const TRANSPORT_TYPE_LABELS: Record<TransportType, string> = {
   other_location: "Other location",
 };
 
-export const PEOPLE_OPTIONS = [1, 2, 3, 4] as const;
-export const TRAVEL_HOUR_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
+export const PEOPLE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
+export const TRAVEL_HOUR_OPTIONS = [
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+] as const;
+export const MAX_TRANSPORT_PEOPLE = 10;
+export const MAX_TRAVEL_HOURS = 30;
 
 export type Transport = {
   id: string;
@@ -86,8 +90,8 @@ export function validateTransport(input: {
     ["maximum", input.max_travel_hours],
   ] as const) {
     if (value == null) continue;
-    if (!Number.isInteger(value) || value < 1 || value > 9) {
-      issues.push(`The ${label} travel time must be between 1 and 9 hours.`);
+    if (!Number.isInteger(value) || value < 1 || value > MAX_TRAVEL_HOURS) {
+      issues.push(`The ${label} travel time must be between 1 and ${MAX_TRAVEL_HOURS} hours.`);
     }
   }
   const min = input.min_travel_hours;
@@ -104,8 +108,8 @@ export function validatePeoplePrices(
   const issues: string[] = [];
   const seen = new Set<number>();
   for (const row of rows) {
-    if (!Number.isInteger(row.people) || row.people < 1 || row.people > 4) {
-      issues.push("The number of people must be between 1 and 4.");
+    if (!Number.isInteger(row.people) || row.people < 1 || row.people > MAX_TRANSPORT_PEOPLE) {
+      issues.push(`The number of people must be between 1 and ${MAX_TRANSPORT_PEOPLE}.`);
     } else if (seen.has(row.people)) {
       issues.push(`There is more than one price for ${row.people} people.`);
     } else {
@@ -127,8 +131,8 @@ export function validateTimePrices(
   const issues: string[] = [];
   const seen = new Set<number>();
   for (const row of rows) {
-    if (!Number.isInteger(row.travel_hours) || row.travel_hours < 1 || row.travel_hours > 9) {
-      issues.push("Travel time must be between 1 and 9 hours.");
+    if (!Number.isInteger(row.travel_hours) || row.travel_hours < 1 || row.travel_hours > MAX_TRAVEL_HOURS) {
+      issues.push(`Travel time must be between 1 and ${MAX_TRAVEL_HOURS} hours.`);
     } else if (seen.has(row.travel_hours)) {
       issues.push(`There is more than one price for ${row.travel_hours} hours.`);
     } else {
@@ -198,4 +202,51 @@ export function moveItem<T>(items: T[], index: number, direction: -1 | 1): T[] {
   const [item] = next.splice(index, 1);
   next.splice(target, 0, item as T);
   return next;
+}
+
+const PREVIOUS_PEOPLE_CEILING = 7;
+const PREVIOUS_HOUR_CEILINGS = new Set([9, 14]);
+
+/**
+ * Public people/hours pickers follow the Admin grid.
+ * If every stored slot is the identity scale (1 costs 1, 2 costs 2, …),
+ * missing slots up to the new max are filled the same way (8→8, 15→15).
+ * Other tables are left as stored so we never invent a 0 Rp choice.
+ */
+export function expandTransportPriceChoices(
+  rows: { value: number; price_idr: number }[],
+  _oldFullMax: number,
+  newMax: number,
+): { value: number; price_idr: number }[] {
+  if (rows.length === 0) return [];
+  const byValue = new Map(rows.map((row) => [row.value, row.price_idr]));
+  const values = [...byValue.keys()].sort((a, b) => a - b);
+  const consecutiveFromOne = values.every((value, i) => value === i + 1);
+  if (!consecutiveFromOne) {
+    return values.map((value) => ({ value, price_idr: byValue.get(value) ?? 0 }));
+  }
+  const identity = values.every((value) => byValue.get(value) === value);
+  if (!identity) {
+    return values.map((value) => ({ value, price_idr: byValue.get(value) ?? 0 }));
+  }
+  return Array.from({ length: newMax }, (_, i) => {
+    const value = i + 1;
+    return { value, price_idr: byValue.get(value) ?? value };
+  });
+}
+
+export function publicTransportPeopleChoices(rows: { value: number; price_idr: number }[]) {
+  return expandTransportPriceChoices(rows, PREVIOUS_PEOPLE_CEILING, MAX_TRANSPORT_PEOPLE);
+}
+
+export function publicTransportHourChoices(
+  rows: { value: number; price_idr: number }[],
+  min: number | null,
+  max: number | null,
+) {
+  const expanded = expandTransportPriceChoices(rows, 14, MAX_TRAVEL_HOURS);
+  const cap = max != null && PREVIOUS_HOUR_CEILINGS.has(max) ? MAX_TRAVEL_HOURS : max;
+  return expanded.filter(
+    (row) => (min == null || row.value >= min) && (cap == null || row.value <= cap),
+  );
 }

@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  expandTransportPriceChoices,
   moveItem,
   otherLocationQuote,
   otherLocationQuoteMultiplied,
   parseIdr,
+  publicTransportHourChoices,
+  publicTransportPeopleChoices,
   transportMargin,
   validatePeoplePrices,
   validateTimePrices,
@@ -18,13 +21,13 @@ describe("transport validation", () => {
     expect(validateTransport({ internal_name: "X", transport_type: "boat" })).toHaveLength(1);
   });
 
-  it("keeps travel hours inside 1-9 and in order", () => {
+  it("keeps travel hours inside 1-30 and in order", () => {
     expect(
       validateTransport({
         internal_name: "Other",
         transport_type: "other_location",
         min_travel_hours: 1,
-        max_travel_hours: 9,
+        max_travel_hours: 30,
       }),
     ).toEqual([]);
     expect(
@@ -32,7 +35,7 @@ describe("transport validation", () => {
         internal_name: "Other",
         transport_type: "other_location",
         min_travel_hours: 0,
-        max_travel_hours: 10,
+        max_travel_hours: 31,
       }),
     ).toHaveLength(2);
     expect(
@@ -52,7 +55,7 @@ describe("transport validation", () => {
         { people: 2, supplier_cost_idr: 500000, customer_price_idr: 750000 },
       ]),
     ).toEqual([]);
-    expect(validatePeoplePrices([{ people: 5, supplier_cost_idr: 0, customer_price_idr: 0 }])).toHaveLength(1);
+    expect(validatePeoplePrices([{ people: 11, supplier_cost_idr: 0, customer_price_idr: 0 }])).toHaveLength(1);
     expect(
       validatePeoplePrices([
         { people: 2, supplier_cost_idr: 0, customer_price_idr: 0 },
@@ -64,8 +67,8 @@ describe("transport validation", () => {
   });
 
   it("rejects invalid or duplicate travel-hour prices", () => {
-    expect(validateTimePrices([{ travel_hours: 9, supplier_cost_idr: 0, customer_price_idr: 0 }])).toEqual([]);
-    expect(validateTimePrices([{ travel_hours: 10, supplier_cost_idr: 0, customer_price_idr: 0 }])).toHaveLength(1);
+    expect(validateTimePrices([{ travel_hours: 30, supplier_cost_idr: 0, customer_price_idr: 0 }])).toEqual([]);
+    expect(validateTimePrices([{ travel_hours: 31, supplier_cost_idr: 0, customer_price_idr: 0 }])).toHaveLength(1);
     expect(
       validateTimePrices([
         { travel_hours: 3, supplier_cost_idr: 0, customer_price_idr: 0 },
@@ -140,5 +143,46 @@ describe("otherLocationQuoteMultiplied", () => {
         peoplePrice: { supplier_cost_idr: 1, customer_price_idr: 1 },
       }),
     ).toBeNull();
+  });
+});
+
+describe("public transport pickers", () => {
+  it("opens an identity 1–7 people table to 1–10 with 8→8", () => {
+    const rows = [1, 2, 3, 4, 5, 6, 7].map((value) => ({ value, price_idr: value }));
+    const people = publicTransportPeopleChoices(rows);
+    expect(people.map((r) => r.value)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(people[7]).toEqual({ value: 8, price_idr: 8 });
+    expect(people[9]).toEqual({ value: 10, price_idr: 10 });
+  });
+
+  it("does not invent people slots when prices are real Rupiah, not 1=1", () => {
+    const rows = [1, 2, 3, 4].map((value) => ({ value, price_idr: value * 1000 }));
+    expect(publicTransportPeopleChoices(rows).map((r) => r.value)).toEqual([1, 2, 3, 4]);
+  });
+
+  it("leaves a sparse people table unchanged", () => {
+    expect(publicTransportPeopleChoices([{ value: 2, price_idr: 10 }])).toEqual([
+      { value: 2, price_idr: 10 },
+    ]);
+  });
+
+  it("opens an identity 1–14 hour table to 1–30 even when max travel time is still 14", () => {
+    const rows = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map((value) => ({
+      value,
+      price_idr: value,
+    }));
+    const hours = publicTransportHourChoices(rows, 1, 14);
+    expect(hours.map((r) => r.value)).toEqual(Array.from({ length: 30 }, (_, i) => i + 1));
+    expect(hours[14]).toEqual({ value: 15, price_idr: 15 });
+    expect(hours[29]).toEqual({ value: 30, price_idr: 30 });
+  });
+
+  it("still respects a shorter max travel time", () => {
+    const rows = [1, 2, 3, 4].map((value) => ({ value, price_idr: 1 }));
+    expect(publicTransportHourChoices(rows, null, 3).map((r) => r.value)).toEqual([1, 2, 3]);
+  });
+
+  it("does not invent rows for an empty table", () => {
+    expect(expandTransportPriceChoices([], 7, 10)).toEqual([]);
   });
 });

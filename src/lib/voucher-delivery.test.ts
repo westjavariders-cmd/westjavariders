@@ -4,6 +4,7 @@ import { buildEntitlement } from "@/lib/voucher";
 import {
   buildDocumentModel,
   buildEmailContent,
+  DEFAULT_BUSINESS_NAME,
   documentObjectPath,
   readContactSettings,
   resolveRecipients,
@@ -11,7 +12,7 @@ import {
 } from "@/lib/voucher-delivery";
 
 const CONTACT_ROWS = [
-  { key: "business_name", value: "Cimaja Boardriders" },
+  { key: "business_name", value: DEFAULT_BUSINESS_NAME },
   { key: "contact_email", value: "reservations@cimaja.example" },
   { key: "contact_whatsapp", value: "+62 811 111 222" },
   { key: "contact_location", value: "Cimaja, West Java" },
@@ -119,6 +120,7 @@ describe("voucher document", () => {
     expect(check.ok).toBe(false);
     expect(check.ok === false && check.missing).toContain("contact_email");
     expect(check.ok === false && check.missing).toContain("contact_whatsapp");
+    expect(check.contact.business_name).toBe(DEFAULT_BUSINESS_NAME);
   });
 
   it("keeps document paths unguessable from the voucher number", () => {

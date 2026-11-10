@@ -30,6 +30,9 @@ export const EMAIL_STATUS_LABELS: Record<EmailStatus, string> = {
 /* Contact configuration (Admin settings, never hardcoded)             */
 /* ------------------------------------------------------------------ */
 
+/** Official commercial brand. Proper name: do not translate when public i18n lands. */
+export const DEFAULT_BUSINESS_NAME = "West Java Riders";
+
 export type ContactSettings = {
   business_name: string;
   contact_email: string;
@@ -55,7 +58,7 @@ function value(raw: unknown): string {
 export function readContactSettings(rows: { key: string; value: string }[] | null | undefined): ContactCheck {
   const map = new Map((rows ?? []).map((r) => [r.key, value(r.value)]));
   const contact: ContactSettings = {
-    business_name: map.get("business_name") || "Cimaja Boardriders",
+    business_name: map.get("business_name") || DEFAULT_BUSINESS_NAME,
     contact_email: map.get("contact_email") ?? "",
     contact_whatsapp: map.get("contact_whatsapp") ?? "",
     contact_location: map.get("contact_location") ?? "",
@@ -284,10 +287,13 @@ export function buildEmailContent(args: {
   for (const item of model.experience.items) {
     lines.push("");
     lines.push(item.product_title);
+    for (const o of item.options) {
+      lines.push(`  ${o.label}`);
+      lines.push(`    ${o.value}`);
+    }
     if (item.base_price) lines.push(`  Base price: ${item.base_price}`);
     for (const b of item.breakdown) lines.push(`  ${b.label}: ${b.value}`);
     if (item.total) lines.push(`  Package total: ${item.total}`);
-    for (const o of item.options) lines.push(`  ${o.label}: ${o.value}`);
     if (item.people != null) lines.push(`  People: ${item.people}`);
     if (item.quantity != null) lines.push(`  Quantity: ${item.quantity}`);
   }
@@ -318,12 +324,17 @@ ${isGift ? "" : model.commercial.map((l) => `<tr><td style="padding:6px 0;color:
 ${model.experience.items
     .map(
       (item) => `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin:0 0 12px">
-<p style="font-size:15px;font-weight:bold;margin:0 0 6px">${escape(item.product_title)}</p>
-<table role="presentation" style="width:100%;border-collapse:collapse;font-size:13px">
+<p style="font-size:15px;font-weight:bold;margin:0 0 10px">${escape(item.product_title)}</p>
+${item.options
+  .map(
+    (o) => `<p style="font-size:12px;color:#6b7280;margin:10px 0 0">${escape(o.label)}</p>
+<p style="font-size:14px;font-weight:bold;margin:2px 0 0">${escape(o.value)}</p>`,
+  )
+  .join("")}
+<table role="presentation" style="width:100%;border-collapse:collapse;font-size:13px;margin-top:12px">
 ${item.base_price ? `<tr><td style="padding:3px 0;color:#6b7280">Base price</td><td style="padding:3px 0;text-align:right">${escape(item.base_price)}</td></tr>` : ""}
 ${item.breakdown.map((b) => `<tr><td style="padding:3px 0;color:#6b7280">${escape(b.label)}</td><td style="padding:3px 0;text-align:right">${escape(b.value)}</td></tr>`).join("")}
 ${item.total ? `<tr><td style="padding:3px 0;font-weight:bold">Package total</td><td style="padding:3px 0;text-align:right;font-weight:bold">${escape(item.total)}</td></tr>` : ""}
-${item.options.map((o) => `<tr><td style="padding:3px 0;color:#6b7280">${escape(o.label)}</td><td style="padding:3px 0;text-align:right">${escape(o.value)}</td></tr>`).join("")}
 ${item.people != null ? `<tr><td style="padding:3px 0;color:#6b7280">People</td><td style="padding:3px 0;text-align:right">${item.people}</td></tr>` : ""}
 ${item.quantity != null ? `<tr><td style="padding:3px 0;color:#6b7280">Quantity</td><td style="padding:3px 0;text-align:right">${item.quantity}</td></tr>` : ""}
 </table></div>`,

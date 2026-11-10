@@ -14,22 +14,76 @@ import { formatIdr } from "@/lib/public-catalog";
 import { discardDraftPackage, removeCartPackage } from "@/lib/cart.functions";
 import { saveTrip } from "@/lib/saved-trip.functions";
 import { confirmCheckout, getCheckoutSummary } from "@/lib/purchase.functions";
+import { getBookingConditions } from "@/lib/booking-conditions.functions";
+import { CART_CONDITIONS_ACCEPTANCE_LABEL, CART_GIFT_LABEL } from "@/lib/booking-conditions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { sendContactRequest } from "@/lib/contact.functions";
+
+const CART_PAYMENT_SUMMARY_KEY = ["cart-payment-summary"] as const;
+
+function CartConfigSummary({
+  lines,
+  promoCode,
+  expanded,
+  onToggle,
+}: {
+  lines: { label: string; value: string }[];
+  promoCode: string | null;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  if (lines.length === 0 && !promoCode) return null;
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        className="text-xs uppercase tracking-[0.14em] text-muted-foreground underline"
+        onClick={onToggle}
+      >
+        {expanded ? "Hide details" : "View details"}
+      </button>
+      {expanded ? (
+        <dl className="space-y-1 text-sm">
+          {lines.map((line) => (
+            <div key={`${line.label}\u0000${line.value}`} className="flex justify-between gap-4">
+              <dt className="min-w-0 truncate text-muted-foreground">{line.label}</dt>
+              <dd className="max-w-[60%] truncate text-right">{line.value}</dd>
+            </div>
+          ))}
+          {promoCode && (
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Promo code</dt>
+              <dd className="truncate">{promoCode}</dd>
+            </div>
+          )}
+        </dl>
+      ) : null}
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
     meta: [
-      { title: "Your Cart | Cimaja Boardriders" },
+      { title: "Your Cart | West Java Riders" },
       {
         name: "description",
         content:
           "Review the packages you have built for your Cimaja surf and travel trip before booking.",
       },
-      { property: "og:title", content: "Your Cart — Cimaja Boardriders" },
+      { property: "og:title", content: "Your Cart — West Java Riders" },
       {
         property: "og:description",
         content: "Review the packages you have built for your Cimaja surf and travel trip.",
@@ -49,20 +103,28 @@ function CartPage() {
   const discard = useServerFn(discardDraftPackage);
   const summaryFn = useServerFn(getCheckoutSummary);
   const pay = useServerFn(confirmCheckout);
+  const loadConditions = useServerFn(getBookingConditions);
   const [busy, setBusy] = useState<string | null>(null);
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [contact, setContact] = useState({ full_name: "", email: "", phone: "", country: "" });
   const [isGift, setIsGift] = useState(false);
   const [gift, setGift] = useState({ recipient: "", message: "" });
   const [riskAccepted, setRiskAccepted] = useState(false);
+  const [conditionsOpen, setConditionsOpen] = useState(false);
+  const [giftHelpOpen, setGiftHelpOpen] = useState(false);
+
+  const conditions = useQuery({
+    queryKey: ["booking-conditions"],
+    queryFn: () => loadConditions({ data: undefined as never }),
+  });
 
   // Server-authoritative amounts: what would be charged right now.
   const summary = useQuery({
-    queryKey: ["cart-payment-summary"],
+    queryKey: CART_PAYMENT_SUMMARY_KEY,
     queryFn: () => summaryFn({ data: undefined as never }),
     refetchOnWindowFocus: false,
   });
-  const money = summary.data;
+  const money = summary.isError ? undefined : summary.data;
   const blockers = money?.blockers ?? [];
 
   async function payNow() {
@@ -98,6 +160,7 @@ function CartPage() {
     try {
       await fn();
       await queryClient.invalidateQueries({ queryKey: PUBLIC_CART_KEY });
+      await queryClient.invalidateQueries({ queryKey: CART_PAYMENT_SUMMARY_KEY });
       await cart.refetch();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : failure);
@@ -115,48 +178,54 @@ function CartPage() {
 
       {cart.isPending && <p className="mt-4 text-sm text-muted-foreground">Loading…</p>}
 
-      {!cart.isPending && packages.length === 0 && !draft && (
+      {cart.isError && (
         <div className="mt-4 space-y-4">
-          <p className="text-sm text-muted-foreground">Your cart is empty.</p>
-          <Button onClick={() => navigate({ to: "/build-your-trip" })}>Build your trip</Button>
+          <p role="alert" className="text-sm text-muted-foreground">
+            {cart.error instanceof Error ? cart.error.message : "Your cart could not be loaded."}
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => {
+              void cart.refetch();
+            }}
+          >
+            Try again
+          </Button>
         </div>
       )}
 
+      {!cart.isPending && !cart.isError && packages.length === 0 && !draft && (
+        <div className="mt-4 space-y-4">
+          <p className="text-sm text-muted-foreground">Your cart is empty.</p>
+          <Button onClick={() => navigate({ to: "/home" })}>See trips</Button>
+        </div>
+      )}
+
+      {!cart.isError && (
+      <>
       <div className="mt-6 space-y-3">
-        {packages.map((p) => (
+        {packages.map((p) => {
+          const quoted = money?.packages.find((row) => row.package_id === p.id);
+          return (
           <Card key={p.id}>
             <CardContent className="space-y-3 p-4">
               <div className="flex items-baseline justify-between gap-3">
-                <p className="text-sm font-medium">
-                  {p.product_id
-                    ? `${p.product_title.toUpperCase()} — PACKAGE`
-                    : p.product_title.toUpperCase()}
+                <p className="min-w-0 text-sm font-medium">
+                  {`${p.product_title.toUpperCase()} — PACKAGE`}
                 </p>
-                <p className="text-base font-semibold">{formatIdr(p.total_idr)}</p>
+                <p className="shrink-0 text-base font-semibold">{formatIdr(p.total_idr)}</p>
               </div>
-              <button
-                type="button"
-                className="text-xs uppercase tracking-[0.14em] text-muted-foreground underline"
-                onClick={() => setOpen((o) => ({ ...o, [p.id]: !o[p.id] }))}
-              >
-                {open[p.id] ? "Hide details" : "View details"}
-              </button>
-              {open[p.id] && (
-                <dl className="space-y-1 border-t border-border pt-3 text-sm">
-                  {p.summary.map((line) => (
-                    <div key={line.label} className="flex justify-between gap-4">
-                      <dt className="text-muted-foreground">{line.label}</dt>
-                      <dd className="text-right">{line.value}</dd>
-                    </div>
-                  ))}
-                  {p.promo_code && (
-                    <div className="flex justify-between gap-4">
-                      <dt className="text-muted-foreground">Promo code</dt>
-                      <dd>{p.promo_code}</dd>
-                    </div>
-                  )}
-                </dl>
+              {quoted?.price_changed && (
+                <p className="text-xs text-muted-foreground">
+                  Current price {formatIdr(quoted.total_idr)}
+                </p>
               )}
+              <CartConfigSummary
+                lines={p.summary}
+                promoCode={p.promo_code}
+                expanded={Boolean(open[p.id])}
+                onToggle={() => setOpen((o) => ({ ...o, [p.id]: !o[p.id] }))}
+              />
               <Button
                 variant="outline"
                 size="sm"
@@ -173,27 +242,34 @@ function CartPage() {
               </Button>
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
 
         {draft && (
           <Card className="border-dashed">
             <CardContent className="space-y-3 p-4">
               <div className="flex items-baseline justify-between gap-3">
-                <p className="text-sm font-medium">
+                <p className="min-w-0 text-sm font-medium">
                   {draft.product_title.toUpperCase()} — CURRENT PACKAGE
                 </p>
-                <p className="text-base font-semibold">{formatIdr(draft.total_idr)}</p>
+                <p className="shrink-0 text-base font-semibold">{formatIdr(draft.total_idr)}</p>
               </div>
               <p className="text-xs text-muted-foreground">
                 Not finished yet, so it is not part of your total.
               </p>
+              <CartConfigSummary
+                lines={draft.summary}
+                promoCode={draft.promo_code}
+                expanded={Boolean(open[draft.id])}
+                onToggle={() => setOpen((o) => ({ ...o, [draft.id]: !o[draft.id] }))}
+              />
               <div className="flex flex-wrap gap-2">
                 {draft.product_id && (
                   <Button
                     size="sm"
                     onClick={() =>
                       navigate({
-                        to: "/build-your-trip/$productId",
+                        to: "/build-your-trip/$productId/configure",
                         params: { productId: draft.product_id as string },
                       })
                     }
@@ -217,8 +293,26 @@ function CartPage() {
         )}
       </div>
 
-      {(packages.length > 0 || draft) && (
+      {packages.length > 0 && (
         <div className="mt-6 space-y-3 border-t border-border pt-4">
+          {summary.isError ? (
+            <div className="space-y-3">
+              <p role="alert" className="text-sm text-muted-foreground">
+                {summary.error instanceof Error
+                  ? summary.error.message
+                  : "This total could not be verified."}
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  void summary.refetch();
+                }}
+              >
+                Try again
+              </Button>
+            </div>
+          ) : (
+            <>
           {money && (
             <>
               <div className="flex items-baseline justify-between">
@@ -324,21 +418,46 @@ function CartPage() {
                 </div>
               </div>
 
-              <label className="flex items-start gap-3 border-t border-border pt-4 text-sm">
+              <div className="flex items-start gap-3 border-t border-border pt-4 text-sm">
                 <input
+                  id="cart-is-gift"
                   type="checkbox"
-                  className="mt-1 h-4 w-4 accent-primary"
+                  className="mt-1 h-4 w-4 shrink-0 accent-primary"
                   checked={isGift}
                   onChange={(e) => setIsGift(e.target.checked)}
+                  aria-label={CART_GIFT_LABEL}
                 />
-                <span>
-                  <span className="font-medium">This is a gift</span>
-                  <span className="block text-xs text-muted-foreground">
-                    We send everything to you, so you can give it yourself. The price is never
-                    shown on a gift.
-                  </span>
-                </span>
-              </label>
+                <button
+                  type="button"
+                  className="text-left font-medium underline underline-offset-2"
+                  onClick={() => setGiftHelpOpen(true)}
+                >
+                  {CART_GIFT_LABEL}
+                </button>
+              </div>
+
+              <Dialog open={giftHelpOpen} onOpenChange={setGiftHelpOpen}>
+                <DialogContent className="flex max-h-[min(85vh,40rem)] max-w-2xl flex-col gap-4 overflow-hidden">
+                  <DialogHeader>
+                    <DialogTitle>This is a gift</DialogTitle>
+                    <DialogDescription>
+                      Optional. Close this window when you are ready — you do not have to open it to pay.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                      {conditions.data?.gift_body?.trim()
+                        ? conditions.data.gift_body
+                        : "We send everything to you, so you can give it yourself. The price is never shown on a gift."}
+                    </p>
+                  </div>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button type="button">Back to cart</Button>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
               {isGift && (
                 <div className="space-y-3">
@@ -364,18 +483,46 @@ function CartPage() {
                 </div>
               )}
 
-              <label className="flex items-start gap-3 border-t border-border pt-4 text-sm">
+              <div className="flex items-start gap-3 border-t border-border pt-4 text-sm">
                 <input
+                  id="cart-risk-accepted"
                   type="checkbox"
-                  className="mt-1 h-4 w-4 accent-primary"
+                  className="mt-1 h-4 w-4 shrink-0 accent-primary"
                   checked={riskAccepted}
                   onChange={(e) => setRiskAccepted(e.target.checked)}
+                  aria-label={CART_CONDITIONS_ACCEPTANCE_LABEL}
                 />
-                <span>
-                  I understand that surfing and travel activities carry risks, and I accept the
-                  booking conditions.
-                </span>
-              </label>
+                <button
+                  type="button"
+                  className="text-left underline underline-offset-2"
+                  onClick={() => setConditionsOpen(true)}
+                >
+                  {CART_CONDITIONS_ACCEPTANCE_LABEL}
+                </button>
+              </div>
+
+              <Dialog open={conditionsOpen} onOpenChange={setConditionsOpen}>
+                <DialogContent className="flex max-h-[min(85vh,40rem)] max-w-2xl flex-col gap-4 overflow-hidden">
+                  <DialogHeader>
+                    <DialogTitle>Booking conditions</DialogTitle>
+                    <DialogDescription>
+                      Read these conditions, then close this window to accept and pay.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                      {conditions.data?.body?.trim()
+                        ? conditions.data.body
+                        : "The booking conditions have not been published yet. You can close this window and contact us if you need them before paying."}
+                    </p>
+                  </div>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button type="button">Back to cart</Button>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
               <Button
                 className="w-full"
@@ -384,7 +531,8 @@ function CartPage() {
                   busy === "pay" ||
                   blockers.length > 0 ||
                   !riskAccepted ||
-                  summary.isPending
+                  summary.isPending ||
+                  summary.isError
                 }
                 onClick={payNow}
               >
@@ -392,17 +540,29 @@ function CartPage() {
               </Button>
             </>
           )}
+            </>
+          )}
 
           {packages.length > 0 && <ShareTrip />}
           <ContactUs />
 
           <Link
-            to="/build-your-trip"
+            to="/home"
             className="block text-center text-sm underline underline-offset-2"
           >
             Continue shopping
           </Link>
         </div>
+      )}
+      {packages.length === 0 && draft && (
+        <Link
+          to="/home"
+          className="mt-6 block text-center text-sm underline underline-offset-2"
+        >
+          Continue shopping
+        </Link>
+      )}
+      </>
       )}
     </PublicPage>
   );

@@ -14,6 +14,8 @@ import {
   type CatalogueItemsByKey,
 } from "@/lib/catalogue-bridge";
 import { previewCatalogue } from "@/lib/catalog.functions";
+import { ConfiguratorQuantityStepper } from "@/components/public/ConfiguratorQuantityStepper";
+import { integerQuantityChoices } from "@/lib/quantity-choices";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -191,13 +193,13 @@ export function PreviewTab({ bundle }: { bundle: ProductBundle }) {
                 )}
 
                 {(f.field_type === "quantity" || f.field_type === "number") && (
-                  <Input
-                    inputMode="decimal"
-                    disabled={e.disabled}
+                  <ConfiguratorQuantityStepper
+                    choices={integerQuantityChoices(e.min, e.max)}
                     value={String(value)}
-                    min={e.min ?? undefined}
-                    max={e.max ?? undefined}
-                    onChange={(ev) => set(f, ev.target.value)}
+                    disabled={e.disabled}
+                    decreaseLabel={`Decrease ${f.customer_label ?? f.internal_name}`}
+                    increaseLabel={`Increase ${f.customer_label ?? f.internal_name}`}
+                    onChange={(next) => set(f, next)}
                   />
                 )}
 

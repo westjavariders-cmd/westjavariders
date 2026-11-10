@@ -7,6 +7,7 @@ import { Upload } from "lucide-react";
 
 import { PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
+import { prepareImageForUpload } from "@/lib/encode-upload-image";
 import {
   MOTORBIKE_PHOTO_BUCKET,
   motorbikeMargin,
@@ -150,8 +151,9 @@ function MotorbikeEditorPage() {
     if (!file) return;
     setUploading(true);
     try {
-      const path = motorbikePhotoPath(motorbikeId, file.name);
-      const { error } = await supabase.storage.from(MOTORBIKE_PHOTO_BUCKET).upload(path, file);
+      const image = await prepareImageForUpload(file);
+      const path = motorbikePhotoPath(motorbikeId, image.name);
+      const { error } = await supabase.storage.from(MOTORBIKE_PHOTO_BUCKET).upload(path, image);
       if (error) throw new Error(error.message);
       await savePhoto({ data: { id: motorbikeId, photo_path: path } });
       toast.success("Photo saved.");

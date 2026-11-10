@@ -12,7 +12,6 @@ import {
   MASTER_LANGUAGE,
   evaluateDependencies,
   stripInactiveAnswers,
-
   type PreviewValues,
   type ProductBundle,
 } from "@/lib/catalog";
@@ -104,7 +103,10 @@ async function findCart(token: string): Promise<CartRow | null> {
  * Returns the open cart for this browser, creating one only when asked.
  * `explicitToken` exists for server-side tests; requests always use the cookie.
  */
-export async function currentCart(create: boolean, explicitToken?: string): Promise<CartRow | null> {
+export async function currentCart(
+  create: boolean,
+  explicitToken?: string,
+): Promise<CartRow | null> {
   const token = explicitToken ?? readCookieToken();
   let reusableToken: string | null = null;
   if (token) {
@@ -156,34 +158,40 @@ async function loadSeason(db: any, productId: string): Promise<SeasonConfig> {
     db.from("product_season_periods").select("*").eq("product_id", productId),
     db.from("product_season_months").select("*").eq("product_id", productId).order("month"),
   ]);
-  return { settings: settings.data ?? null, periods: periods.data ?? [], months: months.data ?? [] };
+  return {
+    settings: settings.data ?? null,
+    periods: periods.data ?? [],
+    months: months.data ?? [],
+  };
 }
 
 async function loadPricingContext(db: any, productId: string) {
   const { data: product } = await db.from("products").select("*").eq("id", productId).maybeSingle();
   if (!product) fail("This product could not be found.");
 
-  const [translation, components, flow, fields, dependencies, pricing, categories] = await Promise.all([
-    db
-      .from("product_translations")
-      .select("*")
-      .eq("product_id", productId)
-      .eq("language_code", MASTER_LANGUAGE)
-      .maybeSingle(),
-    db.from("product_components").select("*").eq("product_id", productId).order("display_order"),
-    db.from("config_flows").select("*").eq("product_id", productId).maybeSingle(),
-    db.from("fields").select("*").eq("product_id", productId).order("display_order"),
-    db.from("dependencies").select("*").eq("product_id", productId),
-    db.from("product_pricing").select("*").eq("product_id", productId).maybeSingle(),
-    db.from("product_categories").select("category_id").eq("product_id", productId),
-  ]);
+  const [translation, components, flow, fields, dependencies, pricing, categories] =
+    await Promise.all([
+      db
+        .from("product_translations")
+        .select("*")
+        .eq("product_id", productId)
+        .eq("language_code", MASTER_LANGUAGE)
+        .maybeSingle(),
+      db.from("product_components").select("*").eq("product_id", productId).order("display_order"),
+      db.from("config_flows").select("*").eq("product_id", productId).maybeSingle(),
+      db.from("fields").select("*").eq("product_id", productId).order("display_order"),
+      db.from("dependencies").select("*").eq("product_id", productId),
+      db.from("product_pricing").select("*").eq("product_id", productId).maybeSingle(),
+      db.from("product_categories").select("category_id").eq("product_id", productId),
+    ]);
 
   const steps = flow.data
     ? (await db.from("steps").select("*").eq("flow_id", flow.data.id).order("display_order")).data
     : [];
   const fieldIds = (fields.data ?? []).map((f: any) => f.id);
   const options = fieldIds.length
-    ? (await db.from("field_options").select("*").in("field_id", fieldIds).order("display_order")).data
+    ? (await db.from("field_options").select("*").in("field_id", fieldIds).order("display_order"))
+        .data
     : [];
 
   const bundle: ProductBundle = {
@@ -203,14 +211,21 @@ async function loadPricingContext(db: any, productId: string) {
   if (!pricingRow) fail("This product has no pricing configuration yet.");
 
   const rules =
-    (await db.from("pricing_rules").select("*").eq("pricing_id", pricingRow.id).order("display_order")).data ??
-    [];
+    (
+      await db
+        .from("pricing_rules")
+        .select("*")
+        .eq("pricing_id", pricingRow.id)
+        .order("display_order")
+    ).data ?? [];
   const ruleIds = rules.map((r: any) => r.id);
   const tiers = ruleIds.length
-    ? ((await db.from("pricing_tiers").select("*").in("rule_id", ruleIds).order("display_order")).data ?? [])
+    ? ((await db.from("pricing_tiers").select("*").in("rule_id", ruleIds).order("display_order"))
+        .data ?? [])
     : [];
   const versions =
-    (await db.from("formula_versions").select("*").eq("pricing_id", pricingRow.id).order("version")).data ?? [];
+    (await db.from("formula_versions").select("*").eq("pricing_id", pricingRow.id).order("version"))
+      .data ?? [];
 
   return { bundle, pricing: pricingRow, rules, tiers, versions };
 }
@@ -226,8 +241,7 @@ export function configurationIssues(bundle: ProductBundle, values: PreviewValues
     if (e.hidden && !e.forcedVisible) continue;
     if (e.reset) continue;
     const raw = e.forcedValue ?? values[f.variable_name];
-    const empty =
-      raw == null || raw === "" || (Array.isArray(raw) && raw.length === 0);
+    const empty = raw == null || raw === "" || (Array.isArray(raw) && raw.length === 0);
     const label = f.customer_label || f.internal_name;
     if (e.required && empty) {
       issues.push(`${label} is required.`);
@@ -247,7 +261,10 @@ export function configurationIssues(bundle: ProductBundle, values: PreviewValues
 function serializeInputs(inputs: PricingInputs) {
   const out: Record<string, { type: string; value: string | boolean | string[] }> = {};
   for (const [k, v] of Object.entries(inputs)) {
-    out[k] = v.type === "number" ? { type: "number", value: exactToString(v.value) } : { type: v.type, value: v.value };
+    out[k] =
+      v.type === "number"
+        ? { type: "number", value: exactToString(v.value) }
+        : { type: v.type, value: v.value };
   }
   return out;
 }
@@ -316,7 +333,10 @@ export async function quotePackage(args: {
   const catalogue = await resolveCatalogues(fieldCatalogueRefs(catalogueFields as never));
   // Answers for fields the saved dependencies currently hide or reset are
   // dropped first, so they never price, validate or persist.
-  const visibleAnswers = stripInactiveAnswers(loaded.bundle, args.answers as never) as PreviewValues;
+  const visibleAnswers = stripInactiveAnswers(
+    loaded.bundle,
+    args.answers as never,
+  ) as PreviewValues;
   const answers = stripInvalidCatalogueAnswers(
     catalogueFields as never,
     visibleAnswers as Record<string, unknown>,
@@ -324,14 +344,13 @@ export async function quotePackage(args: {
   ) as PreviewValues;
   const { selections, invalid } = resolveCatalogueSelections(
     catalogueFields as never,
-    visibleAnswers as Record<string, unknown>,
+    answers as Record<string, unknown>,
     catalogue,
     (f) => {
       const field = catalogueFields.find((x: any) => x.variable_name === f.variable_name) as any;
       return field?.customer_label || field?.internal_name || f.variable_name;
     },
   );
-
 
   const inputs = resolveInputs(loaded.bundle, answers as never);
   for (const [name, amount] of Object.entries(cataloguePriceVariables(selections))) {
@@ -411,12 +430,6 @@ async function nextPosition(cartId: string) {
 
 /** Starts a draft Package for a product. At most one draft per cart. */
 export async function startPackage(productId: string, token?: string) {
-  const cart = (await currentCart(true, token))!;
-  const existingDraft = await getDraft(cart.id);
-  if (existingDraft) {
-    fail("You already have a package in progress. Finish or discard it first.");
-  }
-
   const db = await admin();
   const { data: product } = await db
     .from("products")
@@ -424,6 +437,22 @@ export async function startPackage(productId: string, token?: string) {
     .eq("id", productId)
     .maybeSingle();
   if (!product) fail("This product could not be found.");
+
+  const { data: pricing } = await db
+    .from("product_pricing")
+    .select("status")
+    .eq("product_id", productId)
+    .maybeSingle();
+  // Same gate as getPublicProduct / publicProductBundle: product + pricing both active.
+  if (!isPurchasable(product.status, pricing?.status)) {
+    fail("This product is not available for booking right now.");
+  }
+
+  const cart = (await currentCart(true, token))!;
+  const existingDraft = await getDraft(cart.id);
+  if (existingDraft) {
+    fail("You already have a package in progress. Finish or discard it first.");
+  }
 
   const { data: pkg, error } = await db
     .from("packages")
@@ -589,7 +618,11 @@ export async function removePackage(packageId: string, token?: string) {
   await assertPackageInCart(cart.id, packageId);
 
   const db = await admin();
-  const { data: pkg } = await db.from("packages").select("id, status").eq("id", packageId).maybeSingle();
+  const { data: pkg } = await db
+    .from("packages")
+    .select("id, status")
+    .eq("id", packageId)
+    .maybeSingle();
   if (!pkg) fail("This package could not be found.");
   if (pkg.status !== "complete") fail("Only a completed package can be removed from the cart.");
 

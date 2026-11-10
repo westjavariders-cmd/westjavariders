@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ArrowDown, ArrowUp, Plus, Trash2, Upload } from "lucide-react";
 
 import { PageHeader } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
+import { prepareImageForUpload } from "@/lib/encode-upload-image";
 import {
   deleteBlock,
   deleteSection,
@@ -43,7 +44,13 @@ export const Route = createFileRoute("/admin/_app/website/$pageId")({
   component: WebsitePageEditor,
 });
 
-type SectionRow = { id: string; internal_name: string; is_active: boolean; sort_order: number };
+type SectionRow = {
+  id: string;
+  internal_name: string;
+  is_active: boolean;
+  sort_order: number;
+  image_path: string | null;
+};
 type BlockRow = {
   id: string;
   section_id: string;
@@ -118,13 +125,19 @@ function WebsitePageEditor() {
   const sections = useQuery({
     queryKey: ["website-sections", pageId],
     queryFn: async () => {
+      const withImage = await supabase
+        .from("website_sections")
+        .select("id, internal_name, is_active, sort_order, image_path")
+        .eq("page_id", pageId)
+        .order("sort_order");
+      if (!withImage.error) return (withImage.data ?? []) as SectionRow[];
       const { data, error } = await supabase
         .from("website_sections")
         .select("id, internal_name, is_active, sort_order")
         .eq("page_id", pageId)
         .order("sort_order");
       if (error) throw new Error(error.message);
-      return (data ?? []) as SectionRow[];
+      return (data ?? []).map((row) => ({ ...row, image_path: null })) as SectionRow[];
     },
   });
 
@@ -239,7 +252,29 @@ function WebsitePageEditor() {
     is_active: boolean;
     title: string;
     subtitle: string;
+    image_path: string | null;
   } | null>(null);
+  const sectionImageInput = useRef<HTMLInputElement>(null);
+  const [sectionImagePreview, setSectionImagePreview] = useState<string | null>(null);
+  const [sectionUploading, setSectionUploading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function preview() {
+      if (!sectionDraft?.image_path) {
+        setSectionImagePreview(null);
+        return;
+      }
+      const { data } = await supabase.storage
+        .from(WEBSITE_MEDIA_BUCKET)
+        .createSignedUrl(sectionDraft.image_path, 3600);
+      if (!cancelled) setSectionImagePreview(data?.signedUrl ?? null);
+    }
+    void preview();
+    return () => {
+      cancelled = true;
+    };
+  }, [sectionDraft?.image_path]);
 
   async function submitSection() {
     if (!sectionDraft) return;
@@ -253,6 +288,7 @@ function WebsitePageEditor() {
           language: activeLanguage,
           title: sectionDraft.title,
           subtitle: sectionDraft.subtitle,
+          image_path: sectionDraft.image_path,
         },
       });
       toast.success("Section saved.");
@@ -260,6 +296,25 @@ function WebsitePageEditor() {
       refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "This section could not be saved.");
+    }
+  }
+
+  async function uploadSectionImage(files: FileList | null) {
+    const file = files?.[0];
+    if (!file || !sectionDraft) return;
+    setSectionUploading(true);
+    try {
+      const image = await prepareImageForUpload(file);
+      const path = `section-buttons/${crypto.randomUUID()}-${image.name}`;
+      const { error } = await supabase.storage.from(WEBSITE_MEDIA_BUCKET).upload(path, image);
+      if (error) throw new Error(error.message);
+      setSectionDraft({ ...sectionDraft, image_path: path });
+      toast.success("Photo uploaded. Save the section to keep it.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "This photo could not be uploaded.");
+    } finally {
+      setSectionUploading(false);
+      if (sectionImageInput.current) sectionImageInput.current.value = "";
     }
   }
 
@@ -370,17 +425,27 @@ function WebsitePageEditor() {
     if (!files || files.length === 0 || !blockDraft) return;
     const file = files[0];
     if (!file) return;
-    const kind = file.type.startsWith("video/") ? "video" : "image";
+    const kind =
+      blockDraft.block_kind === "catalogue" || !file.type.startsWith("video/") ? "image" : "video";
+    if (blockDraft.block_kind === "catalogue" && !file.type.startsWith("image/")) {
+      toast.error("Use a photo for this button.");
+      return;
+    }
     setUploading(true);
     try {
-      const safe = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "-");
+      const toStore = kind === "video" ? file : await prepareImageForUpload(file);
+      const safe = toStore.name.replace(/[^a-zA-Z0-9.\-_]/g, "-");
       const path = `blocks/${crypto.randomUUID()}-${safe}`;
-      const { error } = await supabase.storage.from(WEBSITE_MEDIA_BUCKET).upload(path, file);
+      const { error } = await supabase.storage.from(WEBSITE_MEDIA_BUCKET).upload(path, toStore);
       if (error) throw new Error(error.message);
       setBlockDraft({ ...blockDraft, media_kind: kind, media_path: path });
       const { data } = await supabase.storage.from(WEBSITE_MEDIA_BUCKET).createSignedUrl(path, 3600);
       setMediaPreview(data?.signedUrl ?? null);
-      toast.success("Media uploaded. Save the block to keep it.");
+      toast.success(
+        blockDraft.block_kind === "catalogue"
+          ? "Photo uploaded. Save the block to keep it."
+          : "Media uploaded. Save the block to keep it.",
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "This file could not be uploaded.");
     } finally {
@@ -491,7 +556,13 @@ function WebsitePageEditor() {
               <Button
                 size="sm"
                 onClick={() =>
-                  setSectionDraft({ internal_name: "", is_active: true, title: "", subtitle: "" })
+                  setSectionDraft({
+                    internal_name: "",
+                    is_active: true,
+                    title: "",
+                    subtitle: "",
+                    image_path: null,
+                  })
                 }
               >
                 <Plus className="mr-1.5 h-3.5 w-3.5" />
@@ -525,6 +596,9 @@ function WebsitePageEditor() {
                   value={sectionDraft.title}
                   onChange={(e) => setSectionDraft({ ...sectionDraft, title: e.target.value })}
                 />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  On Book individually this is the first tile visitors tap (the group).
+                </p>
               </div>
             </div>
             <div>
@@ -535,6 +609,41 @@ function WebsitePageEditor() {
                 value={sectionDraft.subtitle}
                 onChange={(e) => setSectionDraft({ ...sectionDraft, subtitle: e.target.value })}
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Section button photo</Label>
+              <p className="text-xs text-muted-foreground">
+                Optional. Fills the Book individually group tile. Leave empty to use a photo from the catalogues inside.
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  ref={sectionImageInput}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => void uploadSectionImage(e.target.files)}
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={sectionUploading}
+                  onClick={() => sectionImageInput.current?.click()}
+                >
+                  {sectionDraft.image_path ? "Replace photo" : "Upload photo"}
+                </Button>
+                {sectionDraft.image_path && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setSectionDraft({ ...sectionDraft, image_path: null })}
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
+              {sectionImagePreview && (
+                <img src={sectionImagePreview} alt="" className="h-20 max-w-xs rounded-md object-cover" />
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Switch
@@ -691,18 +800,35 @@ function WebsitePageEditor() {
             </div>
 
             <div className="space-y-2">
-              <Label>Image or video</Label>
+              {blockDraft.block_kind === "catalogue" ? (
+                <>
+                  <Label>Catalogue button photo</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Optional. Fills this catalogue tile in Book individually. Leave empty to use a photo from an item inside.
+                  </p>
+                </>
+              ) : (
+                <Label>Image or video</Label>
+              )}
               <input
                 ref={fileInput}
                 type="file"
-                accept="image/*,video/*"
+                accept={blockDraft.block_kind === "catalogue" ? "image/*" : "image/*,video/*"}
                 className="hidden"
                 onChange={(e) => void uploadMedia(e.target.files)}
               />
               <div className="flex items-center gap-2">
                 <Button size="sm" variant="outline" disabled={uploading} onClick={() => fileInput.current?.click()}>
                   <Upload className="mr-1.5 h-3.5 w-3.5" />
-                  {uploading ? "Uploading…" : blockDraft.media_path ? "Replace media" : "Upload media"}
+                  {uploading
+                    ? "Uploading…"
+                    : blockDraft.block_kind === "catalogue"
+                      ? blockDraft.media_path
+                        ? "Replace photo"
+                        : "Upload photo"
+                      : blockDraft.media_path
+                        ? "Replace media"
+                        : "Upload media"}
                 </Button>
                 {blockDraft.media_path && (
                   <Button
@@ -713,14 +839,14 @@ function WebsitePageEditor() {
                       setMediaPreview(null);
                     }}
                   >
-                    Remove media
+                    {blockDraft.block_kind === "catalogue" ? "Remove photo" : "Remove media"}
                   </Button>
                 )}
               </div>
               {mediaPreview && blockDraft.media_kind === "image" && (
                 <img src={mediaPreview} alt="" className="h-32 w-auto rounded-md border" />
               )}
-              {mediaPreview && blockDraft.media_kind === "video" && (
+              {mediaPreview && blockDraft.media_kind === "video" && blockDraft.block_kind !== "catalogue" && (
                 <video src={mediaPreview} controls className="h-32 w-auto rounded-md border" />
               )}
             </div>
@@ -755,7 +881,9 @@ function WebsitePageEditor() {
                   )}
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Each bookable item links to its own booking page.
+                  Give this block a Title — that becomes the second tile visitors tap. Use one
+                  catalogue per block so items stay in their own list. You do not need to set
+                  “Button goes to”; the photo tile is created automatically.
                 </p>
               </div>
             )}
@@ -879,6 +1007,7 @@ function WebsitePageEditor() {
                           is_active: section.is_active,
                           title: text?.title ?? "",
                           subtitle: text?.subtitle ?? "",
+                          image_path: section.image_path,
                         })
                       }
                     >

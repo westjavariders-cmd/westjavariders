@@ -29,6 +29,8 @@ import { validateGift, type GiftData, type GiftInput } from "@/lib/voucher";
 import { fxContext, freezeFx, displayAmount } from "@/lib/fx.server";
 import { toPublicFx, type PublicFxContext } from "@/lib/fx.functions";
 import { orderedAnswerSummary, withOrderedSnapshotAnswers } from "@/lib/answer-summary.server";
+import { DEFAULT_BUSINESS_NAME } from "@/lib/voucher-delivery";
+import { BOOKING_CONDITIONS_SETTING_KEY, sanitizeBookingConditions } from "@/lib/booking-conditions";
 
 
 export { CartError };
@@ -336,6 +338,7 @@ function buildSnapshot(
   gift: GiftData,
   frozen: ReturnType<typeof freezeFx>,
   riskAcceptedAt: string,
+  conditionsText: string,
 ) {
   return {
     snapshot_version: 1,
@@ -393,7 +396,11 @@ function buildSnapshot(
       message: gift.gift_message,
     },
     // The conditions the customer accepted before paying, kept historically.
-    risk: { accepted: true, accepted_at: riskAcceptedAt },
+    risk: {
+      accepted: true,
+      accepted_at: riskAcceptedAt,
+      conditions_text: conditionsText,
+    },
   };
 }
 
@@ -608,6 +615,15 @@ export async function createPurchaseFromCart(
   const fx = await fxContext(revalidation.fx.currency_code);
   const frozen = freezeFx(fx, revalidation.total_idr, revalidation.first_payment_idr);
 
+  const { data: conditionsRow } = await db
+    .from("settings")
+    .select("value")
+    .eq("key", BOOKING_CONDITIONS_SETTING_KEY)
+    .maybeSingle();
+  const conditionsText = sanitizeBookingConditions(
+    typeof conditionsRow?.value === "string" ? conditionsRow.value : "",
+  );
+
   const { data: purchaseId, error } = await db.rpc("create_purchase", {
     _cart_id: revalidation.cart_id,
     _customer_id: customerId,
@@ -621,6 +637,7 @@ export async function createPurchaseFromCart(
       gift,
       frozen,
       new Date().toISOString(),
+      conditionsText,
     ) as never,
     _is_gift: gift.is_gift,
     _gift_recipient_name: gift.gift_recipient_name,
@@ -694,7 +711,9 @@ export async function ensurePaymentLink(purchaseId: string, kind: PaymentRequest
     amountIdr: Number(request.amount_idr),
     currencyCode: request.currency_code,
     description:
-      kind === "first_payment" ? "Cimaja Boardriders booking deposit" : "Cimaja Boardriders balance",
+      kind === "first_payment"
+        ? `${DEFAULT_BUSINESS_NAME} booking deposit`
+        : `${DEFAULT_BUSINESS_NAME} balance`,
     returnUrl: `${origin()}/purchase/${purchaseId}`,
   });
 

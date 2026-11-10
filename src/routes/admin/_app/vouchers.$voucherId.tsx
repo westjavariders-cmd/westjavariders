@@ -200,10 +200,11 @@ function VoucherDetailPage() {
               <li key={i} className="rounded-md border border-border p-3">
                 <p className="font-medium">{item.product_title}</p>
                 {(item.options ?? []).length > 0 && (
-                  <ul className="mt-1 space-y-0.5 text-muted-foreground">
+                  <ul className="mt-2 space-y-2">
                     {item.options.map((o: any, j: number) => (
                       <li key={j}>
-                        {o.label}: {o.value}
+                        <p className="text-xs text-muted-foreground">{o.label}</p>
+                        <p className="text-sm font-medium">{o.value}</p>
                       </li>
                     ))}
                   </ul>

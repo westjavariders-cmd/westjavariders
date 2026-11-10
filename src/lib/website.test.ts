@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  assignGroupKeys,
+  isChromeImagePath,
+  isLandingCtaImagePath,
+  isSectionButtonImagePath,
+  pickCatalogueTilePhoto,
   isSafeSlug,
+  isSiteBackgroundPath,
   moveInOrder,
   pickTranslation,
   resolveDestination,
@@ -76,7 +82,7 @@ describe("multilingual fallback", () => {
 describe("destination resolution", () => {
   it("resolves the controlled internal destinations", () => {
     expect(resolveDestination({ kind: "build_your_trip" })).toEqual({
-      href: "/build-your-trip",
+      href: "/pages/firstwaves",
       external: false,
     });
     expect(resolveDestination({ kind: "book_individually" })).toEqual({
@@ -115,5 +121,66 @@ describe("destination resolution", () => {
       href: "https://example.com/x",
       external: true,
     });
+  });
+});
+
+describe("chrome background storage paths", () => {
+  it("only accepts files stored under the matching folder", () => {
+    expect(isSiteBackgroundPath("site-background/123-cimaja.jpg")).toBe(true);
+    expect(isChromeImagePath("header", "header-background/bar.jpg")).toBe(true);
+    expect(isChromeImagePath("header", "site-background/123-cimaja.jpg")).toBe(false);
+    expect(isChromeImagePath("menu", "menu-button/open.jpg")).toBe(true);
+    expect(isChromeImagePath("menu", "header-background/bar.jpg")).toBe(false);
+    expect(isSiteBackgroundPath("landing/image.jpg")).toBe(false);
+    expect(isSiteBackgroundPath("../secret")).toBe(false);
+  });
+
+  it("accepts the entry-button photo only under landing/cta-", () => {
+    expect(isLandingCtaImagePath("landing/cta-123-enter.jpg")).toBe(true);
+    expect(isLandingCtaImagePath("landing/cta-123-enter.webp")).toBe(true);
+    expect(isLandingCtaImagePath("landing/image-123.jpg")).toBe(false);
+    expect(isLandingCtaImagePath("site-background/cta.jpg")).toBe(false);
+  });
+
+  it("accepts a Book individually section tile photo only under section-buttons/", () => {
+    expect(isSectionButtonImagePath("section-buttons/abc-surf.jpg")).toBe(true);
+    expect(isSectionButtonImagePath("section-buttons/abc-surf.webp")).toBe(true);
+    expect(isSectionButtonImagePath("blocks/abc-surf.jpg")).toBe(false);
+    expect(isSectionButtonImagePath("../secret")).toBe(false);
+  });
+});
+
+describe("catalogue tile photos", () => {
+  it("prefers the catalogue button photo over an item photo", () => {
+    expect(pickCatalogueTilePhoto("https://cdn/button.jpg", "https://cdn/item.jpg")).toBe(
+      "https://cdn/button.jpg",
+    );
+  });
+
+  it("falls back to an item photo when the button has none", () => {
+    expect(pickCatalogueTilePhoto(null, "https://cdn/item.jpg")).toBe("https://cdn/item.jpg");
+    expect(pickCatalogueTilePhoto(undefined, null)).toBe(null);
+  });
+});
+
+describe("catalogue group keys", () => {
+  it("slugs the section title and disambiguates duplicates", () => {
+    const keys = assignGroupKeys([
+      { id: "a", title: "Surf lessons" },
+      { id: "b", title: "Surf lessons" },
+      { id: "c", title: "Transfers" },
+    ]);
+    expect(keys.get("a")).toBe("surf-lessons");
+    expect(keys.get("b")).toBe("surf-lessons-2");
+    expect(keys.get("c")).toBe("transfers");
+  });
+
+  it("slugs catalogue block titles the same way as sections", () => {
+    const keys = assignGroupKeys([
+      { id: "b1", title: "Beginner lessons" },
+      { id: "b2", title: null },
+    ]);
+    expect(keys.get("b1")).toBe("beginner-lessons");
+    expect(keys.get("b2")).toBe("b2");
   });
 });

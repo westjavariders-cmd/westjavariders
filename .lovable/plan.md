@@ -1,37 +1,21 @@
-# Selector de idioma arriba en la web (y la tarjeta que no se puede pinchar)
+# Lanzar West Java Riders y empezar a vender
 
-## 1. Antes de nada: no he tocado nada del idioma
+## Coste
+- `westjavariders.com`: 11,87 USD el primer año y lo mismo cada renovación anual. Es tuyo y lo pagas aparte del plan.
+- Plan Pro (ya activo): hace falta mantenerlo para usar dominio propio, enviar emails desde la web y ocultar la insignia de Lovable.
 
-No he hecho ningún cambio todavía. Lo que veas ahora mismo es como estaba.
+## Pasos que haces tú
+1. **Comprar el dominio** `westjavariders.com` desde el chat o en Ajustes del proyecto → Dominios. Si se compra con Lovable, queda conectado a la web automáticamente.
+2. **Activar los emails**: en el panel "Configurar dominio de correo" eliges ese dominio. Se verifica solo (puede tardar hasta unas horas).
+3. **Pagos reales con Xendit**: en tu cuenta Xendit, activar el modo Live y darme la clave secreta Live y el token de webhook Live. Los meto en el formulario seguro.
+4. **Revisar el contenido**: precios activos en cada experiencia (por ejemplo "Begginers", que está en borrador), precios de transporte de 5–10 personas, fotos y textos.
+5. **Publicar** la web.
 
-## 2. Por qué no se puede pinchar "Begginers: Cimaja, Cikembang and more surprises"
+## Pasos que hago yo
+- Conectar los emails: consultas de Contact Us y copias de vouchers a westjavariders@gmail.com, y vouchers a los clientes al confirmarse el pago.
+- Reenviar las consultas que se quedaron sin enviar.
+- Cambiar los pagos de modo prueba a Live y configurar el aviso de pago en `https://westjavariders.com/api/public/payments/xendit`.
+- Hacer una compra de prueba de principio a fin y un escaneo de seguridad antes de publicar.
 
-La experiencia está activa, pero **sus precios están en borrador**. Cuando los precios no están activos, la web muestra la tarjeta apagada con el aviso "Not available for booking right now" y no deja pulsarla. "Intermediates and Pros" sí tiene los precios activos, y por eso esa sí se puede pinchar.
-
-No es un fallo de programación. Se arregla en Admin → Products → esa experiencia → pestaña de precios → **Activate pricing**. Dime si quieres que lo active yo.
-
-## 3. Selector de idioma en la parte superior
-
-Ya tienes 8 idiomas activos (inglés como principal, más chino, japonés, indonesio, filipino, tailandés, español y portugués de Brasil) y en Admin puedes escribir los textos de cada página, sección, bloque y menú en cualquiera de ellos. Lo que falta es el selector para el visitante.
-
-Lo que haré:
-
-- Un desplegable de idioma en la barra superior, **justo al lado del de moneda**, con el mismo estilo discreto (EN, ES, JA…).
-- Al elegir un idioma, la web vuelve a pedir los textos en ese idioma: páginas, secciones, bloques, menú y pantalla de entrada. Si a algún texto le falta traducción, se muestra el inglés, como ahora.
-- **"Recordar el idioma elegido"** simplemente significa que si eliges español y luego navegas a otra página o vuelves más tarde, sigue en español sin tener que elegirlo otra vez. Funciona igual que la moneda: se guarda en el navegador del visitante. Si prefieres que no se recuerde y vuelva siempre a inglés, dímelo.
-- **"West Java Riders" no se traduce nunca**: el nombre de la marca en la cabecera se queda siempre igual, en todos los idiomas.
-
-## 4. Lo que seguirá en inglés por ahora
-
-Los textos fijos de la web que no vienen de Admin (botones como "Add to cart", avisos del carrito, formulario de contacto) seguirán en inglés. Traducir esos es un trabajo aparte y bastante mayor; si lo quieres, lo hacemos en un paso siguiente.
-
-## Detalle técnico
-
-- Guardado de la elección con una cookie propia y una función de servidor `setSiteLanguage`, siguiendo el patrón que ya usa la moneda (`setFxCurrency` / `selectCurrency`).
-- Las lecturas públicas (`websitePage`, `websiteNav`, `websiteLanding`) ya aceptan un idioma; se les pasará el elegido en lugar de dejar el idioma por defecto.
-- Nuevo `LanguageSelector` en `SiteHeader.tsx` junto a `CurrencySelector`, alimentado por los idiomas activos.
-- Sin migración de base de datos.
-
-## No se toca
-
-Precios, productos, catálogos, configurador, carrito, pagos, vouchers, Admin ni el nombre de la marca.
+## Orden recomendado
+Dominio → emails → Xendit Live → revisión de contenido → compra de prueba → publicar.

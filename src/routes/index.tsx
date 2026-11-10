@@ -15,7 +15,7 @@ export const Route = createFileRoute("/")({
   errorComponent: ({ error }) => (
     <PublicPage>
       <p role="alert" className="py-8 text-sm text-muted-foreground">
-        {error.message}
+        {(error as Error).message}
       </p>
     </PublicPage>
   ),
@@ -50,7 +50,7 @@ function Index() {
   if (landing) return <LandingScreen landing={landing} />;
 
   return (
-    <PublicPage>
+    <PublicPage width="full">
       <HomeContent page={page} />
     </PublicPage>
   );

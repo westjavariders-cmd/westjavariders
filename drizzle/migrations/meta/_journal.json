@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792227598506,
+      "tag": "0000_transport_ranges_10_people_30_hours",
+      "breakpoints": true
+    }
+  ]
+}

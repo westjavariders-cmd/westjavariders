@@ -264,6 +264,122 @@ describe("transport catalogue extra choices", () => {
   });
 });
 
+describe("multi-select catalogue extras per item", () => {
+  const lesson = {
+    catalogue_type: "transport" as const,
+    catalogue_id: "cat-a",
+    id: "a1",
+    name: "Surf lesson",
+    reference: null,
+    description: null,
+    photo_url: null,
+    photo_urls: [],
+    details: [],
+    customer_price_idr: null,
+    variants: {
+      people_label: "Surfers",
+      hours_label: "Days",
+      people: [
+        { value: 1, price_idr: 400_000 },
+        { value: 2, price_idr: 700_000 },
+      ],
+      hours: [
+        { value: 1, price_idr: 1 },
+        { value: 2, price_idr: 2 },
+      ],
+      calc_mode: "multiply" as const,
+    },
+  };
+  const drone = {
+    catalogue_type: "transport" as const,
+    catalogue_id: "cat-a",
+    id: "d1",
+    name: "Drone shot",
+    reference: null,
+    description: null,
+    photo_url: null,
+    photo_urls: [],
+    details: [],
+    customer_price_idr: null,
+    variants: {
+      people_label: "People",
+      hours_label: "Days",
+      people: [{ value: 1, price_idr: 250_000 }],
+      hours: [{ value: 1, price_idr: 1 }, { value: 3, price_idr: 3 }],
+      calc_mode: "multiply" as const,
+    },
+  };
+  const field = {
+    id: "f1",
+    variable_name: "activities",
+    field_type: "multi_select",
+    option_source: "catalogue",
+    catalogue_type: "transport",
+    catalogue_id: "cat-a",
+  };
+  const items = { "cat-a": [lesson, drone] };
+
+  it("prices each selected activity with its own people and days, then sums", () => {
+    const { selections, invalid } = resolveCatalogueSelections(
+      [field],
+      {
+        activities: ["a1", "d1"],
+        activities__a1_people: 2,
+        activities__a1_hours: 2,
+        activities__d1_people: 1,
+        activities__d1_hours: 3,
+      },
+      items,
+    );
+    expect(invalid).toEqual([]);
+    expect(selections).toHaveLength(2);
+    expect(selections[0]!.customer_price_idr).toBe(1_400_000);
+    expect(selections[1]!.customer_price_idr).toBe(750_000);
+    expect(cataloguePriceVariables(selections)).toEqual({ activities_price: 2_150_000 });
+  });
+
+  it("falls back to field-level people and hours for older answers", () => {
+    const { selections, invalid } = resolveCatalogueSelections(
+      [field],
+      { activities: ["a1", "d1"], activities_people: 1, activities_hours: 1 },
+      items,
+    );
+    expect(invalid).toEqual([]);
+    expect(selections[0]!.customer_price_idr).toBe(400_000);
+    expect(selections[1]!.customer_price_idr).toBe(250_000);
+    expect(cataloguePriceVariables(selections)).toEqual({ activities_price: 650_000 });
+  });
+
+  it("asks for the missing extras using the activity name", () => {
+    const { invalid } = resolveCatalogueSelections(
+      [field],
+      { activities: ["a1"] },
+      items,
+      () => "Other activities",
+    );
+    expect(invalid[0]).toBe("Please choose Surfers and Days for Surf lesson.");
+  });
+
+  it("drops extras for an activity that is no longer selected", () => {
+    const next = stripInvalidCatalogueAnswers(
+      [field],
+      {
+        activities: ["d1"],
+        activities__a1_people: 2,
+        activities__a1_hours: 2,
+        activities__d1_people: 1,
+        activities__d1_hours: 3,
+      },
+      items,
+    );
+    expect(next.activities).toEqual(["d1"]);
+    expect(next["activities__a1_people"]).toBeUndefined();
+    expect(next["activities__a1_hours"]).toBeUndefined();
+    expect(next["activities__d1_people"]).toBe(1);
+    expect(next["activities__d1_hours"]).toBe(3);
+  });
+});
+
 describe("transport variant calculation mode", () => {
   const item = {
     catalogue_type: "transport" as const,

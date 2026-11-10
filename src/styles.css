@@ -1,6 +1,8 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+@import "@fontsource-variable/figtree";
+@import "@fontsource-variable/fraunces";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -121,6 +123,21 @@
   --border: oklch(1 0 0 / 18%);
   --input: oklch(1 0 0 / 28%);
   --ring: oklch(0.84 0 0);
+  font-family: "Figtree Variable", ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Display serif for titles; Figtree stays on menus, buttons and body copy. */
+.public-theme h1,
+.public-theme h2,
+.public-theme h3,
+:root:has(.public-theme) h1,
+:root:has(.public-theme) h2,
+:root:has(.public-theme) h3 {
+  font-family: "Fraunces Variable", ui-serif, Georgia, serif;
+  font-optical-sizing: auto;
+  letter-spacing: -0.03em;
 }
 
 .dark {
@@ -213,10 +230,163 @@
   animation: cbr-step-prev 0.3s ease-out both;
 }
 
+@keyframes cbr-nav-overlay {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cbr-nav-drawer {
+  from {
+    opacity: 0.4;
+    transform: translateX(1.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.cbr-nav-overlay {
+  animation: cbr-nav-overlay 0.22s ease-out both;
+}
+
+.cbr-nav-drawer {
+  animation: cbr-nav-drawer 0.28s ease-out both;
+}
+
+/* Photo tiles: rounded frame with a soft vignette at the edges. */
+.public-theme .cbr-photo-tile {
+  border-radius: 1.35rem;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 10%),
+    0 22px 44px -24px rgb(0 0 0 / 70%);
+}
+
+.public-theme .cbr-photo-tile::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  box-shadow: inset 0 0 56px 12px rgb(0 0 0 / 38%);
+  background: radial-gradient(130% 95% at 50% 40%, transparent 42%, rgb(0 0 0 / 32%) 100%);
+}
+
+.public-theme .cbr-photo-tile--compact {
+  border-radius: 0.7rem;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 12%);
+}
+
+.public-theme .cbr-photo-tile--compact::after {
+  box-shadow: inset 0 0 24px 6px rgb(0 0 0 / 35%);
+}
+
+/* Editorial CTA for the public showcase (doors, cards, package landing, CMS). */
+.public-theme .cbr-editorial-cta {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  transition: color 150ms ease-out;
+}
+
+.public-theme .cbr-editorial-cta:hover {
+  color: var(--muted-foreground);
+}
+
+.public-theme .cbr-editorial-cta:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+}
+
+/* Configurator controls: functional, not showcase CTAs. */
+.public-theme .cbr-config-nav {
+  display: inline-flex;
+  min-height: 2.75rem;
+  min-width: 5.5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1.25rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  transition:
+    color 150ms ease-out,
+    border-color 150ms ease-out,
+    opacity 150ms ease-out;
+}
+
+.public-theme .cbr-config-nav:hover:not(:disabled) {
+  border-color: var(--foreground);
+}
+
+.public-theme .cbr-config-nav:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.public-theme .cbr-config-nav:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+}
+
+.public-theme .cbr-config-primary {
+  display: inline-flex;
+  min-height: 2.75rem;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1.25rem;
+  border: 1px solid var(--foreground);
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  transition: opacity 150ms ease-out;
+}
+
+.public-theme .cbr-config-primary:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.public-theme .cbr-config-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.public-theme .cbr-config-primary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+}
+
+.public-theme .cbr-config-field {
+  height: 2.75rem;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cbr-page-enter,
   .cbr-step-next,
-  .cbr-step-prev {
+  .cbr-step-prev,
+  .cbr-nav-overlay,
+  .cbr-nav-drawer {
     animation: none;
   }
 }
