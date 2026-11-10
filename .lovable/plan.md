@@ -1,22 +1,32 @@
-# Lanzar West Java Riders y empezar a vender
+# Auditoría de infraestructura y pasos para salir de Lovable (solo lectura, nada cambiado)
 
-## Coste
-- `westjavariders.com`: 11,87 USD el primer año y lo mismo cada renovación anual. Es tuyo y lo pagas aparte del plan.
-- Plan Pro (ya activo): hace falta mantenerlo para usar dominio propio, enviar emails desde la web y ocultar la insignia de Lovable.
-- Comprar el dominio fuera de Lovable (Namecheap, GoDaddy…) es posible, pero no te libra del plan de pago: conectar el dominio, ocultar la insignia y enviar emails siguen necesitándolo. Además tendrías que añadir tú los registros DNS en ese proveedor. Comprarlo con Lovable lo deja conectado solo.
+## Respuestas
+1. **Conexión**: la app usa **Lovable Cloud**, no un proyecto Supabase externo. Por debajo es Supabase gestionado por Lovable, así que no tienes acceso directo a su panel ni a la clave de servicio.
+2. **Dónde están los datos**: todo está en la base de datos de Lovable Cloud (65 tablas).
+   - Productos y catálogos: productos, traducciones y catálogos.
+   - Configuraciones y precios: pasos, preguntas, opciones, precios, temporadas, códigos promocionales y tipos de cambio.
+   - Experiencias y transportes: alojamientos, habitaciones, transportes con precios por personas y horas, y motos.
+   - Usuarios y autenticación: el inicio de sesión de Admin/Staff usa la autenticación de Lovable Cloud, y los roles están en su tabla. Los clientes no tienen cuenta, pero sus datos se guardan con sus compras.
+   - Páginas y navegación: páginas, secciones, bloques, menú y portada, con sus traducciones.
+   - Además: carritos, compras, pagos, vouchers, consultas de contacto, viajes compartidos y registro de actividad.
+3. **Imágenes y archivos**: en el almacenamiento de Lovable Cloud, en 5 contenedores privados: fotos de alojamiento, fotos de motos, imágenes de producto, imágenes de la web y PDFs de vouchers.
+4. **Qué depende de Lovable**:
+   - La base de datos, la autenticación y el almacenamiento.
+   - El alojamiento y la publicación: la web se ejecuta en Cloudflare a través de Lovable, y el aviso de pago de Xendit entra por la web.
+   - El envío de emails usa la clave de Lovable (aún no está activo).
+   - La configuración de compilación de Lovable y su informe de errores.
+   - Xendit no depende de Lovable: es tu cuenta y tus claves.
+5. **¿Puede funcionar fuera con GitHub + Supabase + Cloudflare?** Sí. La web ya está hecha para Cloudflare y usa Supabase normal. Solo habría que sustituir dos cosas: los emails (por ejemplo, con Resend o similar) y la configuración de compilación de Lovable, que pasaría a una estándar.
 
-## Pasos que haces tú
-1. **Comprar el dominio** `westjavariders.com` desde el chat o en Ajustes del proyecto → Dominios. Si se compra con Lovable, queda conectado a la web automáticamente.
-2. **Activar los emails**: en el panel "Configurar dominio de correo" eliges ese dominio. Se verifica solo (puede tardar hasta unas horas).
-3. **Pagos reales con Xendit**: en tu cuenta Xendit, activar el modo Live y darme la clave secreta Live y el token de webhook Live. Los meto en el formulario seguro.
-4. **Revisar el contenido**: precios activos en cada experiencia (por ejemplo "Begginers", que está en borrador), precios de transporte de 5–10 personas, fotos y textos.
-5. **Publicar** la web.
+## Qué migrar antes de dejar Lovable
+1. **Código**: conectar el proyecto a GitHub (Ajustes → GitHub) para tener el código completo.
+2. **Base de datos**: crear tu propio proyecto Supabase, aplicar la estructura (58 migraciones en el código) y exportar e importar todos los datos.
+3. **Usuarios Admin/Staff**: las contraseñas no se pueden exportar, así que habría que recrear las cuentas o enviar un enlace para que pongan una nueva. Después se recrean sus roles.
+4. **Archivos**: descargar los 5 contenedores y subirlos con las mismas rutas.
+5. **Secretos**: las claves de Xendit y las nuevas claves de Supabase en Cloudflare. Cambiar en Xendit la dirección del aviso de pago a la nueva web.
+6. **Emails**: cambiar el envío a otro proveedor con tu dominio.
+7. **Despliegue**: Cloudflare Workers conectado a GitHub, y el dominio apuntando ahí.
+8. **Prueba completa** antes de apagar Lovable: compra, pago, voucher, contacto y Admin.
 
-## Pasos que hago yo
-- Conectar los emails: consultas de Contact Us y copias de vouchers a westjavariders@gmail.com, y vouchers a los clientes al confirmarse el pago.
-- Reenviar las consultas que se quedaron sin enviar.
-- Cambiar los pagos de modo prueba a Live y configurar el aviso de pago en `https://westjavariders.com/api/public/payments/xendit`.
-- Hacer una compra de prueba de principio a fin y un escaneo de seguridad antes de publicar.
-
-## Orden recomendado
-Dominio → emails → Xendit Live → revisión de contenido → compra de prueba → publicar.
+## Conclusión
+Hoy la web funciona así: código TanStack Start alojado por Lovable sobre Cloudflare, más Lovable Cloud (Supabase gestionado) para datos, inicio de sesión y archivos, y Xendit para los pagos. Independizarse es viable. El trabajo principal es mover los datos y los archivos a tu propio Supabase y cambiar el envío de emails.
