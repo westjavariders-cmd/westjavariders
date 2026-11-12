@@ -1,32 +1,34 @@
-# Auditoría de infraestructura y pasos para salir de Lovable (solo lectura, nada cambiado)
+# Copiar los archivos de Storage al nuevo proyecto (solo lectura)
 
 ## Respuestas
-1. **Conexión**: la app usa **Lovable Cloud**, no un proyecto Supabase externo. Por debajo es Supabase gestionado por Lovable, así que no tienes acceso directo a su panel ni a la clave de servicio.
-2. **Dónde están los datos**: todo está en la base de datos de Lovable Cloud (65 tablas).
-   - Productos y catálogos: productos, traducciones y catálogos.
-   - Configuraciones y precios: pasos, preguntas, opciones, precios, temporadas, códigos promocionales y tipos de cambio.
-   - Experiencias y transportes: alojamientos, habitaciones, transportes con precios por personas y horas, y motos.
-   - Usuarios y autenticación: el inicio de sesión de Admin/Staff usa la autenticación de Lovable Cloud, y los roles están en su tabla. Los clientes no tienen cuenta, pero sus datos se guardan con sus compras.
-   - Páginas y navegación: páginas, secciones, bloques, menú y portada, con sus traducciones.
-   - Además: carritos, compras, pagos, vouchers, consultas de contacto, viajes compartidos y registro de actividad.
-3. **Imágenes y archivos**: en el almacenamiento de Lovable Cloud, en 5 contenedores privados: fotos de alojamiento, fotos de motos, imágenes de producto, imágenes de la web y PDFs de vouchers.
-4. **Qué depende de Lovable**:
-   - La base de datos, la autenticación y el almacenamiento.
-   - El alojamiento y la publicación: la web se ejecuta en Cloudflare a través de Lovable, y el aviso de pago de Xendit entra por la web.
-   - El envío de emails usa la clave de Lovable (aún no está activo).
-   - La configuración de compilación de Lovable y su informe de errores.
-   - Xendit no depende de Lovable: es tu cuenta y tus claves.
-5. **¿Puede funcionar fuera con GitHub + Supabase + Cloudflare?** Sí. La web ya está hecha para Cloudflare y usa Supabase normal. Solo habría que sustituir dos cosas: los emails (por ejemplo, con Resend o similar) y la configuración de compilación de Lovable, que pasaría a una estándar.
+- **¿Credencial temporal de lectura?** No. Lovable Cloud no entrega la clave de servicio ni credenciales de acceso directo, ni permanentes ni temporales.
+- **¿URLs firmadas?** Sí. El servidor de la web puede generar enlaces firmados de descarga para cualquier archivo privado, con caducidad corta.
+- **¿Procedimiento temporal?** Sí: se crea una herramienta de exportación temporal, solo para ADMIN, que genera la lista de todos los archivos con su enlace de descarga.
+- **Limitaciones:** desde fuera no hay acceso directo al Storage (ni S3 ni panel de control). Solo es posible a través de la web con un usuario ADMIN. Los enlaces caducan (1 hora). La exportación de la base de datos no incluye los archivos.
 
-## Qué migrar antes de dejar Lovable
-1. **Código**: conectar el proyecto a GitHub (Ajustes → GitHub) para tener el código completo.
-2. **Base de datos**: crear tu propio proyecto Supabase, aplicar la estructura (58 migraciones en el código) y exportar e importar todos los datos.
-3. **Usuarios Admin/Staff**: las contraseñas no se pueden exportar, así que habría que recrear las cuentas o enviar un enlace para que pongan una nueva. Después se recrean sus roles.
-4. **Archivos**: descargar los 5 contenedores y subirlos con las mismas rutas.
-5. **Secretos**: las claves de Xendit y las nuevas claves de Supabase en Cloudflare. Cambiar en Xendit la dirección del aviso de pago a la nueva web.
-6. **Emails**: cambiar el envío a otro proveedor con tu dominio.
-7. **Despliegue**: Cloudflare Workers conectado a GitHub, y el dominio apuntando ahí.
-8. **Prueba completa** antes de apagar Lovable: compra, pago, voucher, contacto y Admin.
+## Lo que se construye
+1. Una página nueva en Admin, **Admin → Export files**, visible solo para ADMIN.
+2. Un botón "Generate download list" que recorre los 5 contenedores (accommodation-photos, voucher-documents, motorbike-photos, website-media, product-media), incluidas las subcarpetas, y descarga un archivo `storage-manifest.json` con: contenedor, ruta exacta, tamaño, tipo y enlace firmado válido 1 hora.
+3. Un script listo para copiar (se muestra en la misma página) que el usuario ejecuta en su ordenador:
+   - lee el manifiesto,
+   - descarga cada archivo,
+   - lo sube al nuevo proyecto en el **mismo contenedor y la misma ruta**, usando la clave de servicio del **nuevo** proyecto (esa sí la tiene el usuario),
+   - al final compara el total (132) y avisa de cualquier fallo para reintentarlo.
 
-## Conclusión
-Hoy la web funciona así: código TanStack Start alojado por Lovable sobre Cloudflare, más Lovable Cloud (Supabase gestionado) para datos, inicio de sesión y archivos, y Xendit para los pagos. Independizarse es viable. El trabajo principal es mover los datos y los archivos a tu propio Supabase y cambiar el envío de emails.
+## Pasos para el usuario
+1. En el nuevo proyecto, crear los 5 contenedores privados con los mismos nombres.
+2. Entrar en Admin → Export files y pulsar "Generate download list".
+3. Ejecutar el script antes de 1 hora (si caduca, volver a generar la lista).
+4. Comprobar que el recuento coincide.
+5. Cuando todo esté copiado, pedir que se elimine la página temporal.
+
+## Garantías
+- No se modifica, mueve ni borra ningún archivo ni ajuste del proyecto original: solo lectura.
+- Los enlaces solo se generan para un ADMIN con sesión iniciada; nunca se publican.
+- El contenedor `database_export_10_11_26` (la exportación de la base de datos) no se incluye; se descarga aparte desde More → Storage.
+
+## Detalles técnicos
+- Server function `exportStorageManifest` (requireSupabaseAuth + comprobación `is_admin`), usa `supabaseAdmin` cargado dentro del handler: `storage.from(b).list(prefix, {limit:1000})` recursivo y `createSignedUrls(paths, 3600)`.
+- Ruta `src/routes/admin/_app/export-files.tsx`.
+- Script Node (`@supabase/supabase-js`) con variables `NEW_SUPABASE_URL` y `NEW_SERVICE_ROLE_KEY`, `upload(path, blob, {contentType, upsert:false})`.
+- Sin migraciones de base de datos.
