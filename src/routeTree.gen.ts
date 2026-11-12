@@ -29,6 +29,7 @@ import { Route as AdminAppCataloguesRouteImport } from './routes/admin/_app/cata
 import { Route as AdminAppComponentTemplatesRouteImport } from './routes/admin/_app/component-templates'
 import { Route as AdminAppCustomersRouteImport } from './routes/admin/_app/customers'
 import { Route as AdminAppExperiencesRouteImport } from './routes/admin/_app/experiences'
+import { Route as AdminAppExportFilesRouteImport } from './routes/admin/_app/export-files'
 import { Route as AdminAppInsuranceRouteImport } from './routes/admin/_app/insurance'
 import { Route as AdminAppPricesRouteImport } from './routes/admin/_app/prices'
 import { Route as AdminAppPromoCodesRouteImport } from './routes/admin/_app/promo-codes'
@@ -162,6 +163,11 @@ const AdminAppCustomersRoute = AdminAppCustomersRouteImport.update({
 const AdminAppExperiencesRoute = AdminAppExperiencesRouteImport.update({
   id: '/experiences',
   path: '/experiences',
+  getParentRoute: () => AdminAppRouteRoute,
+} as any)
+const AdminAppExportFilesRoute = AdminAppExportFilesRouteImport.update({
+  id: '/export-files',
+  path: '/export-files',
   getParentRoute: () => AdminAppRouteRoute,
 } as any)
 const AdminAppInsuranceRoute = AdminAppInsuranceRouteImport.update({
@@ -365,6 +371,7 @@ export interface FileRoutesByFullPath {
   '/admin/component-templates': typeof AdminAppComponentTemplatesRoute
   '/admin/customers': typeof AdminAppCustomersRoute
   '/admin/experiences': typeof AdminAppExperiencesRoute
+  '/admin/export-files': typeof AdminAppExportFilesRoute
   '/admin/insurance': typeof AdminAppInsuranceRoute
   '/admin/prices': typeof AdminAppPricesRoute
   '/admin/promo-codes': typeof AdminAppPromoCodesRoute
@@ -419,6 +426,7 @@ export interface FileRoutesByTo {
   '/admin/component-templates': typeof AdminAppComponentTemplatesRoute
   '/admin/customers': typeof AdminAppCustomersRoute
   '/admin/experiences': typeof AdminAppExperiencesRoute
+  '/admin/export-files': typeof AdminAppExportFilesRoute
   '/admin/insurance': typeof AdminAppInsuranceRoute
   '/admin/prices': typeof AdminAppPricesRoute
   '/admin/promo-codes': typeof AdminAppPromoCodesRoute
@@ -474,6 +482,7 @@ export interface FileRoutesById {
   '/admin/_app/component-templates': typeof AdminAppComponentTemplatesRoute
   '/admin/_app/customers': typeof AdminAppCustomersRoute
   '/admin/_app/experiences': typeof AdminAppExperiencesRoute
+  '/admin/_app/export-files': typeof AdminAppExportFilesRoute
   '/admin/_app/insurance': typeof AdminAppInsuranceRoute
   '/admin/_app/prices': typeof AdminAppPricesRoute
   '/admin/_app/promo-codes': typeof AdminAppPromoCodesRoute
@@ -531,6 +540,7 @@ export interface FileRouteTypes {
     | '/admin/component-templates'
     | '/admin/customers'
     | '/admin/experiences'
+    | '/admin/export-files'
     | '/admin/insurance'
     | '/admin/prices'
     | '/admin/promo-codes'
@@ -585,6 +595,7 @@ export interface FileRouteTypes {
     | '/admin/component-templates'
     | '/admin/customers'
     | '/admin/experiences'
+    | '/admin/export-files'
     | '/admin/insurance'
     | '/admin/prices'
     | '/admin/promo-codes'
@@ -639,6 +650,7 @@ export interface FileRouteTypes {
     | '/admin/_app/component-templates'
     | '/admin/_app/customers'
     | '/admin/_app/experiences'
+    | '/admin/_app/export-files'
     | '/admin/_app/insurance'
     | '/admin/_app/prices'
     | '/admin/_app/promo-codes'
@@ -831,6 +843,13 @@ declare module '@tanstack/react-router' {
       path: '/experiences'
       fullPath: '/admin/experiences'
       preLoaderRoute: typeof AdminAppExperiencesRouteImport
+      parentRoute: typeof AdminAppRouteRoute
+    }
+    '/admin/_app/export-files': {
+      id: '/admin/_app/export-files'
+      path: '/export-files'
+      fullPath: '/admin/export-files'
+      preLoaderRoute: typeof AdminAppExportFilesRouteImport
       parentRoute: typeof AdminAppRouteRoute
     }
     '/admin/_app/insurance': {
@@ -1080,6 +1099,7 @@ interface AdminAppRouteRouteChildren {
   AdminAppComponentTemplatesRoute: typeof AdminAppComponentTemplatesRoute
   AdminAppCustomersRoute: typeof AdminAppCustomersRoute
   AdminAppExperiencesRoute: typeof AdminAppExperiencesRoute
+  AdminAppExportFilesRoute: typeof AdminAppExportFilesRoute
   AdminAppInsuranceRoute: typeof AdminAppInsuranceRoute
   AdminAppPricesRoute: typeof AdminAppPricesRoute
   AdminAppPromoCodesRoute: typeof AdminAppPromoCodesRoute
@@ -1116,6 +1136,7 @@ const AdminAppRouteRouteChildren: AdminAppRouteRouteChildren = {
   AdminAppComponentTemplatesRoute: AdminAppComponentTemplatesRoute,
   AdminAppCustomersRoute: AdminAppCustomersRoute,
   AdminAppExperiencesRoute: AdminAppExperiencesRoute,
+  AdminAppExportFilesRoute: AdminAppExportFilesRoute,
   AdminAppInsuranceRoute: AdminAppInsuranceRoute,
   AdminAppPricesRoute: AdminAppPricesRoute,
   AdminAppPromoCodesRoute: AdminAppPromoCodesRoute,
