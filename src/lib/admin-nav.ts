@@ -52,6 +52,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
       { label: "Markets", to: "/admin/settings/markets", status: "available" },
       { label: "Users & Roles", to: "/admin/settings/users", status: "available", adminOnly: true },
       { label: "Audit Log", to: "/admin/settings/audit", status: "available" },
+      { label: "Export files", to: "/admin/export-files", status: "available", adminOnly: true },
     ],
   },
 ];
