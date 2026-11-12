@@ -53,7 +53,7 @@ for (const f of manifest.files) {
   try {
     if (await exists(f.bucket, f.path)) { skipped++; console.log("skip  ", label); continue; }
     const body = await withRetry(async () => {
-      const res = await fetch(f.signed_url);
+      const res = await fetch(f.signed_url, { headers: { "User-Agent": "migrate-storage/1.0" } });
       if (!res.ok) throw new Error("download " + res.status);
       return new Uint8Array(await res.arrayBuffer());
     });
